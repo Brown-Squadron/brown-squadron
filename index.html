@@ -353,9 +353,12 @@
   .map-sticker-bs .bs-num::placeholder{color:var(--dim);}
   .map-sticker-bs .bs-tag{margin-left:6px;font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;pointer-events:none;}
   #map-canvas{width:100%;height:82vh;min-height:560px;border:1px solid var(--line2);border-radius:var(--r-lg);overflow:hidden;background:#0a0d08;}
-  /* ===== Plein écran carte (surtout mobile) ===== */
-  .map-wrap.fs{position:fixed;inset:0;z-index:9000;margin:0;border-radius:0;background:#0a0d08;}
-  .map-wrap.fs #map-canvas{height:100%;min-height:0;border:none;border-radius:0;}
+  /* ===== Mode Tactique (plein écran carte) ===== */
+  .map-wrap.fs{position:fixed!important;top:0;left:0;width:100vw;height:100vh;height:100dvh;
+    z-index:9000;margin:0!important;border-radius:0;background:#0a0d08;}
+  .map-wrap.fs #map-canvas{width:100%!important;height:100%!important;min-height:0!important;
+    border:none;border-radius:0;}
+  .map-wrap.fs .maplibregl-map{width:100%!important;height:100%!important;}
   /* barre flottante : cachée par défaut, visible seulement en plein écran */
   .map-fs-bar{display:none;}
   .map-wrap.fs .map-fs-bar{
@@ -2922,12 +2925,13 @@ var mapIsFs=false;
 function enterMapFullscreen(){
   var wrap=document.querySelector('#view-map .map-wrap');
   if(!wrap)return;
-  /* le plein écran CSS est appliqué TOUJOURS -> fiable sur tous les tél (iOS inclus) */
   wrap.classList.add('fs');mapIsFs=true;
-  document.body.style.overflow='hidden';
-  /* le plein écran natif n'est qu'un bonus (cache la barre du navigateur sur Android) */
+  /* plusieurs resize : MapLibre a besoin de temps pour prendre la nouvelle taille */
+  function rz(){try{if(map)map.resize();}catch(e){}}
+  requestAnimationFrame(function(){rz();requestAnimationFrame(rz);});
+  setTimeout(rz,60);setTimeout(rz,200);setTimeout(rz,450);setTimeout(rz,800);
+  /* natif en bonus seulement (souvent KO sur iOS) */
   try{if(wrap.requestFullscreen)wrap.requestFullscreen().catch(function(){});}catch(e){}
-  setTimeout(function(){try{if(map)map.resize();}catch(e){}},250);
   document.addEventListener('keydown',fsEscHandler);
   initFsBarDrag();
 }
@@ -2935,9 +2939,9 @@ function exitMapFullscreen(){
   var wrap=document.querySelector('#view-map .map-wrap');
   if(!wrap)return;
   wrap.classList.remove('fs');mapIsFs=false;
-  document.body.style.overflow='';
+  function rz(){try{if(map)map.resize();}catch(e){}}
+  rz();setTimeout(rz,60);setTimeout(rz,250);
   try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});}catch(e){}
-  setTimeout(function(){try{if(map)map.resize();}catch(e){}},250);
   document.removeEventListener('keydown',fsEscHandler);
 }
 function fsEscHandler(e){if(e.key==='Escape'&&mapIsFs)exitMapFullscreen();}
@@ -3040,6 +3044,12 @@ function exitBlackout(){
 try{var _lb=document.getElementById('login-badge');if(_lb)_lb.innerHTML='<img src="'+LOGO_TAN+'" alt="Brown Squadron">';
   var _card=document.querySelector('.login-card');
   if(_card&&!_card.querySelector('.camo-top')){var _s=document.createElement('div');_s.className='camo-top';_s.style.background='url('+CAMO_AOR1+') repeat';_card.appendChild(_s);}
+}catch(e){}
+/* sécurité : au chargement, on s'assure qu'aucun état plein écran / overflow ne reste bloquant */
+try{
+  document.body.style.overflow='';
+  var _w=document.querySelector('#view-map .map-wrap');if(_w)_w.classList.remove('fs');
+  var _bv=document.getElementById('blackout-veil');if(_bv)_bv.style.display='none';
 }catch(e){}
 try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 </script>
