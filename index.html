@@ -353,6 +353,28 @@
   .map-sticker-bs .bs-num::placeholder{color:var(--dim);}
   .map-sticker-bs .bs-tag{margin-left:6px;font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;pointer-events:none;}
   #map-canvas{width:100%;height:82vh;min-height:560px;border:1px solid var(--line2);border-radius:var(--r-lg);overflow:hidden;background:#0a0d08;}
+  /* ===== Plein écran carte (surtout mobile) ===== */
+  .map-wrap.fs{position:fixed;inset:0;z-index:9000;margin:0;border-radius:0;background:#0a0d08;}
+  .map-wrap.fs #map-canvas{height:100%;min-height:0;border:none;border-radius:0;}
+  /* barre flottante : cachée par défaut, visible seulement en plein écran */
+  .map-fs-bar{display:none;}
+  .map-wrap.fs .map-fs-bar{
+    display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;
+    position:absolute;left:8px;right:8px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:9100;
+    background:rgba(11,14,10,.82);backdrop-filter:blur(6px);
+    border:1px solid var(--line2);border-radius:14px;padding:8px;}
+  .fsm{background:var(--surface2);border:1px solid var(--line2);color:var(--txt);
+    font-size:18px;line-height:1;min-width:44px;height:44px;border-radius:10px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);}
+  .fsm.on{background:var(--aor1);color:#1a1605;border-color:var(--aor1);}
+  .fsm-ok{background:#2e7d32;color:#fff;border-color:#3a9a40;}
+  .fsm-cancel{background:#7a2b2b;color:#fff;border-color:#9a3a3a;}
+  .fsm-black{background:#111;color:#9aa;border-color:#444;}
+  .fsm-exit{background:#c0392b;color:#fff;border-color:#e05a48;font-size:12px;font-weight:700;
+    letter-spacing:1px;padding:0 14px;width:auto;}
+  .fsm-sep{flex:1 1 100%;height:0;}
+  /* en plein écran la boussole reste en haut à gauche */
+  .map-wrap.fs .map-compass{top:calc(10px + env(safe-area-inset-top));left:10px;z-index:9100;}
   /* la carte et la boussole partagent le même parent (#view-map .map-wrap) */
   .map-compass{position:absolute;top:16px;left:16px;width:72px;height:72px;z-index:5;cursor:pointer;
     background:radial-gradient(circle at 50% 40%,rgba(28,33,22,.95),rgba(11,14,10,.92));
@@ -393,20 +415,36 @@
   .gps-btn.live{background:#c0392b;border-color:#e05a48;color:#fff;animation:gpspulse 1.6s infinite;}
   @keyframes gpspulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.5);}50%{box-shadow:0 0 0 6px rgba(192,57,43,0);}}
   .gps-status{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.5px;}
-  /* ===== Rôle LECTURE SEULE : on masque tous les boutons qui modifient des données ===== */
-  body.role-lecture [onclick*="new"],
-  body.role-lecture [onclick*="add"],
-  body.role-lecture [onclick*="save"],
-  body.role-lecture [onclick*="del"],
-  body.role-lecture [onclick*="remove"],
-  body.role-lecture [onclick*="edit"],
-  body.role-lecture [onclick*="clear"],
-  body.role-lecture [onclick*="import"],
-  body.role-lecture .tabbar button[data-view="view-map"]{display:none!important;}
-  /* champs de saisie désactivés visuellement en lecture seule */
-  body.role-lecture section input:not(#login-pwd):not([type=color]),
-  body.role-lecture section textarea,
-  body.role-lecture section select{opacity:.6;pointer-events:none;}
+  /* ===== Rôle LECTURE = rôle TERRAIN =====
+     Map + outils : autorisés (c'est leur outil principal).
+     Fiche membre : peut éditer Coordonnées + Infos op.
+     Bloqués : la progression des drills, et l'écriture sur Calendrier / Opérations / Drill. */
+  /* la carte reste visible -> on ne cache PLUS l'onglet map */
+  /* bloc progression drills : visible mais non modifiable */
+  body.role-lecture .drill-prog{opacity:.6;pointer-events:none;}
+  /* onglets Calendrier / Opérations / Drill : lecture seule (on masque leurs boutons d'action) */
+  body.role-lecture #view-calendrier [onclick*="new"],
+  body.role-lecture #view-calendrier [onclick*="add"],
+  body.role-lecture #view-calendrier [onclick*="save"],
+  body.role-lecture #view-calendrier [onclick*="del"],
+  body.role-lecture #view-operations [onclick*="new"],
+  body.role-lecture #view-operations [onclick*="add"],
+  body.role-lecture #view-operations [onclick*="save"],
+  body.role-lecture #view-operations [onclick*="del"],
+  body.role-lecture #view-drill [onclick*="new"],
+  body.role-lecture #view-drill [onclick*="add"],
+  body.role-lecture #view-drill [onclick*="save"],
+  body.role-lecture #view-drill [onclick*="del"]{display:none!important;}
+  /* champs en lecture seule dans ces 3 onglets uniquement */
+  body.role-lecture #view-calendrier input:not([type=color]),
+  body.role-lecture #view-calendrier textarea,
+  body.role-lecture #view-calendrier select,
+  body.role-lecture #view-operations input:not([type=color]),
+  body.role-lecture #view-operations textarea,
+  body.role-lecture #view-operations select,
+  body.role-lecture #view-drill input:not([type=color]),
+  body.role-lecture #view-drill textarea,
+  body.role-lecture #view-drill select{opacity:.6;pointer-events:none;}
   /* badge de rôle en haut */
   .role-badge{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:3px 9px;border-radius:10px;
     border:1px solid var(--line2);color:var(--aor1);background:var(--surface2);text-transform:uppercase;margin-left:8px;}
@@ -807,6 +845,7 @@
       <input type="text" id="map-search-input" placeholder="Adresse, ville ou coordonnées (lat, lon)..." onkeydown="if(event.key==='Enter')mapSearch();">
       <button onclick="mapSearch()">&#128269; Aller</button>
       <button class="map-pdf-btn" onclick="genMapPDF()" title="Exporter la carte en PDF">&#128196; Exporter PDF</button>
+      <button class="map-pdf-btn map-fs-btn" onclick="enterMapFullscreen()" title="Carte en plein écran">&#9974; Plein écran</button>
     </div>
 
     <div class="gps-bar">
@@ -826,6 +865,19 @@
           <span class="cdir cn">N</span><span class="cdir ce">E</span><span class="cdir cs">S</span><span class="cdir cw">O</span>
           <div class="compass-needle" id="compass-needle"></div>
         </div>
+      </div>
+      <!-- Barre d'outils flottante (visible seulement en plein écran) -->
+      <div id="map-fs-bar" class="map-fs-bar">
+        <button class="fsm" data-tool="ping" onclick="setMapTool('ping')" title="Ping">&#128205;</button>
+        <button class="fsm" data-tool="zone" onclick="setMapTool('zone')" title="Zone">&#11036;</button>
+        <button class="fsm" data-tool="foot" onclick="setMapTool('foot')" title="Chemin à pied">&#128099;</button>
+        <button class="fsm" data-tool="measure" onclick="setMapTool('measure')" title="Mesure">&#128207;</button>
+        <button class="fsm" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Véhicule">&#128663;</button>
+        <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
+        <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
+        <span class="fsm-sep"></span>
+        <button class="fsm fsm-black" onclick="enterBlackout()" title="Mode Blackout">&#127761;</button>
+        <button class="fsm fsm-exit" onclick="exitMapFullscreen()" title="Quitter le plein écran">&#10005; QUITTER</button>
       </div>
     </div>
 
@@ -1041,8 +1093,6 @@ function startApp(){
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
     var last=sessionStorage.getItem('bs_lastview');
-    /* un lecteur ne peut pas revenir sur la carte */
-    if(currentRole==='lecture' && last==='view-map')last='view-home';
     if(last){var btn=document.querySelector('.tabbar button[data-view="'+last+'"]');if(btn)switchTab(btn);}
   }catch(e){}
 }
@@ -1064,8 +1114,11 @@ function applyRole(){
     badge.textContent = currentRole==='admin'?'ADMIN':(currentRole==='lecture'?'LECTURE SEULE':'MEMBRE');
   }
 }
-/* garde-fou : bloque l'écriture si pas les droits (filet de sécurité) */
-function canWrite(){return currentRole==='admin'||currentRole==='membre';}
+/* garde-fous selon le rôle (filet de sécurité en plus du CSS) */
+/* tout le monde (admin/membre/lecture) peut écrire la base générale : fiche membre, carte */
+function canWrite(){return currentRole==='admin'||currentRole==='membre'||currentRole==='lecture';}
+/* écriture réservée admin + membre : opérations, calendrier, cours/drills, progression */
+function canEditOps(){return currentRole==='admin'||currentRole==='membre';}
 /* seules les suppressions massives / effacement carte réservés admin */
 function canAdmin(){return currentRole==='admin';}
 
@@ -1226,8 +1279,8 @@ function renderDrills(){
       '</select>';
   });
 }
-function toggleDrill(n){drillState['acte'+n].done=!drillState['acte'+n].done;renderDrills();}
-function setDrillLevel(n,v){drillState['acte'+n].level=v;}
+function toggleDrill(n){if(!canEditOps())return;drillState['acte'+n].done=!drillState['acte'+n].done;renderDrills();}
+function setDrillLevel(n,v){if(!canEditOps())return;drillState['acte'+n].level=v;}
 function renderKit(){
   var html='';
   kitState.forEach(function(k,i){
@@ -1511,7 +1564,7 @@ function renderOps(){
 function frDate(iso){if(!iso)return '';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 
 function newOp(){
-  if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
+  if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   currentOpId=uid();db[currentOpId]={type:'operation',evtype:'operation',created:Date.now()};
   opDocs=[];opPresents=[];
   fillOpForm({});showView('view-op-fiche');document.getElementById('op-status').textContent='';
@@ -1601,7 +1654,7 @@ function readOpForm(){
   db[currentOpId]=o;return o;
 }
 function saveOp(){
-  if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
+  if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   var o=readOpForm();
   if(!o.name){document.getElementById('op-status').textContent='// nom requis';return;}
   cacheLocal();
@@ -1727,7 +1780,7 @@ function renderCours(){
   }).join('');
 }
 function newCours(){
-  if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
+  if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   currentCoursId=uid();db[currentCoursId]={type:'cours',created:Date.now()};
   coursBlocks=[];fillCoursForm({});showView('view-cours-fiche');document.getElementById('cours-status').textContent='';
 }
@@ -1802,7 +1855,7 @@ function readCoursForm(){
   db[currentCoursId]=c;return c;
 }
 function saveCours(){
-  if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
+  if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   var c=readCoursForm();
   if(!c.title){document.getElementById('cours-status').textContent='// titre requis';return;}
   cacheLocal();var st=document.getElementById('cours-status');st.textContent='// transmission...';
@@ -1969,11 +2022,14 @@ function curColor(){return document.getElementById('map-color').value;}
 
 function setMapTool(t){
   mapTool=(mapTool===t)?null:t;
-  document.querySelectorAll('.mtool[data-tool]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-tool')===mapTool);});
+  document.querySelectorAll('.mtool[data-tool],.fsm[data-tool]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-tool')===mapTool);});
   mapDraftPts=[];footDrawing=false;updateDraft();
   var multi=(mapTool==='zone'||mapTool==='measure');
   document.getElementById('map-finish').style.display=multi?'':'none';
   document.getElementById('map-cancel').style.display=multi?'':'none';
+  var ff=document.getElementById('map-fs-finish'),fc=document.getElementById('map-fs-cancel');
+  if(ff)ff.style.display=multi?'':'none';
+  if(fc)fc.style.display=multi?'':'none';
   /* couleur par défaut jaune pour la règle */
   if(mapTool==='measure'){document.getElementById('map-color').value='#ffd24a';}
   var hints={ping:'Clique pour poser un ping (avec annotation).',
@@ -2827,6 +2883,36 @@ async function cloudSave(id){
     if(res.error)throw res.error;return true;}catch(err){collabStatus('// ECHEC CLOUD : '+(err.message||err));return false;}
 }
 async function cloudDelete(id){if(!sb)return;try{await sb.from('entries').delete().eq('id',id);}catch(err){}}
+
+/* ============ PLEIN ÉCRAN CARTE (mobile surtout) ============ */
+var mapIsFs=false;
+function enterMapFullscreen(){
+  var wrap=document.querySelector('#view-map .map-wrap');
+  if(!wrap)return;
+  wrap.classList.add('fs');mapIsFs=true;
+  /* fullscreen natif si dispo (cache la barre du navigateur sur Android) */
+  try{if(wrap.requestFullscreen)wrap.requestFullscreen().catch(function(){});
+      else if(wrap.webkitRequestFullscreen)wrap.webkitRequestFullscreen();}catch(e){}
+  /* MapLibre doit recalculer sa taille */
+  setTimeout(function(){try{if(map)map.resize();}catch(e){}},200);
+  /* Échap pour sortir */
+  document.addEventListener('keydown',fsEscHandler);
+}
+function exitMapFullscreen(){
+  var wrap=document.querySelector('#view-map .map-wrap');
+  if(!wrap)return;
+  wrap.classList.remove('fs');mapIsFs=false;
+  try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(function(){});
+      else if(document.webkitFullscreenElement&&document.webkitExitFullscreen)document.webkitExitFullscreen();}catch(e){}
+  setTimeout(function(){try{if(map)map.resize();}catch(e){}},200);
+  document.removeEventListener('keydown',fsEscHandler);
+}
+function fsEscHandler(e){if(e.key==='Escape'&&mapIsFs)exitMapFullscreen();}
+/* si l'utilisateur quitte le fullscreen natif (geste système), on enlève aussi la classe */
+document.addEventListener('fullscreenchange',function(){
+  if(!document.fullscreenElement&&mapIsFs){var w=document.querySelector('#view-map .map-wrap');if(w)w.classList.remove('fs');mapIsFs=false;
+    setTimeout(function(){try{if(map)map.resize();}catch(e){}},200);}
+});
 
 /* ============ MODE BLACKOUT (Op de nuit) ============ */
 /* Voile noir total, luminosité mini, bloque les tapotements accidentels.
