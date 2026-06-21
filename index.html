@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>BROWN SQUADRON // OPS</title>
+<!-- PWA : installation écran d'accueil -->
+<meta name="theme-color" content="#0b0e0a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Brown Squadron">
 <style>
   :root{
     /* AOR2 digital forest + AOR1 desert palette, tactical UI */
@@ -1789,8 +1794,15 @@ function loadMapWorld(){
 var mapWorldLocalTs=0;   /* dernière modif locale du calque carte */
 function saveMapWorld(){
   mapWorldLocalTs=Date.now();
-  db[MAP_WORLD_KEY]={type:'mapdata',data:{pings:mapWorld.pings,shapes:mapWorld.shapes,stickers:mapWorld.stickers||[],bsCount:mapWorld.bsCount||0}};
-  cacheLocal();cloudSave(MAP_WORLD_KEY);
+  var payload={pings:mapWorld.pings,shapes:mapWorld.shapes,stickers:mapWorld.stickers||[],bsCount:mapWorld.bsCount||0};
+  db[MAP_WORLD_KEY]={type:'mapdata',data:payload};
+  cacheLocal();
+  /* envoi direct au cloud (ne dépend pas de db ni du timing de cloudRefresh) */
+  if(sb){
+    sb.from('entries').upsert({id:MAP_WORLD_KEY,type:'mapdata',data:payload,updated_at:new Date().toISOString()}).then(function(r){
+      if(r&&r.error){collabStatus('// ECHEC CARTE : '+(r.error.message||r.error));}
+    },function(e){collabStatus('// ECHEC CARTE : '+(e&&e.message||e));});
+  }
 }
 
 function goMap(){
@@ -2723,6 +2735,30 @@ async function cloudSave(id){
     if(res.error)throw res.error;return true;}catch(err){collabStatus('// ECHEC CLOUD : '+(err.message||err));return false;}
 }
 async function cloudDelete(id){if(!sb)return;try{await sb.from('entries').delete().eq('id',id);}catch(err){}}
+
+/* ============ PWA : manifest + icône générés depuis le logo (mono-fichier) ============ */
+(function installPwa(){
+  try{
+    // icône iOS (apple-touch-icon) = logo Brown Squadron
+    var ai=document.createElement('link');ai.rel='apple-touch-icon';ai.href=LOGO_TAN;
+    document.head.appendChild(ai);
+    // manifest généré à la volée (data URI) -> rien à uploader en plus
+    var manifest={
+      name:'Brown Squadron',short_name:'Brown Sqn',
+      description:'Outil tactique milsim — opérations, carte, GPS',
+      start_url:'.',scope:'.',display:'standalone',orientation:'portrait',
+      background_color:'#0b0e0a',theme_color:'#0b0e0a',
+      icons:[
+        {src:LOGO_TAN,sizes:'192x192',type:'image/png',purpose:'any'},
+        {src:LOGO_TAN,sizes:'512x512',type:'image/png',purpose:'any'},
+        {src:LOGO_TAN,sizes:'512x512',type:'image/png',purpose:'maskable'}
+      ]
+    };
+    var blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+    var ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(blob);
+    document.head.appendChild(ml);
+  }catch(e){}
+})();
 
 /* ============ INIT ============ */
 /* logo de l'écran de login dès l'ouverture */
