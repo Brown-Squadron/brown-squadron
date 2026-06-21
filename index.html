@@ -548,20 +548,25 @@
   /* la carte reste visible -> on ne cache PLUS l'onglet map */
   /* bloc progression drills : visible mais non modifiable */
   body.role-lecture .drill-prog{opacity:.6;pointer-events:none;}
-  /* onglets Calendrier / Opérations / Drill : lecture seule (on masque leurs boutons d'action) */
-  body.role-lecture #view-calendrier [onclick*="new"],
-  body.role-lecture #view-calendrier [onclick*="add"],
-  body.role-lecture #view-calendrier [onclick*="save"],
-  body.role-lecture #view-calendrier [onclick*="del"],
-  body.role-lecture #view-operations [onclick*="new"],
-  body.role-lecture #view-operations [onclick*="add"],
-  body.role-lecture #view-operations [onclick*="save"],
-  body.role-lecture #view-operations [onclick*="del"],
-  body.role-lecture #view-drill [onclick*="new"],
-  body.role-lecture #view-drill [onclick*="add"],
-  body.role-lecture #view-drill [onclick*="save"],
-  body.role-lecture #view-drill [onclick*="del"]{display:none!important;}
-  /* champs en lecture seule dans ces 3 onglets uniquement */
+  body.role-lecture [onclick*="new"],
+  body.role-lecture [onclick*="add"],
+  body.role-lecture [onclick*="save"],
+  body.role-lecture [onclick*="del"],
+  body.role-lecture [onclick*="gen"],
+  body.role-lecture [onclick*="import"]{display:none!important;}
+  body.role-lecture #map-fs-bar [onclick],
+  body.role-lecture .map-tools [onclick],
+  body.role-lecture [onclick*="finishMapShape"],
+  body.role-lecture [onclick*="cancelMapShape"],
+  body.role-lecture [onclick*="enterMapFullscreen"],
+  body.role-lecture [onclick*="exitMapFullscreen"],
+  body.role-lecture [onclick*="enterBlackout"],
+  body.role-lecture [onclick*="toggleGps"],
+  body.role-lecture [onclick*="mapSearch"]{display:inline-flex!important;}
+  body.role-lecture #view-fiche input:not(.kit-cb),
+  body.role-lecture #view-fiche textarea,
+  body.role-lecture #view-fiche select,
+  body.role-lecture #view-membres input,
   body.role-lecture #view-calendrier input:not([type=color]),
   body.role-lecture #view-calendrier textarea,
   body.role-lecture #view-calendrier select,
@@ -570,12 +575,17 @@
   body.role-lecture #view-operations select,
   body.role-lecture #view-drill input:not([type=color]),
   body.role-lecture #view-drill textarea,
-  body.role-lecture #view-drill select{opacity:.6;pointer-events:none;}
+  body.role-lecture #view-drill select,
+  body.role-lecture #view-direction input:not([type=color]),
+  body.role-lecture #view-direction textarea,
+  body.role-lecture #view-direction select{opacity:.6;pointer-events:none;}
+  body.role-lecture .kititem .cb{pointer-events:auto!important;opacity:1!important;}
   /* badge de rôle en haut */
   .role-badge{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:3px 9px;border-radius:10px;
     border:1px solid var(--line2);color:var(--aor1);background:var(--surface2);text-transform:uppercase;margin-left:8px;}
   .role-badge.lecture{color:#7fa9c9;border-color:#3a566b;}
   .role-badge.membre{color:#8fbf6f;border-color:#3a5a2a;}
+  .tabbar button.tabdrag{opacity:.5;outline:2px dashed var(--aor1);}
   .blackout-toggle{border-color:#555!important;color:#999!important;}
   .blackout-toggle:hover{background:#222!important;color:#fff!important;}
   /* voile blackout : noir total, par-dessus tout, bloque tous les tapotements */
@@ -782,6 +792,7 @@
     <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#128506;</span><span class="lbl">Op&eacute;rations</span></button>
     <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#127919;</span><span class="lbl">Drill</span></button>
     <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#127757;</span><span class="lbl">Map</span></button>
+    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#128188;</span><span class="lbl">Direction</span></button>
   </div>
 
   <div class="collab" id="collab-status"></div>
@@ -963,7 +974,8 @@
         <div class="field"><label>Lieu</label><input type="text" id="o_lieu" placeholder="Terrain, ville..."></div>
         <div class="field"><label>Date de début</label><input type="date" id="o_date"></div>
         <div class="field"><label>Date de fin <span style="color:var(--dim);font-weight:400">(optionnel)</span></label><input type="date" id="o_date_fin"></div>
-        <div class="field"><label>Heure</label><input type="time" id="o_heure"></div>
+        <div class="field"><label>Heure de début</label><input type="time" id="o_heure"></div>
+        <div class="field"><label>Heure de fin <span style="color:var(--dim);font-weight:400">(optionnel)</span></label><input type="time" id="o_heure_fin"></div>
       </div>
       <div class="field" style="margin-top:12px"><label>Renseignements utiles</label><textarea id="o_infos" placeholder="Matériel spécifique, point de RDV, consignes, dress code..."></textarea></div>
       <div class="grid" style="margin-top:12px">
@@ -1129,6 +1141,17 @@
     <div class="map-readout" id="map-readout"></div>
 
     <div class="map-legend" id="map-legend"></div>
+  </div>
+
+  <!-- ===== DIRECTION ===== -->
+  <div class="view" id="view-direction">
+    <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
+      <div><h2 class="text-tan tracking-widest">Direction</h2><p class="view-sub">// Documents internes &mdash; acc&egrave;s restreint</p></div>
+      <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="document.getElementById('dir-file-input').click()"><span class="plus">+</span> PDF</button>
+    </div>
+    <input type="file" id="dir-file-input" accept="application/pdf,image/*" multiple style="display:none" onchange="addDirDocs(this.files)">
+    <div class="dir-theme-bar" id="dir-theme-bar"></div>
+    <div id="dir-docs"></div>
   </div>
 
 </div>
@@ -1328,6 +1351,8 @@ function startApp(){
   /* récupérer le rôle (au cas où on revient via session) */
   try{if(!currentRole)currentRole=sessionStorage.getItem('bs_role')||'membre';}catch(e){currentRole='membre';}
   applyRole();
+  restoreTabOrder();
+  wireTabDrag();
   db=loadCache();renderAll();applyBranding();cloudRefresh();
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
@@ -1352,6 +1377,8 @@ function applyRole(){
     badge.className='role-badge '+(currentRole||'');
     badge.textContent = currentRole==='admin'?'ADMIN':(currentRole==='lecture'?'LECTURE SEULE':'MEMBRE');
   }
+  var dirBtn=document.querySelector('.tabbar button[data-view="view-direction"]');
+  if(dirBtn)dirBtn.style.display=(currentRole==='admin')?'':'none';
 }
 /* garde-fous selon le rôle (filet de sécurité en plus du CSS) */
 /* tout le monde (admin/membre/lecture) peut écrire la base générale : fiche membre, carte */
@@ -1368,6 +1395,7 @@ function switchTab(btn){
   try{sessionStorage.setItem('bs_lastview',id);}catch(e){}
   if(id==='view-map'){mapOpMode=null;initMap();}
   if(id==='view-home'){renderDashboard();}
+  if(id==='view-direction'){renderDirDocs();}
 }
 function showView(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -1383,7 +1411,80 @@ function goMembres(){
   document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')==='view-membres');});
   showView('view-membres');renderMembres();
 }
-function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();}
+function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();}
+
+/* ============ DIRECTION (documents internes par thème) ============ */
+var DIR_THEMES=['Direction','Compta','Social','Doc technique','Doc Commerciale'];
+var dirCurTheme='Direction';
+function dirKey(){return '__direction__';}
+function dirData(){var d=db[dirKey()];return (d&&d.docs)?d.docs:[];}
+function addDirDocs(files){
+  if(!canAdmin())return;
+  var arr=dirData().slice();var pending=files.length;
+  [].slice.call(files).forEach(function(f){
+    var r=new FileReader();
+    r.onload=function(){arr.push({name:f.name,type:f.type,data:r.result,theme:dirCurTheme,ts:Date.now()});
+      pending--;if(pending<=0){saveDirDocs(arr);}};
+    r.onerror=function(){pending--;if(pending<=0){saveDirDocs(arr);}};
+    r.readAsDataURL(f);
+  });
+  document.getElementById('dir-file-input').value='';
+}
+function saveDirDocs(arr){
+  db[dirKey()]={type:'direction',docs:arr};cacheLocal();
+  if(sb){sb.from('entries').upsert({id:dirKey(),type:'direction',data:{docs:arr},updated_at:new Date().toISOString()}).then(function(){},function(){});}
+  renderDirDocs();
+}
+function delDirDoc(ts){
+  if(!canAdmin())return;
+  saveDirDocs(dirData().filter(function(d){return d.ts!==ts;}));
+}
+function viewDirDoc(ts){
+  var d=dirData().filter(function(x){return x.ts===ts;})[0];if(!d)return;
+  var w=window.open('','_blank');
+  if((d.type||'').indexOf('image')===0){w.document.write('<img src="'+d.data+'" style="max-width:100%">');}
+  else{w.document.write('<iframe src="'+d.data+'" style="border:0;width:100%;height:100vh"></iframe>');}
+}
+function renderDirDocs(){
+  var bar=document.getElementById('dir-theme-bar');if(!bar)return;
+  bar.innerHTML=DIR_THEMES.map(function(t){
+    var n=dirData().filter(function(d){return (d.theme||'Direction')===t;}).length;
+    return '<button class="dir-theme'+(t===dirCurTheme?' on':'')+'" onclick="dirCurTheme=\''+t.replace(/'/g,"\\'")+'\';renderDirDocs();">'+esc(t)+' <span class="dt-c">'+n+'</span></button>';
+  }).join('');
+  var box=document.getElementById('dir-docs');if(!box)return;
+  var list=dirData().filter(function(d){return (d.theme||'Direction')===dirCurTheme;});
+  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128193;</div>Aucun document dans &laquo; '+esc(dirCurTheme)+' &raquo;.</div>';return;}
+  box.innerHTML='<div class="doc-grid">'+list.map(function(d){
+    var isImg=(d.type||'').indexOf('image')===0;
+    var inner=isImg?'<img src="'+d.data+'">':'<div class="fic">&#128196;</div><div class="fnm">'+esc(d.name)+'</div>';
+    return '<div class="doc-tile" onclick="viewDirDoc('+d.ts+')"><button class="dx" onclick="event.stopPropagation();delDirDoc('+d.ts+')">&times;</button>'+inner+'</div>';
+  }).join('')+'</div>';
+}
+
+/* ============ DRAG DES ONGLETS ============ */
+function initTabDrag(){
+  var bar=document.getElementById('tabbar');if(!bar||bar._dragInit)return;bar._dragInit=true;
+  var order=[];try{order=JSON.parse(localStorage.getItem('bs_taborder'))||[];}catch(e){}
+  if(order.length){order.forEach(function(v){var b=bar.querySelector('button[data-view="'+v+'"]');if(b)bar.appendChild(b);});}
+  var btns=bar.querySelectorAll('button');
+  var dragB=null,sx=0,moved=false;
+  btns.forEach(function(b){
+    b.setAttribute('draggable','false');
+    var press=null;
+    function down(x){press=setTimeout(function(){dragB=b;moved=false;sx=x;b.style.opacity='.5';},250);}
+    function up(){if(press)clearTimeout(press);if(dragB){dragB.style.opacity='';saveTabOrder();dragB=null;}}
+    b.addEventListener('touchstart',function(e){down(e.touches[0].clientX);},{passive:true});
+    b.addEventListener('touchmove',function(e){if(!dragB)return;var x=e.touches[0].clientX;var t=document.elementFromPoint(x,e.touches[0].clientY);var tb=t&&t.closest?t.closest('#tabbar button'):null;if(tb&&tb!==dragB){var r=tb.getBoundingClientRect();if(x<r.left+r.width/2)bar.insertBefore(dragB,tb);else bar.insertBefore(dragB,tb.nextSibling);}e.preventDefault();},{passive:false});
+    b.addEventListener('touchend',up);
+    b.addEventListener('mousedown',function(e){down(e.clientX);});
+  });
+  document.addEventListener('mousemove',function(e){if(!dragB)return;var t=document.elementFromPoint(e.clientX,e.clientY);var tb=t&&t.closest?t.closest('#tabbar button'):null;if(tb&&tb!==dragB){var r=tb.getBoundingClientRect();if(e.clientX<r.left+r.width/2)bar.insertBefore(dragB,tb);else bar.insertBefore(dragB,tb.nextSibling);}});
+  document.addEventListener('mouseup',function(){if(dragB){dragB.style.opacity='';saveTabOrder();dragB=null;}});
+}
+function saveTabOrder(){
+  var ids=[].slice.call(document.querySelectorAll('#tabbar button')).map(function(b){return b.getAttribute('data-view');});
+  try{localStorage.setItem('bs_taborder',JSON.stringify(ids));}catch(e){}
+}
 
 /* ============ DASHBOARD ACCUEIL ============ */
 var DASH_ORDER_KEY='bs_dash_order';
@@ -1433,6 +1534,52 @@ function renderDashboard(){
   }).join('');
   wireDashDrag();
 }
+var TAB_ORDER_KEY='bs_tab_order';
+function restoreTabOrder(){
+  try{
+    var order=JSON.parse(localStorage.getItem(TAB_ORDER_KEY)||'[]');
+    if(!order.length)return;
+    var bar=document.getElementById('tabbar');if(!bar)return;
+    order.forEach(function(v){var b=bar.querySelector('button[data-view="'+v+'"]');if(b)bar.appendChild(b);});
+  }catch(e){}
+}
+function saveTabOrder(){
+  try{var bar=document.getElementById('tabbar');
+    var ids=[].slice.call(bar.querySelectorAll('button[data-view]')).map(function(b){return b.getAttribute('data-view');});
+    localStorage.setItem(TAB_ORDER_KEY,JSON.stringify(ids));}catch(e){}
+}
+function wireTabDrag(){
+  var bar=document.getElementById('tabbar');if(!bar||bar._tabDragWired)return;bar._tabDragWired=true;
+  var dragEl=null,touchClone=null,pressTimer=null;
+  function startDrag(btn){dragEl=btn;btn.classList.add('tabdrag');}
+  function endDrag(){if(dragEl){dragEl.classList.remove('tabdrag');dragEl=null;saveTabOrder();}}
+  function afterEl(x){
+    var els=[].slice.call(bar.querySelectorAll('button[data-view]:not(.tabdrag)'));
+    var closest=null,cdist=-Infinity;
+    els.forEach(function(el){var b=el.getBoundingClientRect();var off=x-(b.left+b.width/2);
+      if(off<0&&off>cdist){cdist=off;closest=el;}});
+    return closest;
+  }
+  bar.querySelectorAll('button[data-view]').forEach(function(btn){
+    btn.setAttribute('draggable','true');
+    btn.addEventListener('dragstart',function(e){startDrag(btn);e.dataTransfer.effectAllowed='move';});
+    btn.addEventListener('dragend',endDrag);
+    btn.addEventListener('touchstart',function(e){
+      pressTimer=setTimeout(function(){startDrag(btn);},220);
+    },{passive:true});
+    btn.addEventListener('touchend',function(){clearTimeout(pressTimer);endDrag();});
+    btn.addEventListener('touchmove',function(e){
+      if(!dragEl)return;e.preventDefault();
+      var t=e.touches[0];var after=afterEl(t.clientX);
+      if(after==null)bar.appendChild(dragEl);else bar.insertBefore(dragEl,after);
+    },{passive:false});
+  });
+  bar.addEventListener('dragover',function(e){
+    e.preventDefault();if(!dragEl)return;
+    var after=afterEl(e.clientX);
+    if(after==null)bar.appendChild(dragEl);else bar.insertBefore(dragEl,after);
+  });
+}
 function wireDashDrag(){
   var grid=document.getElementById('dash-grid');
   var dragEl=null;
@@ -1481,15 +1628,15 @@ function renderMembres(){
 function newMembre(){
   if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   currentId=uid();db[currentId]={type:'membre',created:Date.now()};
-  kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:k.qty||1,has:false};});
+  kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:false};});
   drillState={acte1:{done:false,level:''},acte2:{done:false,level:''},acte3:{done:false,level:''}};
   repImg={1:'',2:''};fillForm({});showView('view-fiche');
   document.getElementById('fiche-status').textContent='';
 }
 function openMembre(id){
   currentId=id;var m=db[id]||{};
-  kitState=(m.kit||[]).map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:k.qty||1,has:!!k.has};});
-  if(!kitState.length)kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:k.qty||1,has:false};});
+  kitState=(m.kit||[]).map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:!!k.has};});
+  if(!kitState.length)kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:false};});
   var dd=m.drills||{};
   drillState={acte1:{done:!!(dd.acte1&&dd.acte1.done),level:(dd.acte1&&dd.acte1.level)||''},
     acte2:{done:!!(dd.acte2&&dd.acte2.done),level:(dd.acte2&&dd.acte2.level)||''},
@@ -1524,24 +1671,29 @@ function renderDrills(){
 }
 function toggleDrill(n){if(!canEditOps())return;drillState['acte'+n].done=!drillState['acte'+n].done;renderDrills();}
 function setDrillLevel(n,v){if(!canEditOps())return;drillState['acte'+n].level=v;}
+var kitCollapsed={};
 function renderKit(){
-  var html='';
+  var html='';var curGrp='__nogrp__';
   kitState.forEach(function(k,i){
-    if(k.grp){html+='<div class="kit-grp">'+esc(k.grp)+'</div>';}
-    html+='<div class="kititem'+(k.has?' has':'')+(k.lvl?' sub':'')+'">'+
+    if(k.grp){curGrp=k.grp;var col=!!kitCollapsed[k.grp];
+      html+='<div class="kit-grp" onclick="toggleKitGrp(this)" data-grp="'+esc(k.grp)+'" style="cursor:pointer;user-select:none">'+
+        '<span class="kg-arrow">'+(col?'&#9656;':'&#9662;')+'</span> '+esc(k.grp)+'</div>';}
+    var hidden=(curGrp!=='__nogrp__'&&kitCollapsed[curGrp])?' style="display:none"':'';
+    html+='<div class="kititem'+(k.has?' has':'')+(k.lvl?' sub':'')+'" data-grpitem="'+esc(curGrp)+'"'+hidden+'>'+
       '<div class="cb" onclick="toggleKit('+i+')">'+(k.has?'&#10003;':'')+'</div>'+
       '<div class="kmid"><div class="ktxt">'+esc(k.name)+'</div></div>'+
-      '<div class="kqty"><input type="number" min="1" value="'+(k.qty||1)+'" onchange="setKitQty('+i+',this.value)"></div>'+
+      '<div class="kqty"><input type="number" min="0" value="'+(k.qty==null?0:k.qty)+'" onchange="setKitQty('+i+',this.value)"></div>'+
       '<button class="kdel" onclick="delKit('+i+')">&#128465;</button>'+
     '</div>';
   });
   document.getElementById('kit-list').innerHTML=html;
 }
+function toggleKitGrp(el){var g=el.getAttribute('data-grp');kitCollapsed[g]=!kitCollapsed[g];renderKit();}
 function toggleKit(i){kitState[i].has=!kitState[i].has;renderKit();}
-function setKitQty(i,v){kitState[i].qty=Math.max(1,parseInt(v,10)||1);}
+function setKitQty(i,v){kitState[i].qty=Math.max(0,parseInt(v,10)||0);}
 function delKit(i){kitState.splice(i,1);renderKit();}
 function addKit(){var inp=document.getElementById('kit-new');var v=inp.value.trim();if(!v)return;
-  kitState.push({name:v,grp:'',lvl:0,qty:1,has:false});inp.value='';renderKit();inp.focus();}
+  kitState.push({name:v,grp:'',lvl:0,qty:0,has:false});inp.value='';renderKit();inp.focus();}
 
 /* photos répliques */
 function loadRepImg(input,n){
@@ -1594,7 +1746,7 @@ function genMembrePDF(){
   function flush(){ if(grpHas)rows+=grpBuf; grpBuf='';grpHas=false; }
   kit.forEach(function(k,i){
     if(k.grp){ flush(); grpBuf+='<tr><td colspan="2" class="kg">'+esc(k.grp)+'</td></tr>'; }
-    if(visible[i]){ grpBuf+='<tr><td'+(k.lvl?' class="ind"':'')+'>'+esc(k.name)+'</td><td class="q">x'+(k.qty||1)+'</td></tr>'; grpHas=true;anyVis=true; }
+    if(visible[i]){ grpBuf+='<tr><td'+(k.lvl?' class="ind"':'')+'>'+esc(k.name)+'</td><td class="q">x'+(k.qty==null?0:k.qty)+'</td></tr>'; grpHas=true;anyVis=true; }
   });
   flush();
   if(!anyVis)rows='<tr><td colspan="2" style="color:#888">Aucun équipement coché.</td></tr>';
@@ -1651,10 +1803,16 @@ function genMembrePDF(){
 
 /* ============ CALENDRIER ============ */
 function operationsOf(){return Object.keys(db).filter(function(k){return db[k]&&db[k].type==='operation';}).map(function(k){var o=db[k];o._id=k;return o;});}
+/* affichage d'une plage horaire : "14:00 → 18:00" ou juste "14:00" */
+function heureRange(o){
+  if(!o||!o.heure)return '';
+  return o.heure_fin ? (o.heure+' → '+o.heure_fin) : o.heure;
+}
 function dateRangeList(start,end){
   var out=[start];if(!end||end<=start)return out;
   var d=new Date(start+'T00:00:00');var stop=new Date(end+'T00:00:00');var guard=0;
-  while(d<stop&&guard<400){d.setDate(d.getDate()+1);guard++;out.push(d.toISOString().slice(0,10));}
+  /* la date de fin est EXCLUE : l'événement s'arrête la veille */
+  while(guard<400){d.setDate(d.getDate()+1);guard++;if(d>=stop)break;out.push(d.toISOString().slice(0,10));}
   return out;
 }
 function eventsByDate(){
@@ -1696,7 +1854,7 @@ function showEvPop(ds){
     var present=(o.presents||[]).map(function(id){var m=db[id];return m?(m.pseudo||[m.prenom,m.nom].join(' ')):null;}).filter(Boolean);
     var multi=(o.date_fin&&o.date_fin>o.date)?(' &middot; '+frDate(o.date)+' → '+frDate(o.date_fin)):'';
     html+='<div class="ev-item" style="border-left-color:'+col+'"><span class="type-tag" style="background:'+col+'">'+(TYPE_LABEL[o.evtype]||'Événement')+'</span>'+
-      '<div class="en">'+esc(o.name||'Sans nom')+'</div><div class="meta">'+(o.lieu?'&#128205; <b>'+esc(o.lieu)+'</b><br>':'')+(o.heure?'&#128336; '+esc(o.heure):'')+multi+'</div>'+
+      '<div class="en">'+esc(o.name||'Sans nom')+'</div><div class="meta">'+(o.lieu?'&#128205; <b>'+esc(o.lieu)+'</b><br>':'')+(o.heure?'&#128336; '+esc(heureRange(o)):'')+multi+'</div>'+
       (o.scenario?'<div class="meta" style="margin-top:8px;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:8px">'+nl2br(o.scenario.slice(0,400))+(o.scenario.length>400?'...':'')+'</div>':'')+
       ((o.docs&&o.docs.length)?'<div class="meta" style="margin-top:6px">&#128206; '+o.docs.length+' document(s)</div>':'')+
       '<div class="members"><div class="lab">Membres validés ('+present.length+')</div>'+(present.length?present.map(function(x){return '<span class="chip">'+esc(x)+'</span>';}).join(''):'<span style="color:var(--dim);font-size:12px">—</span>')+'</div></div>';
@@ -1735,7 +1893,7 @@ function genCalendarPDF(){
             '<div class="evd-date"><span class="dn">'+dayNum+'</span><span class="dw">'+dow+'</span></div>'+
             '<div class="evd-info"><span class="evd-tag" style="background:'+col+'">'+(TYPE_LABEL[o.evtype]||'Événement')+'</span>'+
               '<div class="evd-name">'+esc(o.name||'Sans nom')+'</div>'+
-              (o.lieu||o.heure?'<div class="evd-meta">'+(o.lieu?'&#128205; '+esc(o.lieu):'')+(o.heure?'  &#128336; '+esc(o.heure):'')+'</div>':'')+
+              (o.lieu||o.heure?'<div class="evd-meta">'+(o.lieu?'&#128205; '+esc(o.lieu):'')+(o.heure?'  &#128336; '+esc(heureRange(o)):'')+'</div>':'')+
             '</div>'+
           '</div>'+
           '<div class="evd-members"><span class="lab">Inscrits ('+present.length+') :</span> '+chips+'</div>'+
@@ -1794,7 +1952,7 @@ function renderOps(){
     var col=TYPE_COLOR[o.evtype]||'var(--aor1)';
     var nbp=(o.presents||[]).length;
     var dstr=o.date?(o.date_fin&&o.date_fin>o.date?(frDate(o.date)+' → '+frDate(o.date_fin)):frDate(o.date)):'';
-    var dh=[dstr,o.heure||''].filter(Boolean).join(' · ');
+    var dh=[dstr,heureRange(o)].filter(Boolean).join(' · ');
     return '<div class="opcard" onclick="openOp(\''+o._id+'\')"><div class="ostripe" style="background:'+col+'"></div>'+
       '<button class="trash" onclick="event.stopPropagation();delOp(\''+o._id+'\')">&#128465;</button>'+
       '<span class="otype" style="background:'+col+'">'+(TYPE_LABEL[o.evtype]||'Év.')+'</span>'+
@@ -1824,6 +1982,7 @@ function fillOpForm(o){
   document.getElementById('o_date').value=o.date||'';
   document.getElementById('o_date_fin').value=o.date_fin||'';
   document.getElementById('o_heure').value=o.heure||'';
+  var _hf=document.getElementById('o_heure_fin');if(_hf)_hf.value=o.heure_fin||'';
   document.getElementById('o_infos').value=o.infos||'';
   document.getElementById('o_scenario').value=o.scenario||'';
   var g=document.getElementById('o_gps');if(g)g.value=(o.gps&&typeof o.gps.lat==='number')?(o.gps.lat.toFixed(5)+', '+o.gps.lon.toFixed(5)):'';
@@ -1891,6 +2050,7 @@ function readOpForm(){
   o.date=document.getElementById('o_date').value;
   o.date_fin=document.getElementById('o_date_fin').value;
   o.heure=document.getElementById('o_heure').value;
+  var _hf=document.getElementById('o_heure_fin');o.heure_fin=_hf?_hf.value:'';
   o.infos=document.getElementById('o_infos').value.trim();
   o.scenario=document.getElementById('o_scenario').value.trim();
   o.docs=opDocs.slice();o.presents=opPresents.slice();
@@ -1943,7 +2103,7 @@ function genOpPDF(){
     '<div class="camobar"></div>'+
     '<div class="hd"><div class="b"><img src="'+LOGO_BLACK+'"></div><div><div class="t1">'+esc(o.name||'Opération')+'</div><div class="t2">Brown Squadron &middot; Fiche d\'opération</div></div></div>'+
     '<span class="tag">'+(TYPE_LABEL[o.evtype]||'Événement')+'</span>'+
-    '<h2>Logistique</h2><table>'+kv('Lieu',o.lieu)+kv('Date',human)+kv('Heure',o.heure)+kv('Renseignements',o.infos)+'</table>'+
+    '<h2>Logistique</h2><table>'+kv('Lieu',o.lieu)+kv('Date',human)+kv('Heure',heureRange(o))+kv('Renseignements',o.infos)+'</table>'+
     (o.scenario?'<h2>Scénario / Briefing</h2><div class="scenario">'+nl2br(o.scenario)+'</div>':'')+
     '<h2>Composition de l\'équipe ('+present.length+')</h2><div>'+chips+'</div>'+
     (docs.length?'<h2>Documents joints ('+docs.length+')</h2><p style="color:#777;font-size:12px">Voir pages suivantes.</p>':'')+
