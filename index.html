@@ -586,6 +586,21 @@
   .role-badge.lecture{color:#7fa9c9;border-color:#3a566b;}
   .role-badge.membre{color:#8fbf6f;border-color:#3a5a2a;}
   .tabbar button.tabdrag{opacity:.5;outline:2px dashed var(--aor1);}
+  .doc-pop-close{position:fixed;top:calc(12px + env(safe-area-inset-top));right:14px;z-index:100000;
+    background:var(--op);color:#fff;border:none;border-radius:11px;font-family:var(--mono);font-weight:800;
+    font-size:14px;letter-spacing:1px;padding:11px 16px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.5);}
+  .doc-pop-close:active{transform:scale(.97);}
+  /* bouton Enregistrer flottant (mobile) dans les fiches op/membre/cours/direction */
+  .save-fab{display:none;}
+  @media (max-width:760px){
+    .save-fab{display:flex;position:fixed;left:14px;right:14px;bottom:calc(12px + env(safe-area-inset-bottom));
+      z-index:8000;align-items:center;justify-content:center;gap:8px;
+      background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#1a1605;border:none;border-radius:13px;
+      font-family:var(--mono);font-weight:800;font-size:15px;letter-spacing:1px;text-transform:uppercase;
+      padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer;}
+    .save-fab:active{transform:scale(.98);}
+    body.role-lecture .save-fab{display:none!important;}
+  }
   .blackout-toggle{border-color:#555!important;color:#999!important;}
   .blackout-toggle:hover{background:#222!important;color:#fff!important;}
   /* voile blackout : noir total, par-dessus tout, bloque tous les tapotements */
@@ -818,6 +833,7 @@
 
   <!-- ===== FICHE ===== -->
   <div class="view" id="view-fiche">
+    <button class="save-fab" onclick="saveMembre()">&#9658; Enregistrer la fiche</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goMembres()"><span class="ba">&#8592;</span> Retour effectif</button>
       <button class="savebtn" onclick="saveMembre()">&#9658; Enregistrer</button>
@@ -947,6 +963,7 @@
 
   <!-- ===== FICHE OPERATION ===== -->
   <div class="view" id="view-op-fiche">
+    <button class="save-fab" onclick="saveOp()">&#9658; Enregistrer l'op&eacute;ration</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goOps()"><span class="ba">&#8592;</span> Retour opérations</button>
       <button class="savebtn" onclick="saveOp()">&#9658; Enregistrer</button>
@@ -1030,6 +1047,7 @@
 
   <!-- ===== DRILL : FICHE COURS ===== -->
   <div class="view" id="view-cours-fiche">
+    <button class="save-fab" onclick="saveCours()">&#9658; Enregistrer le cours</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goDrill()"><span class="ba">&#8592;</span> Retour cours</button>
       <button class="savebtn" onclick="saveCours()">&#9658; Enregistrer</button>
@@ -1108,7 +1126,7 @@
       <input type="text" id="gps-pseudo" placeholder="Ton indicatif (ex: BS-01)" maxlength="20">
       <input type="color" id="gps-color" value="#46b29d" title="Ta couleur">
       <button id="gps-btn" class="gps-btn" onclick="toggleGps()">&#128225; Activer ma position</button>
-      <button id="blackout-btn" class="gps-btn blackout-toggle" onclick="enterBlackout()">&#127761; Mode Blackout</button>
+      <button id="blackout-btn" class="gps-btn blackout-toggle" onclick="enterBlackout()">&#128065; Vision Nocturne</button>
       <button id="mapfs-btn" class="gps-btn" onclick="enterMapFullscreen()" title="Carte en mode tactique plein écran">&#9974; Mode Tactique</button>
       <span class="gps-status" id="gps-status"></span>
     </div>
@@ -1133,7 +1151,7 @@
         <button class="fsm" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Véhicule">&#128663;</button>
         <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
         <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
-        <button class="fsm fsm-black" onclick="enterBlackout()" title="Mode Blackout">&#127761;</button>
+        <button class="fsm fsm-black" onclick="enterBlackout()" title="Vision Nocturne">&#128065;</button>
         <button class="fsm fsm-exit" onclick="exitMapFullscreen()" title="Quitter le mode tactique">&#10005; QUITTER</button>
       </div>
     </div>
@@ -1167,7 +1185,8 @@
 
 <!-- aperçu document -->
 <div class="ev-pop" id="doc-pop" onclick="if(event.target===this)closeDocPop()">
-  <div id="doc-pop-inner" style="max-width:92vw;max-height:90vh;"></div>
+  <button onclick="closeDocPop()" class="doc-pop-close">&times; Fermer</button>
+  <div id="doc-pop-inner" style="max-width:92vw;max-height:82vh;overflow:auto;"></div>
 </div>
 
 <script>
@@ -1808,18 +1827,22 @@ function heureRange(o){
   if(!o||!o.heure)return '';
   return o.heure_fin ? (o.heure+' → '+o.heure_fin) : o.heure;
 }
-function dateRangeList(start,end){
+function dateRangeList(start,end,includeEnd){
   var out=[start];if(!end||end<=start)return out;
   var d=new Date(start+'T00:00:00');var stop=new Date(end+'T00:00:00');var guard=0;
-  /* la date de fin est EXCLUE : l'événement s'arrête la veille */
-  while(guard<400){d.setDate(d.getDate()+1);guard++;if(d>=stop)break;out.push(d.toISOString().slice(0,10));}
+  /* fin exclue par défaut ; incluse si includeEnd (ex. une heure de fin est saisie ce jour-là) */
+  while(guard<400){d.setDate(d.getDate()+1);guard++;
+    if(d>stop)break;
+    if(d.getTime()===stop.getTime()&&!includeEnd)break;
+    out.push(d.toISOString().slice(0,10));}
   return out;
 }
 function eventsByDate(){
   var idx={};
   operationsOf().forEach(function(o){
     if(!o.date)return;
-    dateRangeList(o.date,o.date_fin).forEach(function(day){(idx[day]=idx[day]||[]).push(o);});
+    var inc=!!(o.heure_fin&&o.heure_fin.trim());
+    dateRangeList(o.date,o.date_fin,inc).forEach(function(day){(idx[day]=idx[day]||[]).push(o);});
   });
   return idx;
 }
