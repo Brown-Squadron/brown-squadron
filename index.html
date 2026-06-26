@@ -122,7 +122,7 @@
     letter-spacing:4px;font-family:var(--mono);animation:fadeUp .9s ease .5s both;}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
   #login-pwd{width:100%;background:rgba(10,13,8,.85);border:1px solid var(--line2);border-radius:10px;color:var(--amber);
-    font-family:var(--mono);font-size:16px;padding:15px;text-align:center;letter-spacing:3px;margin-bottom:13px;
+    font-family:var(--mono);font-size:16px;padding:15px;text-align:center;letter-spacing:3px;margin-bottom:0;
     transition:border-color .25s,box-shadow .25s;animation:fadeUp .9s ease .6s both;}
   #login-pwd:focus{outline:none;border-color:var(--aor1);box-shadow:0 0 0 3px rgba(184,160,106,.22);}
   .login-btn{width:100%;background:linear-gradient(180deg,#c4ab6f,#9a7f43);border:none;border-radius:10px;color:#1a1605;
@@ -133,8 +133,12 @@
   .login-btn:active{transform:scale(.98);}
   #login-err{color:#e06b5e;font-size:12px;min-height:16px;margin:12px 0 0;font-family:var(--mono);letter-spacing:1px;}
   @media (prefers-reduced-motion:reduce){
-    .radar-sweep,.radar-blip,.login-badge img,.blink,.login-badge:after{animation:none;}
+    .login-badge img{animation-duration:14s;}
   }
+  .pwd-wrap{position:relative;margin-bottom:13px;}
+  .pwd-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;
+    color:var(--dim);font-size:18px;cursor:pointer;padding:6px;line-height:1;transition:color .15s;}
+  .pwd-eye:hover,.pwd-eye.on{color:var(--aor1);}
 
   /* ===== STRUCTURE ===== */
   .app{max-width:980px;margin:0 auto;padding:14px 14px 60px;}
@@ -158,7 +162,33 @@
   .tabbar{display:flex;gap:5px;margin-bottom:14px;}
   .tabbar button{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--muted);padding:10px 3px;cursor:pointer;font-family:var(--mono);
     display:flex;flex-direction:column;align-items:center;gap:4px;transition:.12s;text-transform:uppercase;letter-spacing:.5px;}
-  .tabbar button .ico{font-size:19px;line-height:1;}
+  .tabbar button .ico{font-size:18px;line-height:1;color:var(--muted);transition:color .18s;
+    -webkit-text-fill-color:currentColor;}
+  .tabbar button:hover .ico{color:var(--tanl,#d8c089);}
+  .tabbar button.on .ico{color:#1a1605;}
+  /* ===== COMMS (chat) ===== */
+  .comms-wrap{display:flex;flex-direction:column;height:72vh;background:var(--surface);border:1px solid var(--line2);border-radius:14px;overflow:hidden;}
+  .comms-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;}
+  .comms-msg{max-width:82%;padding:9px 13px;border-radius:12px;background:var(--bg2);border:1px solid var(--line);
+    font-size:14px;line-height:1.4;align-self:flex-start;animation:viewIn .25s ease both;}
+  .comms-msg.mine{align-self:flex-end;background:linear-gradient(160deg,rgba(90,107,59,.35),rgba(90,107,59,.18));border-color:var(--aor2b);}
+  .comms-msg .who{font-family:var(--mono);font-size:10.5px;color:var(--aor1);letter-spacing:1px;margin-bottom:3px;text-transform:uppercase;}
+  .comms-msg .when{font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:4px;text-align:right;}
+  .comms-bar{display:flex;gap:7px;padding:10px;border-top:1px solid var(--line2);background:var(--bg2);}
+  .comms-bar #comms-call{flex:0 0 96px;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;color:var(--aor1);font-family:var(--mono);font-size:13px;padding:11px 9px;}
+  .comms-bar #comms-input{flex:1;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-size:15px;padding:11px 13px;}
+  .comms-send{flex:0 0 50px;background:var(--aor1);border:none;border-radius:9px;color:#1a1605;font-size:18px;font-weight:800;cursor:pointer;transition:filter .15s,transform .12s;}
+  .comms-send:hover{filter:brightness(1.1);}.comms-send:active{transform:scale(.95);}
+  .comms-empty{color:var(--dim);font-family:var(--mono);font-size:12px;text-align:center;margin:auto;}
+  /* overlay attente PDF */
+  #pdf-wait{display:none;position:fixed;inset:0;z-index:99998;background:rgba(7,9,6,.92);
+    align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+  #pdf-wait .pw-box{text-align:center;}
+  #pdf-wait .pw-spin{width:54px;height:54px;margin:0 auto 18px;border-radius:50%;
+    border:3px solid rgba(184,160,106,.2);border-top-color:var(--aor1);animation:pwspin 1s linear infinite;}
+  @keyframes pwspin{to{transform:rotate(360deg);}}
+  #pdf-wait .pw-txt{font-family:var(--mono);font-size:14px;letter-spacing:2px;color:var(--aor1);font-weight:800;}
+  #pdf-wait .pw-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1px;}
   .tabbar button .lbl{font-size:10.5px;font-weight:600;white-space:nowrap;}
   .tabbar button.on{background:var(--aor1);border-color:var(--aor1b);color:#1a1605;}
   .tabbar button.on .lbl{font-weight:800;}
@@ -496,7 +526,7 @@
   .fsm.on{background:var(--aor1);color:#1a1605;border-color:var(--aor1);}
   .fsm-ok{background:#2e7d32;color:#fff;border-color:#3a9a40;}
   .fsm-cancel{background:#7a2b2b;color:#fff;border-color:#9a3a3a;}
-  .fsm-black{background:#0d0d0d;color:#9aa;border-color:#3a3a3a;}
+  .fsm-black{background:#0d0d0d;color:#e8c061;border-color:#5a4a2a;}
   .fsm-exit{background:rgba(192,57,43,.9);color:#fff;border-color:#e05a48;font-size:10px;font-weight:700;
     letter-spacing:.5px;padding:0 9px;width:auto;height:36px;}
   .fsm-sep{display:none;}
@@ -522,6 +552,30 @@
   .compass-needle:after{content:'';position:absolute;bottom:0;left:0;width:6px;height:23px;
     background:linear-gradient(to top,#cfd8c0,#8a9478);clip-path:polygon(50% 100%,100% 0,0 0);}
   .map-readout{font-size:12px;color:var(--amber);font-family:var(--mono);margin-top:8px;min-height:16px;letter-spacing:.5px;}
+  /* ===== Panneau indicatifs déployés ===== */
+  .deployed-panel{position:absolute;top:12px;left:12px;z-index:850;width:158px;
+    background:rgba(11,14,10,.82);backdrop-filter:blur(7px);border:1px solid var(--line2);
+    border-radius:11px;box-shadow:0 6px 18px rgba(0,0,0,.45);overflow:hidden;
+    font-family:var(--mono);transition:width .18s;}
+  .deployed-panel.folded{width:46px;}
+  .deployed-panel.folded .dep-title,.deployed-panel.folded .dep-badge,.deployed-panel.folded .dep-body{display:none;}
+  .dep-head{display:flex;align-items:center;gap:6px;padding:8px 9px;cursor:grab;
+    border-bottom:1px solid var(--line);background:rgba(184,160,106,.08);user-select:none;}
+  .dep-head:active{cursor:grabbing;}
+  .dep-grip{color:var(--dim);font-size:12px;}
+  .dep-title{flex:1;font-size:10px;letter-spacing:1.5px;color:var(--aor1);font-weight:700;}
+  .dep-badge{background:var(--aor2);color:#fff;font-size:10px;border-radius:9px;padding:1px 7px;font-weight:700;}
+  .dep-fold{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px;}
+  .dep-fold:hover{color:var(--aor1);}
+  .dep-body{max-height:42vh;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:4px;}
+  .dep-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;cursor:pointer;
+    background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;
+    color:var(--txt);font-family:var(--mono);font-size:12px;transition:border-color .15s,background .15s;}
+  .dep-item:hover{border-color:var(--aor1);background:var(--surface3);}
+  .dep-item:active{transform:scale(.98);}
+  .dep-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px rgba(0,0,0,.5);}
+  .dep-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dep-empty{color:var(--dim);font-size:10.5px;text-align:center;padding:10px 6px;letter-spacing:.5px;}
   /* surcharge style maplibre pour coller au thème */
   .maplibregl-popup-content{background:var(--surface)!important;color:var(--txt)!important;border:1px solid var(--line2);border-radius:var(--r);font-family:var(--mono);font-size:12px;}
   .maplibregl-popup-tip{border-top-color:var(--surface)!important;border-bottom-color:var(--surface)!important;}
@@ -775,8 +829,11 @@
     <div class="login-badge" id="login-badge"></div>
     <div class="name">BROWN SQUADRON</div>
     <div class="tag">// Centre de commandement</div>
-    <input type="password" id="login-pwd" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password"
-      onkeydown="if(event.key==='Enter')tryLogin();">
+    <div class="pwd-wrap">
+      <input type="password" id="login-pwd" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')tryLogin();">
+      <button type="button" class="pwd-eye" id="pwd-eye" onclick="togglePwd()" title="Afficher / masquer">&#128065;</button>
+    </div>
     <button class="login-btn" onclick="tryLogin()">&#9654; Acc&eacute;der</button>
     <p id="login-err"></p>
   </div>
@@ -801,13 +858,14 @@
   </div>
 
   <div class="tabbar" id="tabbar">
-    <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico">&#9733;</span><span class="lbl">Accueil</span></button>
-    <button data-view="view-membres" onclick="switchTab(this)"><span class="ico">&#129509;</span><span class="lbl">Membres</span></button>
-    <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico">&#128197;</span><span class="lbl">Calendrier</span></button>
-    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#128506;</span><span class="lbl">Op&eacute;rations</span></button>
-    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#127919;</span><span class="lbl">Drill</span></button>
-    <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#127757;</span><span class="lbl">Map</span></button>
-    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#128188;</span><span class="lbl">Direction</span></button>
+    <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Accueil</span></button>
+    <button data-view="view-membres" onclick="switchTab(this)"><span class="ico">&#9650;</span><span class="lbl">Membres</span></button>
+    <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico">&#9636;</span><span class="lbl">Calendrier</span></button>
+    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#10010;</span><span class="lbl">Op&eacute;rations</span></button>
+    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#9678;</span><span class="lbl">Drill</span></button>
+    <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#9673;</span><span class="lbl">Map</span></button>
+    <button data-view="view-comms" onclick="switchTab(this)"><span class="ico">&#9889;</span><span class="lbl">Comms</span></button>
+    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#9707;</span><span class="lbl">Direction</span></button>
   </div>
 
   <div class="collab" id="collab-status"></div>
@@ -1151,14 +1209,42 @@
         <button class="fsm" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Véhicule">&#128663;</button>
         <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
         <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
-        <button class="fsm fsm-black" onclick="enterBlackout()" title="Mode Blackout">&#127761;</button>
-        <button class="fsm fsm-exit" onclick="exitMapFullscreen()" title="Quitter le mode tactique">&#10005; QUITTER</button>
+        <button class="fsm" onclick="mapUndo()" ontouchend="event.preventDefault();event.stopPropagation();mapUndo();" title="Annuler la dernière suppression" id="map-undo-btn" style="display:none">&#8634;</button>
+        <button class="fsm fsm-black" onclick="enterBlackout()" ontouchend="event.preventDefault();event.stopPropagation();enterBlackout();" title="Mode Blackout">&#127761;</button>
+        <button class="fsm fsm-exit" onclick="exitMapFullscreen()" ontouchend="event.preventDefault();event.stopPropagation();exitMapFullscreen();" title="Quitter le mode tactique">&#10005; QUITTER</button>
+      </div>
+      <!-- Panneau des indicatifs déployés (vertical, déplaçable, repliable) -->
+      <div id="deployed-panel" class="deployed-panel">
+        <div class="dep-head" id="dep-head">
+          <span class="dep-grip">&#10021;</span>
+          <span class="dep-title">DÉPLOYÉS</span>
+          <span class="dep-badge" id="deployed-count">0</span>
+          <button class="dep-fold" id="dep-fold" onclick="toggleDeployed()" title="Replier / dérouler">&#9776;</button>
+        </div>
+        <div class="dep-body" id="deployed-list"><div class="dep-empty">Aucun indicatif déployé</div></div>
       </div>
     </div>
 
     <div class="map-readout" id="map-readout"></div>
 
     <div class="map-legend" id="map-legend"></div>
+  </div>
+
+  <!-- ===== COMMS (chat temps réel) ===== -->
+  <div class="view" id="view-comms">
+    <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
+      <div><h2 class="text-tan tracking-widest">Comms</h2><p class="view-sub">// Liaison radio texte &mdash; temps r&eacute;el</p></div>
+      <span id="comms-status" class="font-mono text-[10px] tracking-widest text-dim uppercase">// LINK</span>
+    </div>
+    <div class="comms-wrap">
+      <div id="comms-log" class="comms-log"></div>
+      <div class="comms-bar">
+        <input type="text" id="comms-call" placeholder="Indicatif" maxlength="16">
+        <input type="text" id="comms-input" placeholder="Message&hellip;" maxlength="280"
+          onkeydown="if(event.key==='Enter')sendComms();">
+        <button class="comms-send" onclick="sendComms()">&#9658;</button>
+      </div>
+    </div>
   </div>
 
   <!-- ===== DIRECTION ===== -->
@@ -1333,6 +1419,8 @@ async function sha256hex(str){
   var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
   return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
 }
+function togglePwd(){var i=document.getElementById('login-pwd'),e=document.getElementById('pwd-eye');
+  if(!i)return;if(i.type==='password'){i.type='text';e.classList.add('on');}else{i.type='password';e.classList.remove('on');}}
 function tryLogin(){
   var v=document.getElementById('login-pwd').value;
   sha256hex(v).then(function(h){
@@ -1415,6 +1503,7 @@ function switchTab(btn){
   if(id==='view-map'){mapOpMode=null;initMap();}
   if(id==='view-home'){renderDashboard();}
   if(id==='view-direction'){renderDirDocs();}
+  if(id==='view-comms'){enterComms();}
 }
 function showView(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -2101,9 +2190,11 @@ function genOpPDF(){
   var docs=(o.docs||[]);
   function kv(l,v){return v?'<tr><td class="l">'+l+'</td><td>'+nl2br(v)+'</td></tr>':'';}
   var human=o.date?(o.date_fin&&o.date_fin>o.date?(frDate(o.date)+' → '+frDate(o.date_fin)):frDate(o.date)):'';
-  var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(o.name||'Opération')+'</title></head><body style="font-family:Arial;background:#0b0e0a;color:#e4e9da;padding:40px;text-align:center"><h3>Génération du PDF...</h3><p>Intégration des documents joints, patiente.</p></body></html>');
+  /* overlay d'attente DANS l'app (l'onglet reste actif -> pdf.js ne se met pas en pause) */
+  showPdfWait(true);
   docsToPagesAsync(docs).then(function(docsPagesHtml){
+  var w=window.open('','_blank');
+  showPdfWait(false);
   var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'+esc(o.name||'Opération')+'</title><style>'+
     '@page{margin:16mm;}body{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:13px;line-height:1.6;padding:20px 30px;position:relative;}'+
     '.hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid '+col+';padding-bottom:13px;margin-bottom:16px;}'+
@@ -2141,18 +2232,28 @@ function docsToPagesAsync(docs){
     if(!docs||!docs.length){resolve('');return;}
     var parts=new Array(docs.length).fill('');
     var pending=docs.length;
-    function done(){pending--;if(pending<=0)resolve(parts.join(''));}
+    var finished=false;
+    function finish(){if(finished)return;finished=true;resolve(parts.join(''));}
+    function done(){pending--;if(pending<=0)finish();}
+    /* sécurité : si la conversion bloque (mobile lent, pdf.js KO), on continue après 12s */
+    var guard=setTimeout(function(){
+      for(var k=0;k<parts.length;k++){if(!parts[k])parts[k]='<div class="docpage"><h3>Document '+(k+1)+'</h3><p class="nofile">Document joint non rendu (délai dépassé). Il reste consultable dans l\'app.</p></div>';}
+      finish();
+    },12000);
+    var origResolve=resolve;resolve=function(v){clearTimeout(guard);origResolve(v);};
     docs.forEach(function(d,i){
       var t=(d.type||'');var name=esc(d.name||('Document '+(i+1)));
       if(t.indexOf('image')===0){
         parts[i]='<div class="docpage"><h3>Document '+(i+1)+' — '+name+'</h3><img src="'+d.data+'"></div>';done();
       }else if(t.indexOf('pdf')>=0 && window.pdfjsLib){
+        var perTimeout=setTimeout(function(){if(!parts[i]){parts[i]='<div class="docpage"><h3>Document '+(i+1)+' — '+name+'</h3><p class="nofile">PDF non rendu (délai).</p></div>';done();}},9000);
         renderPdfToImages(d.data).then(function(imgs){
+          clearTimeout(perTimeout);if(parts[i])return;
           parts[i]=imgs.map(function(im,pi){
             return '<div class="docpage"><h3>Document '+(i+1)+' — '+name+(imgs.length>1?(' (p.'+(pi+1)+'/'+imgs.length+')'):'')+'</h3><img src="'+im+'"></div>';
           }).join('');
           done();
-        }).catch(function(){parts[i]='<div class="docpage"><h3>Document '+(i+1)+' — '+name+'</h3><p class="nofile">PDF non rendu.</p></div>';done();});
+        }).catch(function(){clearTimeout(perTimeout);if(parts[i])return;parts[i]='<div class="docpage"><h3>Document '+(i+1)+' — '+name+'</h3><p class="nofile">PDF non rendu.</p></div>';done();});
       }else{
         parts[i]='<div class="docpage"><h3>Document '+(i+1)+' — '+name+'</h3><p class="nofile">Fichier joint (type non affichable), conservé dans l\'app.</p></div>';done();
       }
@@ -2294,8 +2395,6 @@ function delCours(id){if(!confirm('Supprimer ce cours définitivement ?'))return
   delete db[id];cacheLocal();renderCours();cloudDelete(id);}
 function genCoursPDF(){
   var c=readCoursForm();cacheLocal();cloudSave(currentCoursId);
-  var w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+esc(c.title||'Cours')+'</title></head><body style="font-family:Arial;background:#0b0e0a;color:#e4e9da;padding:40px;text-align:center"><h3>Génération du PDF...</h3><p>Intégration des documents, patiente.</p></body></html>');
   /* construire le corps : texte/img inline ; pdf -> pages images en fin */
   var blocks=c.blocks||[];
   var pdfDocs=blocks.filter(function(b){return b.type==='pdf';}).map(function(b){return {name:b.name||'PDF',type:'application/pdf',data:b.data};});
@@ -2305,7 +2404,10 @@ function genCoursPDF(){
     if(b.type==='video'&&b.url)return '<div class="ctext">&#127909; Vidéo : <a href="'+esc(b.url)+'" style="color:#4a90d9">'+esc(b.url)+'</a></div>';
     return '';
   }).join('')||'<p style="color:#888">Cours vide.</p>';
+  showPdfWait(true);
   docsToPagesAsync(pdfDocs).then(function(pdfPages){
+  var w=window.open('','_blank');
+  showPdfWait(false);
   var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'+esc(c.title||'Cours')+'</title><style>'+
     '@page{margin:16mm;}body{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:13px;line-height:1.6;padding:20px 30px;position:relative;}'+
     '.hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #4a90d9;padding-bottom:13px;margin-bottom:18px;}'+
@@ -2395,6 +2497,7 @@ function initMap(){
     try{map.setProjection({type:'globe'});}catch(e){}
     addMapLayers();redrawMap();renderMapLegend();
     if(sb){subscribeMapWorld();subscribePositions();}
+    wireDeployedDrag();renderDeployed();
   });
   map.on('click',onMapClick);
   map.on('mousemove',onMapMove);
@@ -2825,9 +2928,28 @@ function renderMapLegend(){
 }
 var mapLegendOpen={};
 function toggleLegendFolder(k){mapLegendOpen[k]=(mapLegendOpen[k]===false);renderMapLegend();}
+var mapUndoStack=[];
+function pushMapUndo(){
+  try{
+    mapUndoStack.push(JSON.stringify({pings:mapWorld.pings,shapes:mapWorld.shapes,stickers:mapWorld.stickers||[],bsCount:mapWorld.bsCount||0}));
+    if(mapUndoStack.length>25)mapUndoStack.shift();
+    var btn=document.getElementById('map-undo-btn');if(btn)btn.style.display=mapUndoStack.length?'':'none';
+  }catch(e){}
+}
+function mapUndo(){
+  if(!mapUndoStack.length)return;
+  try{
+    var prev=JSON.parse(mapUndoStack.pop());
+    mapWorld.pings=prev.pings||[];mapWorld.shapes=prev.shapes||[];
+    mapWorld.stickers=prev.stickers||[];mapWorld.bsCount=prev.bsCount||0;
+    saveMapWorld();redrawMap();renderMapLegend();
+    var btn=document.getElementById('map-undo-btn');if(btn)btn.style.display=mapUndoStack.length?'':'none';
+  }catch(e){}
+}
 function legendDelFolder(k){
   var nm=opName(k);
-  if(!confirm('Effacer tout le dossier « '+nm+' » ? (les autres dossiers restent intacts)'))return;
+  if(!confirm('Effacer tout le dossier « '+nm+' » ?\n\nCette action peut être annulée avec le bouton Annuler (↶).'))return;
+  pushMapUndo();
   mapWorld.pings=mapWorld.pings.filter(function(x){return elemOp(x)!==k;});
   mapWorld.shapes=mapWorld.shapes.filter(function(x){return elemOp(x)!==k;});
   mapWorld.stickers=(mapWorld.stickers||[]).filter(function(x){return elemOp(x)!==k;});
@@ -2839,6 +2961,8 @@ function legendFocus(kind,id){
   else{var s=findShape(id);if(s&&s.coords.length)map.flyTo({center:s.coords[0],zoom:14});}
 }
 function legendDel(kind,id){
+  if(!confirm('Supprimer cet élément ?\n\n(annulable avec le bouton ↶)'))return;
+  pushMapUndo();
   if(kind==='ping')mapWorld.pings=mapWorld.pings.filter(function(x){return x.id!==id;});
   else if(kind==='sticker')mapWorld.stickers=(mapWorld.stickers||[]).filter(function(x){return x.id!==id;});
   else mapWorld.shapes=mapWorld.shapes.filter(function(x){return x.id!==id;});
@@ -3094,7 +3218,7 @@ function startGps(){
   document.getElementById('gps-status').textContent='// acquisition GPS...';
   subscribePositions();
   /* watch GPS haute précision, sans cache (maximumAge 0 = position fraîche) */
-  gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
   startHeading();         /* boussole du téléphone -> cap de la flèche */
   requestWakeLock();      /* garde l'écran allumé tant que possible */
   document.addEventListener('visibilitychange',gpsVisibility);
@@ -3113,21 +3237,31 @@ function gpsVisibility(){
   if(document.visibilityState==='visible'&&gpsOn){
     requestWakeLock();
     if(gpsWatchId==null){
-      gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+      gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
     }
     loadAllPositions();
   }
 }
 function onGpsPos(pos){
   var lat=pos.coords.latitude, lon=pos.coords.longitude;
+  var prev=gpsLastPos;
   gpsLastPos={lat:lat,lon:lon};
-  /* si le téléphone fournit un cap de déplacement, on le garde en secours */
   if(typeof pos.coords.heading==='number'&&!isNaN(pos.coords.heading)&&pos.coords.speed>0.5){gpsHeading=pos.coords.heading;}
   document.getElementById('gps-status').textContent='// position émise ('+lat.toFixed(4)+', '+lon.toFixed(4)+')';
-  /* throttle : 1 envoi / 3s max (au lieu de 8s) */
+  /* ÉCONOMIE BATTERIE : envoi adaptatif selon le déplacement.
+     - immobile (moins de ~6 m depuis le dernier envoi) -> on espace fortement (30 s)
+     - en mouvement -> on reste réactif (GPS_SEND_MS, 3 s) */
   var now=Date.now();
-  if(now-gpsLastSent<GPS_SEND_MS)return;
+  var moved=prev?distMeters(prev.lat,prev.lon,lat,lon):999;
+  var speed=(typeof pos.coords.speed==='number'&&pos.coords.speed>0)?pos.coords.speed:0;
+  var interval=(moved<6&&speed<0.6)?30000:GPS_SEND_MS;
+  if(now-gpsLastSent<interval)return;
   sendMyPosition();
+}
+function distMeters(la1,lo1,la2,lo2){
+  var R=6371000,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 function sendMyPosition(){
   if(!sb||!gpsOn||!gpsLastPos)return;
@@ -3205,7 +3339,7 @@ function subscribePositions(){
       .subscribe();
   }catch(e){}
   /* secours : recharge toutes les 5s (au lieu de 12s) si le realtime ne passe pas */
-  if(!gpsPollTimer)gpsPollTimer=setInterval(loadAllPositions,5000);
+  if(!gpsPollTimer)gpsPollTimer=setInterval(loadAllPositions,10000);
 }
 /* synchro temps réel du calque carte (dessins, autocollants, pings) entre membres */
 var mapWorldChannel=null;
@@ -3256,14 +3390,56 @@ function loadAllPositions(){
         var age=now-new Date(p.updated_at).getTime();
         if(age<120000)upsertGpsMarker(p);else removeGpsMarker(p.pseudo);
       });
+      renderDeployed();
     }
   });
+}
+function renderDeployed(){
+  var box=document.getElementById('deployed-list');if(!box)return;
+  var keys=Object.keys(gpsMarkers);
+  var cnt=document.getElementById('deployed-count');if(cnt)cnt.textContent=keys.length;
+  if(!keys.length){box.innerHTML='<div class="dep-empty">Aucun indicatif déployé</div>';return;}
+  box.innerHTML=keys.sort().map(function(k){
+    var m=gpsMarkers[k];var col=(m&&m.color)||'#46b29d';
+    return '<button class="dep-item" onclick="focusDeployed(\''+encodeURIComponent(k)+'\')">'+
+      '<span class="dep-dot" style="background:'+col+'"></span>'+
+      '<span class="dep-name">'+esc(k)+'</span></button>';
+  }).join('');
+}
+function focusDeployed(k){
+  k=decodeURIComponent(k);var m=gpsMarkers[k];
+  if(m&&m.lat!=null&&map){map.flyTo({center:[m.lon,m.lat],zoom:16,speed:1.4});}
+}
+function toggleDeployed(){
+  var p=document.getElementById('deployed-panel');if(p)p.classList.toggle('folded');
+}
+var depDragWired=false;
+function wireDeployedDrag(){
+  if(depDragWired)return;depDragWired=true;
+  var panel=document.getElementById('deployed-panel'),head=document.getElementById('dep-head');
+  if(!panel||!head)return;
+  var drag=false,sx=0,sy=0,bx=0,by=0;
+  function start(x,y){drag=true;var r=panel.getBoundingClientRect();var pr=panel.parentNode.getBoundingClientRect();
+    bx=r.left-pr.left;by=r.top-pr.top;sx=x;sy=y;panel.style.right='auto';}
+  function move(x,y){if(!drag)return;var pr=panel.parentNode.getBoundingClientRect();
+    var nx=bx+(x-sx),ny=by+(y-sy);
+    nx=Math.max(4,Math.min(pr.width-panel.offsetWidth-4,nx));
+    ny=Math.max(4,Math.min(pr.height-panel.offsetHeight-4,ny));
+    panel.style.left=nx+'px';panel.style.top=ny+'px';}
+  function end(){drag=false;}
+  head.addEventListener('mousedown',function(e){if(e.target.classList.contains('dep-fold'))return;start(e.clientX,e.clientY);e.preventDefault();});
+  document.addEventListener('mousemove',function(e){move(e.clientX,e.clientY);});
+  document.addEventListener('mouseup',end);
+  head.addEventListener('touchstart',function(e){if(e.target.classList.contains('dep-fold'))return;var t=e.touches[0];start(t.clientX,t.clientY);},{passive:true});
+  document.addEventListener('touchmove',function(e){if(drag){var t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault();}},{passive:false});
+  document.addEventListener('touchend',end);
 }
 function upsertGpsMarker(p){
   if(!p||!p.pseudo||!map)return;
   if(typeof p.lat!=='number'||typeof p.lon!=='number')return;
   var ex=gpsMarkers[p.pseudo];
   if(ex){
+    ex.lat=p.lat;ex.lon=p.lon;ex.color=p.color||ex.color;
     ex.marker.setLngLat([p.lon,p.lat]);ex.label.setLngLat([p.lon,p.lat]);
     if(ex.arrow&&typeof p.heading==='number'){
       ex.lastHeading=p.heading;
@@ -3287,11 +3463,13 @@ function upsertGpsMarker(p){
   var marker=new maplibregl.Marker({element:wrap,anchor:'center'}).setLngLat([p.lon,p.lat]).addTo(map);
   var le=document.createElement('div');le.className='map-ping-lbl';le.style.borderColor=(p.color||'#46b29d');le.textContent=p.pseudo;
   var label=new maplibregl.Marker({element:le,anchor:'bottom',offset:[0,-20]}).setLngLat([p.lon,p.lat]).addTo(map);
-  gpsMarkers[p.pseudo]={marker:marker,label:label,arrow:arrow,lastHeading:(typeof p.heading==='number'?p.heading:null)};
+  gpsMarkers[p.pseudo]={marker:marker,label:label,arrow:arrow,lat:p.lat,lon:p.lon,color:(p.color||'#46b29d'),lastHeading:(typeof p.heading==='number'?p.heading:null)};
+  renderDeployed();
 }
 function removeGpsMarker(pseudo){
   var ex=gpsMarkers[pseudo];if(!ex)return;
   ex.marker.remove();ex.label.remove();delete gpsMarkers[pseudo];
+  renderDeployed();
 }
 
 /* ============ CLOUD ============ */
@@ -3401,9 +3579,79 @@ function exitBlackout(){
   try{if(blackoutWake){blackoutWake.release();blackoutWake=null;}}catch(e){}
   /* ----- on rétablit le fonctionnement normal ----- */
   GPS_SEND_MS=3000;
-  try{if(typeof subscribePositions==='function'&&gpsOn&&!gpsPollTimer)gpsPollTimer=setInterval(loadAllPositions,5000);}catch(e){}
+  try{if(typeof subscribePositions==='function'&&gpsOn&&!gpsPollTimer)gpsPollTimer=setInterval(loadAllPositions,10000);}catch(e){}
   try{if(typeof subscribeMapWorld==='function')subscribeMapWorld();}catch(e){}
   try{if(gpsOn)startHeading();}catch(e){}
+}
+
+/* overlay d'attente PDF affiché DANS l'app (garde l'onglet actif pour pdf.js) */
+function showPdfWait(on){
+  var el=document.getElementById('pdf-wait');
+  if(!el){
+    el=document.createElement('div');el.id='pdf-wait';
+    el.innerHTML='<div class="pw-box"><div class="pw-spin"></div><div class="pw-txt">GÉNÉRATION DU PDF…</div><div class="pw-sub">Intégration des documents joints</div></div>';
+    document.body.appendChild(el);
+  }
+  el.style.display=on?'flex':'none';
+}
+/* ============ COMMS — chat texte temps réel ============ */
+var commsChannel=null,commsPoll=null,commsLoaded=false;
+function commsMyCall(){
+  var el=document.getElementById('comms-call');
+  var v=el&&el.value.trim();
+  if(!v){try{v=localStorage.getItem('bs_comms_call')||'';}catch(e){}if(v&&el)el.value=v;}
+  return v||'';
+}
+function enterComms(){
+  /* pré-remplir l'indicatif depuis le GPS ou la mémoire */
+  var el=document.getElementById('comms-call');
+  if(el&&!el.value){try{el.value=localStorage.getItem('bs_comms_call')||(typeof gpsMyPseudo!=='undefined'?gpsMyPseudo:'')||'';}catch(e){}}
+  loadComms();
+  subscribeComms();
+}
+function loadComms(){
+  if(!sb){renderComms([]);return;}
+  sb.from('messages').select('*').order('created_at',{ascending:true}).limit(200).then(function(r){
+    if(r&&r.data){renderComms(r.data);}
+  });
+}
+function renderComms(rows){
+  var box=document.getElementById('comms-log');if(!box)return;
+  var me=commsMyCall();
+  if(!rows.length){box.innerHTML='<div class="comms-empty">// AUCUN MESSAGE — OUVRE LA LIAISON</div>';return;}
+  box.innerHTML=rows.map(function(m){
+    var mine=(m.callsign&&me&&m.callsign.toUpperCase()===me.toUpperCase());
+    var t='';try{var d=new Date(m.created_at);t=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}catch(e){}
+    return '<div class="comms-msg'+(mine?' mine':'')+'"><div class="who">'+esc(m.callsign||'?')+'</div>'+esc(m.body||'')+'<div class="when">'+t+'</div></div>';
+  }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+function sendComms(){
+  var call=commsMyCall();var inp=document.getElementById('comms-input');
+  var body=inp?inp.value.trim():'';
+  if(!call){alert('Entre ton indicatif avant d\'émettre.');return;}
+  if(!body)return;
+  try{localStorage.setItem('bs_comms_call',call);}catch(e){}
+  if(!sb){return;}
+  inp.value='';
+  sb.from('messages').insert({callsign:call,body:body,created_at:new Date().toISOString()}).then(function(r){
+    if(r&&r.error){document.getElementById('comms-status').textContent='// ECHEC ENVOI';}
+    else{loadComms();}
+  });
+}
+function subscribeComms(){
+  if(!sb)return;
+  if(!commsChannel){
+    try{
+      commsChannel=sb.channel('comms-live')
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},function(){loadComms();})
+        .subscribe();
+    }catch(e){}
+  }
+  if(!commsPoll)commsPoll=setInterval(function(){
+    if(document.getElementById('view-comms')&&document.getElementById('view-comms').classList.contains('active'))loadComms();
+  },6000);
+  var st=document.getElementById('comms-status');if(st)st.textContent='// LINK ✓';
 }
 
 /* ============ PWA : manifest + icône générés depuis le logo (mono-fichier) ============ */
