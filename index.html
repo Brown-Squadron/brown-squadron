@@ -162,19 +162,15 @@
   .tabbar{display:flex;gap:5px;margin-bottom:14px;}
   .tabbar button{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--muted);padding:10px 3px;cursor:pointer;font-family:var(--mono);
     display:flex;flex-direction:column;align-items:center;gap:4px;transition:.12s;text-transform:uppercase;letter-spacing:.5px;}
-  .tabbar button .ico{font-size:18px;line-height:1;transition:color .18s,filter .18s;}
-  .tabbar button:hover .ico{filter:brightness(1.15);}
-  .tabbar button.on .ico{filter:none;}
-  /* Accueil et Calendrier en glyphe sable mono */
-  .tabbar button[data-view="view-home"] .ico,
-  .tabbar button[data-view="view-calendrier"] .ico{color:var(--muted);-webkit-text-fill-color:var(--muted);}
-  .tabbar button[data-view="view-home"].on .ico,
-  .tabbar button[data-view="view-calendrier"].on .ico{color:#1a1605;-webkit-text-fill-color:#1a1605;}
-  /* Membres : logo Brown Squadron */
+  .tabbar button .ico{font-size:18px;line-height:1;transition:color .18s,filter .18s;
+    color:var(--muted);-webkit-text-fill-color:var(--muted);}
+  .tabbar button:hover .ico{color:var(--tanl,#d8c089);-webkit-text-fill-color:var(--tanl,#d8c089);}
+  .tabbar button.on .ico{color:#1a1605;-webkit-text-fill-color:#1a1605;}
+  /* Membres : logo Brown Squadron en blanc, contour visible */
   .ico-bslogo{display:inline-block;width:20px;height:20px;background:var(--bs-logo) center/contain no-repeat;
-    filter:brightness(0) saturate(100%);opacity:.78;}
+    filter:brightness(0) invert(1);opacity:1;}
   .tabbar button:hover .ico-bslogo{opacity:1;}
-  .tabbar button.on .ico-bslogo{filter:brightness(0) saturate(100%);opacity:1;}
+  .tabbar button.on .ico-bslogo{filter:brightness(0);opacity:1;}
   /* ===== COMMS (chat) ===== */
   .comms-wrap{display:flex;flex-direction:column;height:72vh;background:var(--surface);border:1px solid var(--line2);border-radius:14px;overflow:hidden;}
   .comms-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px;}
@@ -705,6 +701,9 @@
   body.role-lecture #doc-drop,
   body.role-lecture .dir-upload,
   body.role-lecture .dir-add{display:none!important;}
+  /* les boutons d'export PDF restent visibles pour TOUS les rôles */
+  .pdf,.pdf-fab,button.pdf{display:inline-flex!important;}
+  body.role-lecture .pdf,body.role-lecture .pdf-fab{display:inline-flex!important;}
   /* badge de rôle en haut */
   .role-badge{font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:3px 9px;border-radius:10px;
     border:1px solid var(--line2);color:var(--aor1);background:var(--surface2);text-transform:uppercase;margin-left:8px;}
@@ -932,11 +931,11 @@
     <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Accueil</span></button>
     <button data-view="view-membres" onclick="switchTab(this)"><span class="ico ico-bslogo"></span><span class="lbl">Membres</span></button>
     <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico">&#9636;</span><span class="lbl">Calendrier</span></button>
-    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#127758;</span><span class="lbl">Op&eacute;rations</span></button>
-    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#128214;</span><span class="lbl">Drill</span></button>
-    <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#127760;</span><span class="lbl">Map</span></button>
-    <button data-view="view-comms" onclick="switchTab(this)"><span class="ico">&#128172;</span><span class="lbl">Comms</span></button>
-    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#128193;</span><span class="lbl">Direction</span></button>
+    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#9678;</span><span class="lbl">Op&eacute;rations</span></button>
+    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#9783;</span><span class="lbl">Drill</span></button>
+    <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Map</span></button>
+    <button data-view="view-comms" onclick="switchTab(this)"><span class="ico">&#9993;</span><span class="lbl">Comms</span></button>
+    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#9707;</span><span class="lbl">Direction</span></button>
   </div>
 
   <div class="collab" id="collab-status"></div>
@@ -963,6 +962,7 @@
   <!-- ===== FICHE ===== -->
   <div class="view" id="view-fiche">
     <button class="save-fab" onclick="saveMembre()">&#9658; Enregistrer la fiche</button>
+    <button class="pdf-fab" onclick="genMembrePDF()">&#128196; PDF</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goMembres()"><span class="ba">&#8592;</span> Retour effectif</button>
       <button class="savebtn" onclick="saveMembre()">&#9658; Enregistrer</button>
@@ -1093,6 +1093,7 @@
   <!-- ===== FICHE OPERATION ===== -->
   <div class="view" id="view-op-fiche">
     <button class="save-fab" onclick="saveOp()">&#9658; Enregistrer l'op&eacute;ration</button>
+    <button class="pdf-fab" onclick="genOpPDF()">&#128196; PDF</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goOps()"><span class="ba">&#8592;</span> Retour opérations</button>
       <button class="savebtn" onclick="saveOp()">&#9658; Enregistrer</button>
@@ -1177,6 +1178,7 @@
   <!-- ===== DRILL : FICHE COURS ===== -->
   <div class="view" id="view-cours-fiche">
     <button class="save-fab" onclick="saveCours()">&#9658; Enregistrer le cours</button>
+    <button class="pdf-fab" onclick="genCoursPDF()">&#128196; PDF</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goDrill()"><span class="ba">&#8592;</span> Retour cours</button>
       <button class="savebtn" onclick="saveCours()">&#9658; Enregistrer</button>
@@ -3359,6 +3361,8 @@ function startGps(){
 }
 function stopGps(){
   gpsOn=false;
+  var pf=document.getElementById('gps-pseudo');if(pf)pf.value='';
+  try{localStorage.removeItem('bs_comms_call');}catch(e){}
   var btn=document.getElementById('gps-btn');btn.classList.remove('live');btn.innerHTML='&#128225; Activer ma position';
   document.getElementById('gps-status').textContent='// position désactivée';
   if(gpsWatchId!=null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
@@ -3763,7 +3767,7 @@ function renderCommsChannels(){
       '<span class="cc-hash">#</span>'+esc(c.name)+'</button>';
   }).join('');
 }
-function switchCommsChan(id){commsCurChan=id;renderCommsChannels();loadComms();}
+function switchCommsChan(id){commsCurChan=id;_commsLastSig='';renderCommsChannels();loadComms();}
 function newCommsChannel(){
   var name=prompt('Nom du nouveau canal (sujet, mission, équipe...) :');
   if(!name||!name.trim())return;name=name.trim();
@@ -3797,16 +3801,22 @@ function loadComms(){
     }
   });
 }
+var _commsLastSig='';
 function renderComms(rows){
   var box=document.getElementById('comms-log');if(!box)return;
   var me=commsMyCall();
+  /* signature du contenu : on ne re-render que si ça a changé (évite le clignotement) */
+  var sig=rows.map(function(m){return (m.id||m.created_at)+'|'+m.callsign+'|'+m.body;}).join('~')+'#'+me;
+  if(sig===_commsLastSig)return;
+  _commsLastSig=sig;
   if(!rows.length){box.innerHTML='<div class="comms-empty">// CANAL VIDE — OUVRE LA LIAISON</div>';return;}
+  var atBottom=(box.scrollHeight-box.scrollTop-box.clientHeight)<60;
   box.innerHTML=rows.map(function(m){
     var mine=(m.callsign&&me&&m.callsign.toUpperCase()===me.toUpperCase());
     var t='';try{var d=new Date(m.created_at);t=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}catch(e){}
-    return '<div class="comms-msg'+(mine?' mine':'')+'"><div class="who">'+esc(m.callsign||'?')+'</div>'+esc(m.body||'')+'<div class="when">'+t+'</div></div>';
+    return '<div class="comms-msg'+(mine?' mine':'')+'" data-mid="'+(m.id||'')+'"><div class="who">'+esc(m.callsign||'?')+'</div>'+esc(m.body||'')+'<div class="when">'+t+'</div></div>';
   }).join('');
-  box.scrollTop=box.scrollHeight;
+  if(atBottom)box.scrollTop=box.scrollHeight;
 }
 function sendComms(){
   var call=commsMyCall();var inp=document.getElementById('comms-input');
