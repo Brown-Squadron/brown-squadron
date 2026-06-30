@@ -358,6 +358,13 @@
   .mcard .kitbar i{display:block;height:100%;background:linear-gradient(90deg,var(--aor2),var(--aor2b),var(--aor1));
     box-shadow:0 0 8px rgba(124,145,82,.5);transition:width .5s ease;}
   .mcard .kittxt{font-size:10.5px;color:var(--muted);margin-top:5px;font-family:var(--mono);letter-spacing:.5px;}
+  /* 2e barre : progression DRILLS (couleur bleu drill, motif rayé pour différencier du kit) */
+  .mcard .drillbar{margin-top:10px;height:6px;border-radius:3px;background:rgba(0,0,0,.35);overflow:hidden;border:1px solid var(--line);}
+  .mcard .drillbar i{display:block;height:100%;background:linear-gradient(90deg,var(--drill),#6fa8d8);
+    background-image:linear-gradient(90deg,var(--drill),#6fa8d8),repeating-linear-gradient(45deg,rgba(255,255,255,.18) 0 4px,transparent 4px 8px);
+    box-shadow:0 0 8px rgba(61,122,181,.5);transition:width .5s ease;}
+  .mcard .drilltxt{font-size:10.5px;color:var(--muted);margin-top:5px;font-family:var(--mono);letter-spacing:.5px;}
+  .mcard .drilltxt b{color:#6fa8d8;}
   .mcard .trash{position:absolute;top:11px;right:11px;background:rgba(0,0,0,.25);border:1px solid var(--line);
     border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
   .mcard .trash:hover{color:#fff;background:var(--op);border-color:var(--op);}
@@ -414,6 +421,69 @@
   .kititem.sub.has{background:rgba(90,107,59,.10);}
   .kitadd{display:flex;gap:8px;margin-top:8px;}
   .kitadd input{flex:1;}
+
+  /* ===== ONGLETS AOR1 / AOR2 (switch animé) ===== */
+  .aortabs{display:flex;position:relative;border:1px solid var(--line2);border-radius:12px;overflow:hidden;
+    height:74px;margin-bottom:16px;background:#0d0f0a;}
+  .aortab{flex:1 1 50%;position:relative;z-index:2;border:none;background:none;cursor:pointer;color:#fff;
+    font-family:var(--mono);font-size:15px;font-weight:800;letter-spacing:2px;text-transform:uppercase;
+    display:flex;align-items:center;justify-content:center;transition:opacity .25s;opacity:.55;}
+  .aortab .sub{display:block;font-size:9px;letter-spacing:1px;opacity:.85;margin-top:3px;font-weight:600;}
+  .aortab span.lbl{display:flex;flex-direction:column;align-items:center;text-shadow:0 1px 4px rgba(0,0,0,.85);}
+  .aortab.on{opacity:1;}
+  .aortabs .slide{position:absolute;top:0;bottom:0;left:0;width:50%;z-index:1;
+    transition:transform .35s cubic-bezier(.6,.1,.25,1);}
+  .aortabs[data-sel="aor1"] .slide{transform:translateX(100%);}
+  .aortabs .slide:before{content:"";position:absolute;inset:0;}
+  /* fond camo AOR2 = digital forest ; AOR1 = digital desert (motif CSS) */
+  .aortabs .slide{
+    background-color:#4a5a32;
+    background-image:
+      radial-gradient(circle at 20% 30%,#3a4a26 0 6px,transparent 6px),
+      radial-gradient(circle at 60% 20%,#6b7a44 0 7px,transparent 7px),
+      radial-gradient(circle at 80% 60%,#2c3a1e 0 5px,transparent 5px),
+      radial-gradient(circle at 40% 70%,#7c8c52 0 6px,transparent 6px),
+      radial-gradient(circle at 10% 80%,#2c3a1e 0 5px,transparent 5px),
+      radial-gradient(circle at 90% 35%,#3a4a26 0 6px,transparent 6px);
+    background-size:90px 90px;
+    box-shadow:inset 0 0 0 2px var(--aor2b),0 0 16px rgba(124,145,82,.4);}
+  .aortabs[data-sel="aor1"] .slide{
+    background-color:#c4a878;
+    background-image:
+      radial-gradient(circle at 20% 30%,#a88c5c 0 6px,transparent 6px),
+      radial-gradient(circle at 60% 20%,#d8c089 0 7px,transparent 7px),
+      radial-gradient(circle at 80% 60%,#8c7448 0 5px,transparent 5px),
+      radial-gradient(circle at 40% 70%,#e0cb96 0 6px,transparent 6px),
+      radial-gradient(circle at 10% 80%,#8c7448 0 5px,transparent 5px),
+      radial-gradient(circle at 90% 35%,#a88c5c 0 6px,transparent 6px);
+    background-size:90px 90px;
+    box-shadow:inset 0 0 0 2px var(--aor1b),0 0 16px rgba(216,192,137,.45);}
+  /* panneau actif : fond camo discret derrière la liste */
+  .aorpanel{display:none;border-radius:12px;padding:14px;margin-bottom:18px;border:1px solid var(--line2);}
+  .aorpanel.on{display:block;animation:aorFade .35s ease;}
+  @keyframes aorFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+  .aorpanel.aor2bg{
+    background-color:rgba(74,90,50,.14);
+    background-image:
+      radial-gradient(circle at 15% 20%,rgba(58,74,38,.5) 0 8px,transparent 8px),
+      radial-gradient(circle at 70% 40%,rgba(124,140,82,.4) 0 9px,transparent 9px),
+      radial-gradient(circle at 40% 75%,rgba(44,58,30,.5) 0 7px,transparent 7px);
+    background-size:140px 140px;box-shadow:inset 0 0 0 1px var(--aor2b);}
+  .aorpanel.aor1bg{
+    background-color:rgba(196,168,120,.12);
+    background-image:
+      radial-gradient(circle at 15% 20%,rgba(168,140,92,.45) 0 8px,transparent 8px),
+      radial-gradient(circle at 70% 40%,rgba(224,203,150,.4) 0 9px,transparent 9px),
+      radial-gradient(circle at 40% 75%,rgba(140,116,72,.45) 0 7px,transparent 7px);
+    background-size:140px 140px;box-shadow:inset 0 0 0 1px var(--aor1b);}
+  .aorpanel .aorhd{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;
+    margin-bottom:12px;font-weight:800;}
+  .aorpanel.aor2bg .aorhd{color:var(--aor1b);}
+  .aorpanel.aor1bg .aorhd{color:var(--aor1b);}
+  /* admin only : champ ajout ligne globale */
+  .kit-admin-add{display:flex;gap:8px;margin:6px 0 14px;}
+  .kit-admin-add input{flex:1;}
+  body:not(.role-admin) .kit-admin-only{display:none!important;}
 
   /* replique blocks */
   /* progression drills dans la fiche membre */
@@ -735,6 +805,8 @@
   body.role-lecture #view-direction select{opacity:.6;pointer-events:none;}
   body.role-lecture .kititem .cb{pointer-events:auto!important;opacity:1!important;}
   body.role-lecture .kititem input[type=checkbox]{pointer-events:auto!important;opacity:1!important;}
+  /* la quantité kit reste modifiable pour tous (admin/membre/lecture) — jamais la structure */
+  body.role-lecture .kititem .kqty input{pointer-events:auto!important;opacity:1!important;}
   /* lecture seule : pas d'intégration PDF/photo/lien/document ; l'export/édition PDF reste autorisé */
   body.role-lecture .cours-addbar,
   body.role-lecture #doc-drop,
@@ -1045,11 +1117,47 @@
 
     <section>
       <h3><span class="d" style="background:var(--aor2b)"></span>Kit-list <span class="sub">// cocher = poss&eacute;d&eacute;</span></h3>
-      <div class="kit-qhdr">Qt&eacute;</div>
-      <div id="kit-list"></div>
-      <div class="kitadd">
-        <input type="text" id="kit-new" placeholder="Ajouter un &eacute;quipement..." onkeydown="if(event.key==='Enter'){addKit();}">
-        <button class="ghost" onclick="addKit()">+ Ajouter</button>
+
+      <!-- onglets AOR1 / AOR2 (switch animé, moitié chacun) -->
+      <div class="aortabs" id="aortabs" data-sel="aor2">
+        <div class="slide"></div>
+        <button class="aortab on" data-aor="aor2" onclick="selectAor('aor2')">
+          <span class="lbl">AOR2<span class="sub">Forest // 2008-2014</span></span></button>
+        <button class="aortab" data-aor="aor1" onclick="selectAor('aor1')">
+          <span class="lbl">AOR1<span class="sub">Desert // 2010-2014</span></span></button>
+      </div>
+
+      <!-- panneau AOR2 -->
+      <div class="aorpanel aor2bg on" id="aorpanel-aor2">
+        <div class="aorhd">Tenue AOR2 // NSWDG - NSW</div>
+        <div class="kit-qhdr">Qt&eacute;</div>
+        <div id="kit-aor2"></div>
+        <div class="kit-admin-add kit-admin-only">
+          <input type="text" id="kit-new-aor2" placeholder="Ajouter un item AOR2 (admin)..." onkeydown="if(event.key==='Enter'){addKitLine('aor2');}">
+          <button class="ghost" onclick="addKitLine('aor2')">+ Ajouter</button>
+        </div>
+      </div>
+
+      <!-- panneau AOR1 -->
+      <div class="aorpanel aor1bg" id="aorpanel-aor1">
+        <div class="aorhd">Tenue AOR1 // DEVGRU 2010-2014</div>
+        <div class="kit-qhdr">Qt&eacute;</div>
+        <div id="kit-aor1"></div>
+        <div class="kit-admin-add kit-admin-only">
+          <input type="text" id="kit-new-aor1" placeholder="Ajouter un item AOR1 (admin)..." onkeydown="if(event.key==='Enter'){addKitLine('aor1');}">
+          <button class="ghost" onclick="addKitLine('aor1')">+ Ajouter</button>
+        </div>
+      </div>
+
+      <!-- équipement annexe (commun, ordre PDF) -->
+      <div style="margin-top:4px">
+        <div class="kit-grp">&Eacute;quipement annexe Gear AOR1 / AOR2</div>
+        <div class="kit-qhdr">Qt&eacute;</div>
+        <div id="kit-annexe"></div>
+        <div class="kit-admin-add kit-admin-only">
+          <input type="text" id="kit-new-annexe" placeholder="Ajouter un item annexe (admin)..." onkeydown="if(event.key==='Enter'){addKitLine('annexe');}">
+          <button class="ghost" onclick="addKitLine('annexe')">+ Ajouter</button>
+        </div>
       </div>
     </section>
 
@@ -1422,7 +1530,7 @@ var SB_URL='https://kcjmaukyhpreaqbhcqbk.supabase.co';var SB_KEY='sb_publishable
 
 /* ============ ETAT ============ */
 var DB_KEY='brown_squadron_v1';
-var db={};var currentId=null;var kitState=[];var repImg={1:'',2:''};
+var db={};var currentId=null;var kitState={};var curAor='aor2';var repImg={1:'',2:''};
 var drillState={acte1:{done:false,level:''},acte2:{done:false,level:''},acte3:{done:false,level:''}};
 var LEVEL_LABEL={'':'—',acq:'En cours d\'acquisition',ok:'Acquis',exp:'Expert'};
 var currentOpId=null;var opDocs=[];var opPresents=[];
@@ -1431,74 +1539,62 @@ var calYear=new Date().getFullYear();
 var TYPE_LABEL={operation:'Opération',drill:'Drill',dominicale:'Dominicale',reunion:'Divers'};
 var TYPE_COLOR={operation:'var(--op)',drill:'var(--drill)',dominicale:'var(--domi)',reunion:'var(--reu)'};
 
-/* kit par défaut = liste Brown Squadron AOR2 détaillée.
-   grp = section ; lvl 1 = sous-élément indenté */
-var DEFAULT_KIT=[
-  /* --- Tenue & équipement porté --- */
-  {grp:'Tenue & équipement porté',name:'Combat Shirt AOR2',qty:1},
-  {name:'Pantalon AOR2',qty:1},
-  {name:'Vest type 3 AOR2',qty:1},
-  {name:'Chaussures Merrel',qty:1},
-  {name:'Ceinture CQC OD',qty:1},
-  {name:'Poche noire (1 couteau)',qty:1},
-  {name:'Poche médicale AOR2 (bandage + CAT)',qty:1},
-  {name:'Poche handwarmer AOR2',qty:1},
-  {name:'Gants OD',qty:1},
-  {name:'Cache-cou OD',qty:1},
-  {name:'Maquillage vert/noir (visage)',qty:1},
-  {name:'Patch LPT US IR',qty:2},
-  {name:'Patch BROWN SQUADRON AOR2',qty:1},
-  {name:'Poche Fanny AOR2',qty:1},
-
-  /* --- Chest Rig & portage --- */
-  {grp:'Chest Rig & portage',name:'Chest Rig AOR2',qty:1},
-  {name:'Chargeurs',qty:7,lvl:1},
-  {name:'Grenades frag',qty:4,lvl:1},
-  {name:'Fumigènes',qty:2,lvl:1},
-  {name:'Flashbangs',qty:2,lvl:1},
-  {name:'Radio PRC152 OD',qty:1},
-  {name:'PTT noir',qty:1},
-  {name:'Déport d\'antenne',qty:1},
-  {name:'Antenne fouet',qty:1},
-  {name:'CAT noir',qty:1},
-  {name:'Sac BTAP AOR2',qty:1},
-  {name:'Grenades frag',qty:2,lvl:1},
-  {name:'Fumigènes',qty:2,lvl:1},
-  {name:'Flashbangs',qty:2,lvl:1},
-  {name:'Torche rouge',qty:1,lvl:1},
-  {name:'Chargeur',qty:1,lvl:1},
-  {name:'Camelbak 2 litres d\'eau',qty:1,lvl:1},
-  {name:'Nourriture',qty:1,lvl:1},
-  {name:'Tube de maquillage noir/vert',qty:1,lvl:1},
-  {name:'Carnet de notes',qty:1,lvl:1},
-  {name:'Sac AOR2',qty:1},
-  {name:'Slick AOR2',qty:1},
-  {name:'Mine Claymore',qty:1},
-
-  /* --- Optique & tête --- */
-  {grp:'Optique & tête',name:'Lunettes ICE',qty:1},
-  {name:'Bob AOR2',qty:1},
-  {name:'Casque audio MH180 noir',qty:1},
-  {name:'Casque Mich 2001 OD',qty:1},
-  {name:'MS2000 RD OD',qty:1},
-  {name:'Caméra HD noire',qty:1},
-  {name:'Shroud noir',qty:1},
-  {name:'Mount noir',qty:1},
-  {name:'Velcro noir',qty:1},
-  {name:'Contrepoids noir',qty:1},
-  {name:'PVS-15 (factice)',qty:1},
-
-  /* --- Réplique & accessoires --- */
-  {grp:'Réplique & accessoires',name:'MK18 Block II',qty:1},
-  {name:'RIS 12 pouces MK18 DE',qty:1},
-  {name:'Holosight 553 sable',qty:1},
-  {name:'Specter DR 1x / 4x DE + Red Dot noir',qty:1},
-  {name:'PEQ LA-5C tan',qty:1},
-  {name:'Lampe 600C DE',qty:1},
-  {name:'Double interrupteur tactique noir',qty:1},
-  {name:'Sangle AOR2',qty:1},
-  {name:'P226',qty:1}
+/* ===== KIT-LIST officielle Brown Book (sans marques, colonne item seule) =====
+   3 blocs : AOR2, AOR1, et équipement annexe commun.
+   Cette liste est LE MODÈLE GLOBAL : modifiable uniquement par un admin,
+   synchronisé via l'entrée cloud '__kitlist__' sur tous les comptes.
+   Chaque membre ne stocke que son état (coché + quantité) par item. */
+var KIT_AOR2_DEF=[
+  {name:'Combat Shirt AOR2'},
+  {name:'Combat Pant AOR2'},
+  {name:'Pantalon coupe "field" AOR2'},
+  {name:'Bob / Bonnie hat AOR2'},
+  {name:'Slick AOR2'},
+  {name:'Chest Rig AOR2'},
+  {name:'Rigger Belt (OD / SAND / BLACK)'},
+  {name:'Casque TC2001 / MICH2001'},
+  {name:'Shroud L2G05'},
+  {name:'Chaussures'},
+  {name:'Gloves'},
+  {name:'Équipements IR'},
+  {name:'Medic Pouch (Blow out / Ifak)'}
 ];
+var KIT_AOR1_DEF=[
+  {name:'Combat Shirt AOR1 Navy Custom (Gen2)'},
+  {name:'Combat Pant AOR1 Navy Custom (Gen2)'},
+  {name:'Plate Carrier / Chest + Slick ou PACA ou Chicken'},
+  {name:'Rigger Belt (OD / SAND / BLACK / AOR1)'},
+  {name:'Casque MARITIME type "OpsCore" AOR1'},
+  {name:'Shroud L4G24 Silver ou L4G19 Gold'},
+  {name:'Manta Strobe'},
+  {name:'Chaussures'},
+  {name:'Gloves'},
+  {name:'Medic Pouch (Blow out)'}
+];
+var KIT_ANNEXE_DEF=[
+  {name:'Veste Goretex AOR2 - AOR1 NWU Type III'},
+  {name:'Beyond Cold Fusion AOR1 - AOR2'},
+  {name:'Patagonia lvl 3 / 3a / 5 AOR1 ou AOR2'},
+  {name:'Arcteryx Minotaur Half Shell'},
+  {name:'Sac BTAP AOR1 / AOR2'},
+  {name:'LBT 2595G Backpack'},
+  {name:'Handwarmer AOR1 / AOR2'}
+];
+/* clé cloud du modèle global de kit */
+var KIT_DOC_KEY='__kitlist__';
+/* modèle courant (chargé du cloud sinon défaut) */
+function defaultKitModel(){
+  return {aor2:KIT_AOR2_DEF.map(cloneItem),aor1:KIT_AOR1_DEF.map(cloneItem),annexe:KIT_ANNEXE_DEF.map(cloneItem)};
+}
+function cloneItem(k){return {name:k.name};}
+function kitModel(){
+  var d=db[KIT_DOC_KEY];
+  if(d&&d.aor2&&d.aor1&&d.annexe)return {aor2:d.aor2.slice(),aor1:d.aor1.slice(),annexe:d.annexe.slice()};
+  return defaultKitModel();
+}
+/* liste à plat (ordre PDF) pour calculs de progression et stockage par membre */
+function kitFlat(model){model=model||kitModel();
+  return model.aor2.concat(model.aor1).concat(model.annexe);}
 
 function uid(){return 'x'+Date.now()+Math.random().toString(36).slice(2,6);}
 /* compresse une image (réduit dimensions + qualité) pour alléger le stockage cloud */
@@ -1876,12 +1972,17 @@ function renderMembres(){
   box.innerHTML='<div class="cards">'+list.map(function(m){
     var kit=m.kit||[];var has=kit.filter(function(k){return k.has;}).length;
     var pct=kit.length?Math.round(has/kit.length*100):0;
+    /* progression drills : 3 actes, niveau acq=1/ok=2/exp=3 sur 3 max -> total /9 */
+    var dl={'':0,acq:1,ok:2,exp:3};var dd=m.drills||{};var dscore=0;
+    ['acte1','acte2','acte3'].forEach(function(a){if(dd[a])dscore+=dl[(dd[a].level)||'']||0;});
+    var dpct=Math.round(dscore/9*100);
     return '<div class="mcard" onclick="openMembre(\''+m._id+'\')">'+
       '<button class="trash" onclick="event.stopPropagation();delMembre(\''+m._id+'\')">&#128465;</button>'+
       '<div class="pseudo">'+(esc(m.pseudo)||'SANS INDICATIF')+'</div>'+
       '<div class="realname">'+esc([m.prenom,m.nom].filter(Boolean).join(' '))+'</div>'+
       (m.role?'<div class="role">'+esc(m.role)+'</div>':'')+
       (kit.length?'<div class="kitbar"><i style="width:'+pct+'%"></i></div><div class="kittxt">KIT '+has+'/'+kit.length+'</div>':'')+
+      '<div class="drillbar"><i style="width:'+dpct+'%"></i></div><div class="drilltxt"><b>DRILLS</b> '+dpct+'%</div>'+
     '</div>';
   }).join('')+'</div>';
 }
@@ -1890,15 +1991,20 @@ function renderMembres(){
 function newMembre(){
   if(!canWrite()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
   currentId=uid();db[currentId]={type:'membre',created:Date.now()};
-  kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:false};});
+  kitState={};curAor='aor2';
   drillState={acte1:{done:false,level:''},acte2:{done:false,level:''},acte3:{done:false,level:''}};
   repImg={1:'',2:''};fillForm({});showView('view-fiche');
   document.getElementById('fiche-status').textContent='';
 }
 function openMembre(id){
   currentId=id;var m=db[id]||{};
-  kitState=(m.kit||[]).map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:!!k.has};});
-  if(!kitState.length)kitState=DEFAULT_KIT.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:0,has:false};});
+  /* état kit par membre : map "section::name" -> {qty,has} */
+  kitState={};
+  (m.kit||[]).forEach(function(k){
+    var key=(k.sec||'aor2')+'::'+k.name;
+    kitState[key]={qty:k.qty||0,has:!!k.has};
+  });
+  curAor='aor2';
   var dd=m.drills||{};
   drillState={acte1:{done:!!(dd.acte1&&dd.acte1.done),level:(dd.acte1&&dd.acte1.level)||''},
     acte2:{done:!!(dd.acte2&&dd.acte2.done),level:(dd.acte2&&dd.acte2.level)||''},
@@ -1914,7 +2020,7 @@ function fillForm(m){
   document.getElementById('rep1_up').value=(m.rep1&&m.rep1.up)||'';
   document.getElementById('rep2_model').value=(m.rep2&&m.rep2.model)||'';
   document.getElementById('rep2_up').value=(m.rep2&&m.rep2.up)||'';
-  renderRepImg(1);renderRepImg(2);renderKit();renderDrills();
+  renderRepImg(1);renderRepImg(2);selectAor('aor2');renderKit();renderDrills();
 }
 function renderDrills(){
   [1,2,3].forEach(function(n){
@@ -1933,29 +2039,57 @@ function renderDrills(){
 }
 function toggleDrill(n){if(!canEditOps())return;drillState['acte'+n].done=!drillState['acte'+n].done;renderDrills();}
 function setDrillLevel(n,v){if(!canEditOps())return;drillState['acte'+n].level=v;}
-var kitCollapsed={};
-function renderKit(){
-  var html='';var curGrp='__nogrp__';
-  kitState.forEach(function(k,i){
-    if(k.grp){curGrp=k.grp;var col=!!kitCollapsed[k.grp];
-      html+='<div class="kit-grp" onclick="toggleKitGrp(this)" data-grp="'+esc(k.grp)+'" style="cursor:pointer;user-select:none">'+
-        '<span class="kg-arrow">'+(col?'&#9656;':'&#9662;')+'</span> '+esc(k.grp)+'</div>';}
-    var hidden=(curGrp!=='__nogrp__'&&kitCollapsed[curGrp])?' style="display:none"':'';
-    html+='<div class="kititem'+(k.has?' has':'')+(k.lvl?' sub':'')+'" data-grpitem="'+esc(curGrp)+'"'+hidden+'>'+
-      '<div class="cb" onclick="toggleKit('+i+')">'+(k.has?'&#10003;':'')+'</div>'+
-      '<div class="kmid"><div class="ktxt">'+esc(k.name)+'</div></div>'+
-      '<div class="kqty"><input type="number" min="0" value="'+(k.qty==null?0:k.qty)+'" onchange="setKitQty('+i+',this.value)"></div>'+
-      '<button class="kdel" onclick="delKit('+i+')">&#128465;</button>'+
-    '</div>';
-  });
-  document.getElementById('kit-list').innerHTML=html;
+/* sélection d'onglet AOR avec switch animé */
+function selectAor(sec){
+  curAor=sec;
+  var tabs=document.getElementById('aortabs');if(tabs)tabs.setAttribute('data-sel',sec);
+  document.querySelectorAll('.aortab').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-aor')===sec);});
+  document.getElementById('aorpanel-aor1').classList.toggle('on',sec==='aor1');
+  document.getElementById('aorpanel-aor2').classList.toggle('on',sec==='aor2');
 }
-function toggleKitGrp(el){var g=el.getAttribute('data-grp');kitCollapsed[g]=!kitCollapsed[g];renderKit();}
-function toggleKit(i){kitState[i].has=!kitState[i].has;renderKit();}
-function setKitQty(i,v){kitState[i].qty=Math.max(0,parseInt(v,10)||0);}
-function delKit(i){kitState.splice(i,1);renderKit();}
-function addKit(){var inp=document.getElementById('kit-new');var v=inp.value.trim();if(!v)return;
-  kitState.push({name:v,grp:'',lvl:0,qty:0,has:false});inp.value='';renderKit();inp.focus();}
+/* rend une section de kit (aor2 / aor1 / annexe) dans son conteneur */
+function renderKitSection(sec,containerId){
+  var model=kitModel();var items=model[sec]||[];
+  var box=document.getElementById(containerId);if(!box)return;
+  var html=items.map(function(it,i){
+    var key=sec+'::'+it.name;var st=kitState[key]||{qty:0,has:false};
+    return '<div class="kititem'+(st.has?' has':'')+'">'+
+      '<div class="cb" onclick="toggleKit(\''+sec+'\','+i+')">'+(st.has?'&#10003;':'')+'</div>'+
+      '<div class="kmid"><div class="ktxt">'+esc(it.name)+'</div></div>'+
+      '<div class="kqty"><input type="number" min="0" value="'+(st.qty||0)+'" onchange="setKitQty(\''+sec+'\','+i+',this.value)"></div>'+
+      '<button class="kdel kit-admin-only" onclick="delKitLine(\''+sec+'\','+i+')" title="Supprimer (admin)">&#128465;</button>'+
+    '</div>';
+  }).join('');
+  box.innerHTML=html||'<div style="font-size:12px;color:var(--dim);font-family:var(--mono);padding:6px">— vide —</div>';
+}
+function renderKit(){
+  renderKitSection('aor2','kit-aor2');
+  renderKitSection('aor1','kit-aor1');
+  renderKitSection('annexe','kit-annexe');
+}
+function kitKeyAt(sec,i){var model=kitModel();var it=(model[sec]||[])[i];return it?sec+'::'+it.name:null;}
+function toggleKit(sec,i){var key=kitKeyAt(sec,i);if(!key)return;
+  var st=kitState[key]||{qty:0,has:false};st.has=!st.has;kitState[key]=st;renderKit();}
+function setKitQty(sec,i,v){var key=kitKeyAt(sec,i);if(!key)return;
+  var st=kitState[key]||{qty:0,has:false};st.qty=Math.max(0,parseInt(v,10)||0);kitState[key]=st;}
+
+/* ===== MODIFICATION DU MODÈLE GLOBAL (admin uniquement, synchronisé cloud) ===== */
+function addKitLine(sec){
+  if(!canAdmin()){alert('Seul un compte Admin peut modifier la kit-list.');return;}
+  var inp=document.getElementById('kit-new-'+sec);var v=inp.value.trim();if(!v)return;
+  var model=kitModel();model[sec].push({name:v});
+  saveKitModel(model);inp.value='';renderKit();inp.focus();
+}
+function delKitLine(sec,i){
+  if(!canAdmin()){alert('Seul un compte Admin peut supprimer une ligne de la kit-list.');return;}
+  var model=kitModel();var it=model[sec][i];if(!it)return;
+  if(!confirm('Supprimer « '+it.name+' » de la kit-list (tous les comptes) ?'))return;
+  model[sec].splice(i,1);saveKitModel(model);renderKit();
+}
+function saveKitModel(model){
+  db[KIT_DOC_KEY]={type:'kitlist',aor2:model.aor2,aor1:model.aor1,annexe:model.annexe};
+  cacheLocal();if(sb)cloudSave(KIT_DOC_KEY);
+}
 
 /* photos répliques */
 function loadRepImg(input,n){
@@ -1974,7 +2108,15 @@ function readForm(){
   m.pseudo=val('m_pseudo');m.role=val('m_role');m.nom=val('m_nom');m.prenom=val('m_prenom');
   m.tel=val('m_tel');m.email=val('m_email');m.adresse=val('m_adresse');
   m.sang=val('m_sang');m.taille=val('m_taille');m.urg_nom=val('m_urg_nom');m.urg_tel=val('m_urg_tel');m.notes=val('m_notes');
-  m.kit=kitState.map(function(k){return {name:k.name,grp:k.grp||'',lvl:k.lvl||0,qty:k.qty,has:k.has};});
+  /* kit du membre : on parcourt le modèle global et on stocke l'état (has+qty) de chaque item */
+  var model=kitModel();var kitArr=[];
+  ['aor2','aor1','annexe'].forEach(function(sec){
+    (model[sec]||[]).forEach(function(it){
+      var st=kitState[sec+'::'+it.name]||{qty:0,has:false};
+      kitArr.push({sec:sec,name:it.name,qty:st.qty||0,has:!!st.has});
+    });
+  });
+  m.kit=kitArr;
   m.drills={acte1:{done:drillState.acte1.done,level:drillState.acte1.level},
     acte2:{done:drillState.acte2.done,level:drillState.acte2.level},
     acte3:{done:drillState.acte3.done,level:drillState.acte3.level}};
