@@ -11,6 +11,9 @@
 <meta name="apple-mobile-web-app-title" content="Brown Squadron">
 <style>
   :root{
+    --camo1:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAD3ElEQVR42u2dv2sUURSFdyV/QSqLEEQsRaxSWliJWIm1xRaWVhZWItZiYWkRxMpCrESsLMQqlYhYiUhIYZW/wS7ehVzm3H3vzbsz+33VkoyzcQ73nLnzfszy8erGYojrV68sIlw7GD7n6d8/oXPuXrw0eJ6T4+PB8+zt7y968+Hj57PPFxbQFQRAgO1mRzno249fG+eB59fW072fR/PD+rvNgwy+TwUgACDAVDNAyQPl3t/z9xLfH7MXUe7r79y+SQVgQYAAs8oA5d7/+9GXkP9G+4YWeL0IFYAFAQJsCUtlPMDLA9sT3F+tqv9xJb6sjB8ox0TP/+bwkArAggABJpMBP7++3ti/FN9/+uz5/89PHoW8uEVPoHyX8r3Keez19K4VFYAFIQBMqQ9Q+H1yOnjMwwf3Br21xfOZaAYo2WDP6eUoGYAFAQLMrQ+I+r6SAVGi80FrZUCtPKACsCAEgI7s1DrR5b3djfOgltcrKGPX9pgodo6Qh80GKgALQgDo2QeM+Syo171/61yx2HFyKgALAgTYlj4gG94asRa+TwVgQYAAc84A+/xaGTNo8Vwo6t3KmuFaeRC996cCsCBAgG3pA2wevHz17uyz8lyoxKPpAwABEADGywBvLbF3j2zzwFJrzKBWlpRcB6U/oAKwIASAqWaAsofE+jHn7zX0/tPRuf82OqezZD5P6+tABWBBgAAJkeYFKeuBo/7rzcv01hVn8/0oXk9ABWBBCAAZM6CF70fzQGHMDIjuoc2zICwIEIA+YNjrS/Yc7ZUBlpI8oAKwIASA7Bmg5IHnxa33aeiVB7XygwrAghAAOhJeH6Ds9+n5fskenApKD5EtJ6gABEAAyJ4Bdl2YfU+W56fRuZjRfaQzw14RWBAgwJQyQJnPbn3f7olm1wDfvXVQ5Q/Klge2tyjpIbwxAyoAC0IA6Mjy7YvVxvewXk5E6eX1dh6qzbDoMyXvuiljJ1QAFoQA0LMP8O5VS/Kglu+37gns+gObB0oG2DEP71p5eyvZ60wFYEEIAFkyYMw8UPy9dX9gfd/7uff+SyoACwIEmAFrz4IsJeu2ohmQwfcVlL2MlHfIUAFYECBAlgyw6wOUtWAtfH/MDGidB2QAFgQIMCHW5gWVzHvx+oYWz096ofQB3hwqC+MBWBAgQJYM8H7h7Y2jjA2UPEea01oBmwfemgkqAAtCAMiSAZ6/R/fJUfoJ5X2/UbzvbT22oeD9f6kALAgBIEsGjDk3tFZPoOSNPcZ7V4HFPvPx3nVTgu0JqAAsCAEgSwYoKHtkZh4bsGvBvHvz6DsvS3oCKgALQgDoyD+WKKWpj3MMXQAAAABJRU5ErkJggg==);
+    --camo2:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAADYElEQVR42u2dsUocURSGd4OlVUi5iFhYhtSLiFhaiJVVsFhSWIaQwkrEUkR8ALEQH0B8ABEJ1uIDiIQtJVUeIN1yAnOYez33zL139vuqYZjdWf05/z/n3jszw/HW6uC9rG98ady/vbEZ9T2Tb8etx+x8XRvUzMP9U+P+DwPICgIgwHyzULLva7y8TGfbKyujxv2xyO/xQP7fZB5QAVgQAkBGhlofMFr6FOWV0n+/T/Zaff/y4vDd2SA/e355leQf4Z0B9AFYECBATRmgXe/HXmtreRDi3dpnNUrOAzIACwIEqDUDLGMsFmIzwCMPPDKDsSAsCBCgEP6bD5DjP9KnLHnw/Pjaeszn8XLz8ZP++D4VgAUBAtTUB2jzARZC8kCizRnkygOPMSIqAAtCAMiZAbv7485OFpIBcg3ozfWvLHkQ+zupACwIEKBSFro8mebvmp9afN8jn+SYFRWABQEC9CEDUq2v19DGTyzX0bf3d7PtkPsSLGuTQv4WKgALAgSgD0iD9HTp9doxlvyQ1/5aj0IFYEGAAD1meHCy23pQqv7A4zo6JDNiCRmnogKwIEAAMqCsPAj5/V2elwrAggABCifbWJC3L5fs+1QAAgAC1JQB3vPG2v1otfQZlr+RCsCCEABq6gM88iD2/mRtLrdkr9eOoQKwIASAnBmgPcss5HrcIw8035fnir3fuLQ8IAOwIECAQhiGvEMm1TNELT1Hl2t1Uvk+FYAFAQKU3gdYPjz9/Tbb9ni+kET6fojPpppXoAKwIECAee8DQvDIgJLX86TqCagALAgBoNY+wBttrKn2bKACEAAQoA8ZYLn2j51Prt33mRPGggAB6APS5IHH/QRd+j4VgAUBAsx7BsSuKZLHh6wf9SbkuXLa+iXuEcOCAAFqygA55iPXAnW5LsiSH6X1BFQAFgQIUAjR64IsXi8zI9W5SpgniL13gfkALAgQoNYMsPh1bAaEfH/tc8VUAAIgAGTEfT7A4vtUACAAAkCeDPgz/du4/+NosfXa3MP3Y7+z5P6AsSAsCBCg9AyQXi/zQNuW71vX5pBT0eX8MxWABQECzGMGxCKf5Snzw4KWMbXAsyKwIECAPmSA1hOErIGR7/v9eXQ22z49+tG4XxuD0t4ZoK0T5T1igAAIAK38A5xTQcpppQDsAAAAAElFTkSuQmCC);
+
     /* AOR2 digital forest + AOR1 desert palette, tactical UI */
     --bg:#0b0e0a;            /* near-black olive */
     --bg2:#10140d;
@@ -44,8 +47,7 @@
   .mono{font-family:var(--mono);}
 
   /* ===== LOGIN ===== */
-  #login-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;
-    background:radial-gradient(circle at 50% 38%,#11160d 0%,#0a0d08 55%,#070906 100%);}
+  #login-screen{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;    background:radial-gradient(circle at 50% 38%,#11160d 0%,#0a0d08 55%,#070906 100%);}
   /* grille tactique discrète en fond */
   #login-screen:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
     background-image:linear-gradient(rgba(124,145,82,.06) 1px,transparent 1px),
@@ -54,6 +56,10 @@
     mask-image:radial-gradient(circle at 50% 42%,#000 30%,transparent 78%);
     -webkit-mask-image:radial-gradient(circle at 50% 42%,#000 30%,transparent 78%);}
   /* ---- Radar tactique en fond ---- */
+  #bg3d{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none;opacity:0;transition:opacity 1.2s ease;}
+  #bg3d.on{opacity:1;}
+  #login-screen .login-card{position:relative;z-index:5;backdrop-filter:blur(3px);background:rgba(13,16,9,.55);}
+  #login-screen .radar-bg{opacity:.28;}
   .radar-bg{position:absolute;top:50%;left:50%;width:min(120vw,760px);height:min(120vw,760px);
     transform:translate(-50%,-50%);pointer-events:none;opacity:.5;}
   .radar-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;
@@ -297,6 +303,7 @@
   .dwidget .dw-body{padding:16px 15px;}
   .dw-stat{font-size:46px;font-weight:800;font-family:var(--mono);line-height:1;letter-spacing:-1.5px;
     background:linear-gradient(180deg,#f0e6cf,#b8a06a);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .dw-stat.blue{background:linear-gradient(180deg,#bfe0ff,#3d7ab5);-webkit-background-clip:text;background-clip:text;color:transparent;}
   .dw-stat .u{font-size:13px;color:var(--muted);margin-left:7px;font-weight:600;letter-spacing:0;
     -webkit-text-fill-color:var(--muted);}
   .dw-sub{font-size:11.5px;color:var(--dim);font-family:var(--mono);margin-top:8px;letter-spacing:.5px;}
@@ -309,6 +316,39 @@
   .dw-chip{display:inline-block;background:linear-gradient(160deg,var(--surface2),var(--surface));border:1px solid var(--line2);border-radius:14px;padding:5px 13px;font-size:12px;margin:0 6px 7px 0;font-family:var(--mono);color:var(--txt);transition:border-color .15s,transform .12s;}
   .dw-chip:hover{border-color:var(--tan,#b8a06a);transform:translateY(-1px);}
   .dw-readonly{position:absolute;top:11px;right:44px;font-size:8px;color:var(--dim);font-family:var(--mono);letter-spacing:1px;}
+
+  /* ===== HERO READINESS (jauges circulaires bleues animées) ===== */
+  .dwidget.dw-hero{grid-column:1/-1;background:
+    radial-gradient(120% 140% at 0% 0%,rgba(61,122,181,.18),transparent 55%),
+    radial-gradient(120% 140% at 100% 100%,rgba(184,160,106,.14),transparent 55%),
+    linear-gradient(160deg,var(--surface),var(--bg2));
+    border-color:#2f4a63;box-shadow:0 6px 30px rgba(0,0,0,.4),inset 0 0 50px rgba(61,122,181,.06);}
+  .dwidget.dw-hero:before{background:linear-gradient(90deg,#3d7ab5,#6fa8d8,#3d7ab5);height:4px;opacity:1;
+    animation:heroSweep 3.5s linear infinite;background-size:200% 100%;}
+  @keyframes heroSweep{from{background-position:0 0;}to{background-position:200% 0;}}
+  .hero-gauges{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;padding:8px 0 4px;}
+  .gauge-wrap{position:relative;width:160px;text-align:center;}
+  .gauge{width:130px;height:130px;transform:rotate(-90deg);display:block;margin:0 auto;
+    filter:drop-shadow(0 0 8px rgba(61,122,181,.35));}
+  .gauge .g-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9;}
+  .gauge .g-fg{fill:none;stroke:url(#gaugeGrad);stroke-width:9;stroke-linecap:round;
+    transition:stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1);
+    stroke:#3d7ab5;}
+  .gauge-mid{position:absolute;top:46px;left:0;right:0;display:flex;align-items:baseline;justify-content:center;}
+  .gauge-mid .gp{font-family:var(--mono);font-size:38px;font-weight:800;color:#8fc4ee;
+    text-shadow:0 0 14px rgba(61,122,181,.6);letter-spacing:-2px;}
+  .gauge-mid i{font-style:normal;font-size:15px;color:#6fa8d8;margin-left:2px;font-family:var(--mono);}
+  .gauge-lbl{font-family:var(--mono);font-size:12px;letter-spacing:2px;font-weight:800;color:#9fcdf0;margin-top:4px;text-transform:uppercase;}
+  .gauge-sub{font-size:10px;color:var(--dim);font-family:var(--mono);letter-spacing:1px;margin-top:2px;}
+  /* grosse barre bleue (drills/kit dans dashboard) */
+  .bigbar{height:12px;border-radius:7px;background:rgba(0,0,0,.4);border:1px solid var(--line2);overflow:hidden;margin:12px 0 2px;position:relative;}
+  .bigbar i{display:block;height:100%;border-radius:7px;transition:width 1.1s cubic-bezier(.4,0,.2,1);position:relative;}
+  .bigbar.drill i{background:linear-gradient(90deg,#3d7ab5,#6fa8d8);box-shadow:0 0 12px rgba(61,122,181,.6);}
+  .bigbar.kit i{background:linear-gradient(90deg,#3d7ab5,#8fc4ee);box-shadow:0 0 12px rgba(61,122,181,.6);}
+  .bigbar i:after{content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+    background-size:60px 100%;animation:barShine 2.2s linear infinite;}
+  @keyframes barShine{from{background-position:-60px 0;}to{background-position:calc(100% + 60px) 0;}}
 
   .view{display:none;}
   .view.active{display:block;animation:fade .18s ease;}
@@ -435,28 +475,16 @@
     transition:transform .35s cubic-bezier(.6,.1,.25,1);}
   .aortabs[data-sel="aor1"] .slide{transform:translateX(100%);}
   .aortabs .slide:before{content:"";position:absolute;inset:0;}
-  /* fond camo AOR2 = digital forest ; AOR1 = digital desert (motif CSS) */
+  /* fond camo réel (texture digitale générée, seamless) */
   .aortabs .slide{
     background-color:#4a5a32;
-    background-image:
-      radial-gradient(circle at 20% 30%,#3a4a26 0 6px,transparent 6px),
-      radial-gradient(circle at 60% 20%,#6b7a44 0 7px,transparent 7px),
-      radial-gradient(circle at 80% 60%,#2c3a1e 0 5px,transparent 5px),
-      radial-gradient(circle at 40% 70%,#7c8c52 0 6px,transparent 6px),
-      radial-gradient(circle at 10% 80%,#2c3a1e 0 5px,transparent 5px),
-      radial-gradient(circle at 90% 35%,#3a4a26 0 6px,transparent 6px);
-    background-size:90px 90px;
+    background-image:var(--camo2);
+    background-size:128px 128px;image-rendering:pixelated;
     box-shadow:inset 0 0 0 2px var(--aor2b),0 0 16px rgba(124,145,82,.4);}
   .aortabs[data-sel="aor1"] .slide{
     background-color:#c4a878;
-    background-image:
-      radial-gradient(circle at 20% 30%,#a88c5c 0 6px,transparent 6px),
-      radial-gradient(circle at 60% 20%,#d8c089 0 7px,transparent 7px),
-      radial-gradient(circle at 80% 60%,#8c7448 0 5px,transparent 5px),
-      radial-gradient(circle at 40% 70%,#e0cb96 0 6px,transparent 6px),
-      radial-gradient(circle at 10% 80%,#8c7448 0 5px,transparent 5px),
-      radial-gradient(circle at 90% 35%,#a88c5c 0 6px,transparent 6px);
-    background-size:90px 90px;
+    background-image:var(--camo1);
+    background-size:128px 128px;image-rendering:pixelated;
     box-shadow:inset 0 0 0 2px var(--aor1b),0 0 16px rgba(216,192,137,.45);}
   /* panneau actif : fond camo discret derrière la liste */
   .aorpanel{display:none;border-radius:12px;padding:14px;margin-bottom:18px;border:1px solid var(--line2);}
@@ -464,18 +492,16 @@
   @keyframes aorFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
   .aorpanel.aor2bg{
     background-color:rgba(74,90,50,.14);
-    background-image:
-      radial-gradient(circle at 15% 20%,rgba(58,74,38,.5) 0 8px,transparent 8px),
-      radial-gradient(circle at 70% 40%,rgba(124,140,82,.4) 0 9px,transparent 9px),
-      radial-gradient(circle at 40% 75%,rgba(44,58,30,.5) 0 7px,transparent 7px);
-    background-size:140px 140px;box-shadow:inset 0 0 0 1px var(--aor2b);}
+    background-image:var(--camo2);background-size:128px 128px;image-rendering:pixelated;
+    box-shadow:inset 0 0 0 1px var(--aor2b);position:relative;}
   .aorpanel.aor1bg{
     background-color:rgba(196,168,120,.12);
-    background-image:
-      radial-gradient(circle at 15% 20%,rgba(168,140,92,.45) 0 8px,transparent 8px),
-      radial-gradient(circle at 70% 40%,rgba(224,203,150,.4) 0 9px,transparent 9px),
-      radial-gradient(circle at 40% 75%,rgba(140,116,72,.45) 0 7px,transparent 7px);
-    background-size:140px 140px;box-shadow:inset 0 0 0 1px var(--aor1b);}
+    background-image:var(--camo1);background-size:128px 128px;image-rendering:pixelated;
+    box-shadow:inset 0 0 0 1px var(--aor1b);position:relative;}
+  /* voile sombre pour lisibilité de la liste par-dessus le camo */
+  .aorpanel.aor2bg:before,.aorpanel.aor1bg:before{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(12,14,9,.82),rgba(12,14,9,.9));border-radius:12px;pointer-events:none;}
+  .aorpanel.aor2bg>*,.aorpanel.aor1bg>*{position:relative;z-index:1;}
   .aorpanel .aorhd{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;
     margin-bottom:12px;font-weight:800;}
   .aorpanel.aor2bg .aorhd{color:var(--aor1b);}
@@ -484,6 +510,24 @@
   .kit-admin-add{display:flex;gap:8px;margin:6px 0 14px;}
   .kit-admin-add input{flex:1;}
   body:not(.role-admin) .kit-admin-only{display:none!important;}
+  /* contenant (sac/chest) + sous-items + drag */
+  .kititem{position:relative;transition:transform .12s,box-shadow .15s,background .15s;}
+  .kititem.container{border-color:var(--aor1);box-shadow:inset 3px 0 0 var(--aor1);}
+  .kgrip{flex-shrink:0;cursor:grab;color:var(--dim);font-size:15px;padding:2px 4px 2px 0;touch-action:none;user-select:none;align-self:center;}
+  .kgrip:hover{color:var(--aor1);}
+  .kgrip:active{cursor:grabbing;}
+  .kititem.dragging{opacity:.92;box-shadow:0 10px 26px rgba(0,0,0,.6);transform:scale(1.02);z-index:30;
+    border-color:var(--aor1)!important;background:rgba(184,160,106,.16);}
+  .kititem.drop-above{box-shadow:0 -3px 0 var(--aor1),inset 0 0 0 1px var(--line2);}
+  .kfold{display:inline-block;margin-top:5px;background:rgba(184,160,106,.12);border:1px solid var(--line2);
+    color:var(--aor1);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;
+    padding:3px 9px;border-radius:20px;cursor:pointer;transition:.15s;}
+  .kfold:hover{background:rgba(184,160,106,.22);border-color:var(--aor1);}
+  .ksubwrap{margin:2px 0 12px 18px;padding-left:12px;border-left:2px dashed var(--line2);
+    display:flex;flex-direction:column;gap:6px;animation:subSlide .25s ease;}
+  @keyframes subSlide{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+  .ksubadd input{width:100%;font-size:12px;padding:7px 9px;}
+  .ksubwrap .kititem.sub{margin:0;background:rgba(0,0,0,.18);}
 
   /* replique blocks */
   /* progression drills dans la fiche membre */
@@ -973,6 +1017,131 @@
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== SCÈNE 3D LOGIN (Three.js) — badge Brown Squadron + champ de particules =====
+   Motion design : badge flottant en métal brossé, sweep lumineux bleu, particules
+   tactiques en orbite, parallaxe à la souris / gyroscope. Léger, désactivable. */
+(function(){
+  if(!window.THREE){return;}
+  var cv=document.getElementById('bg3d');if(!cv)return;
+  var W=window.innerWidth,H=window.innerHeight;
+  var renderer=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.setSize(W,H);
+  var scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x070906,0.085);
+  var cam=new THREE.PerspectiveCamera(50,W/H,0.1,100);
+  cam.position.set(0,0,9);
+
+  /* lumières */
+  scene.add(new THREE.AmbientLight(0x404833,0.7));
+  var key=new THREE.DirectionalLight(0xb8a06a,1.5);key.position.set(4,6,8);scene.add(key);
+  var rim=new THREE.PointLight(0x3d7ab5,2.2,40);rim.position.set(-6,-3,6);scene.add(rim);
+  var rim2=new THREE.PointLight(0x6fa8d8,1.4,30);rim2.position.set(6,4,-4);scene.add(rim2);
+
+  /* groupe badge (flottant) */
+  var badge=new THREE.Group();scene.add(badge);
+
+  /* ---- bouclier (forme extrudée) ---- */
+  function shieldShape(){
+    var s=new THREE.Shape();
+    s.moveTo(0,2.2);
+    s.bezierCurveTo(1.6,2.2,1.9,1.9,1.9,1.2);
+    s.lineTo(1.9,-0.2);
+    s.bezierCurveTo(1.9,-1.4,1.1,-2.1,0,-2.5);
+    s.bezierCurveTo(-1.1,-2.1,-1.9,-1.4,-1.9,-0.2);
+    s.lineTo(-1.9,1.2);
+    s.bezierCurveTo(-1.9,1.9,-1.6,2.2,0,2.2);
+    return s;
+  }
+  var shieldGeo=new THREE.ExtrudeGeometry(shieldShape(),{depth:0.42,bevelEnabled:true,bevelThickness:0.12,bevelSize:0.12,bevelSegments:3,steps:1});
+  shieldGeo.center();
+  var shieldMat=new THREE.MeshStandardMaterial({color:0x141609,metalness:0.85,roughness:0.35,emissive:0x1a2a3a,emissiveIntensity:0.25});
+  var shield=new THREE.Mesh(shieldGeo,shieldMat);
+  badge.add(shield);
+
+  /* contour lumineux du bouclier */
+  var edges=new THREE.EdgesGeometry(shieldGeo,28);
+  var edgeMat=new THREE.LineBasicMaterial({color:0x6fa8d8,transparent:true,opacity:0.55});
+  var edgeLines=new THREE.LineSegments(edges,edgeMat);
+  badge.add(edgeLines);
+
+  /* ---- trident (3 dents + manche) en laiton ---- */
+  var brass=new THREE.MeshStandardMaterial({color:0xb8a06a,metalness:0.95,roughness:0.25,emissive:0x3a2f12,emissiveIntensity:0.3});
+  var trident=new THREE.Group();
+  function prong(x){
+    var g=new THREE.CylinderGeometry(0.07,0.07,1.5,12);
+    var m=new THREE.Mesh(g,brass);m.position.set(x,0.85,0.32);return m;
+  }
+  function tip(x){
+    var g=new THREE.ConeGeometry(0.12,0.4,12);
+    var m=new THREE.Mesh(g,brass);m.position.set(x,1.75,0.32);return m;
+  }
+  trident.add(prong(-0.55),prong(0),prong(0.55),tip(-0.55),tip(0),tip(0.55));
+  /* barre transversale */
+  var cross=new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.07,1.3,12),brass);
+  cross.rotation.z=Math.PI/2;cross.position.set(0,0.2,0.32);trident.add(cross);
+  /* manche */
+  var shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,2.0,12),brass);
+  shaft.position.set(0,-0.9,0.32);trident.add(shaft);
+  /* deux cornes (bull) */
+  function horn(side){
+    var pts=[];for(var i=0;i<=8;i++){var t=i/8;pts.push(new THREE.Vector3(side*(0.2+t*0.8),-1.5-t*0.1+Math.sin(t*2)*0.3,0.32));}
+    var g=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),20,0.06,8,false);
+    return new THREE.Mesh(g,brass);
+  }
+  trident.add(horn(1),horn(-1));
+  trident.scale.set(0.82,0.82,0.82);
+  badge.add(trident);
+
+  /* ---- champ de particules tactiques ---- */
+  var pcount=420,pg=new THREE.BufferGeometry(),pos=new Float32Array(pcount*3);
+  for(var i=0;i<pcount;i++){
+    var r=6+Math.random()*16,a=Math.random()*Math.PI*2,y=(Math.random()-0.5)*22;
+    pos[i*3]=Math.cos(a)*r;pos[i*3+1]=y;pos[i*3+2]=Math.sin(a)*r-4;
+  }
+  pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var pmat=new THREE.PointsMaterial({color:0x7c9152,size:0.06,transparent:true,opacity:0.7});
+  var pts=new THREE.Points(pg,pmat);scene.add(pts);
+  /* anneau orbital bleu */
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(3.4,0.02,8,80),new THREE.MeshBasicMaterial({color:0x3d7ab5,transparent:true,opacity:0.5}));
+  ring.rotation.x=Math.PI/2.2;scene.add(ring);
+
+  /* parallaxe */
+  var tx=0,ty=0,cx=0,cy=0;
+  window.addEventListener('pointermove',function(e){
+    tx=(e.clientX/window.innerWidth-0.5);ty=(e.clientY/window.innerHeight-0.5);
+  });
+  window.addEventListener('deviceorientation',function(e){
+    if(e.gamma!=null){tx=Math.max(-0.5,Math.min(0.5,e.gamma/45));ty=Math.max(-0.5,Math.min(0.5,(e.beta-40)/45));}
+  });
+
+  var t0=performance.now();
+  function loop(now){
+    var t=(now-t0)/1000;
+    cx+=(tx-cx)*0.05;cy+=(ty-cy)*0.05;
+    badge.rotation.y=Math.sin(t*0.4)*0.35+cx*0.6;
+    badge.rotation.x=Math.sin(t*0.32)*0.12-cy*0.4;
+    badge.position.y=Math.sin(t*0.8)*0.18;
+    trident.position.z=0.05+Math.sin(t*1.2)*0.03;
+    rim.position.x=Math.cos(t*0.6)*6;rim.position.z=Math.sin(t*0.6)*6;
+    pts.rotation.y=t*0.03;
+    ring.rotation.z=t*0.3;
+    cam.position.x=cx*1.2;cam.position.y=-cy*1.0;cam.lookAt(0,0,0);
+    renderer.render(scene,cam);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  setTimeout(function(){cv.classList.add('on');},120);
+
+  window.addEventListener('resize',function(){
+    W=window.innerWidth;H=window.innerHeight;cam.aspect=W/H;cam.updateProjectionMatrix();renderer.setSize(W,H);
+  });
+  /* libère le rendu une fois loggé (perf) */
+  window._stop3d=function(){try{renderer.dispose();}catch(e){}cv.style.display='none';};
+})();
+</script>
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -1003,7 +1172,8 @@
   <!-- coins HUD -->
   <div class="hud-corner tl"></div><div class="hud-corner tr"></div>
   <div class="hud-corner bl"></div><div class="hud-corner br"></div>
-  <div class="hud-line top"><span>// BROWN SQUADRON</span><span class="blink">SYS ONLINE</span></div>
+  <canvas id="bg3d"></canvas>
+  <div class="hud-line top"><span>// BROWN SQUADRON</span><span class="blink">SYS ONLINE · 3D</span></div>
   <div class="hud-line bottom"><span id="hud-clock">--:--:--</span><span>SECURE CHANNEL</span></div>
 
   <div class="login-card">
@@ -1550,14 +1720,35 @@ var KIT_AOR2_DEF=[
   {name:'Pantalon coupe "field" AOR2'},
   {name:'Bob / Bonnie hat AOR2'},
   {name:'Slick AOR2'},
-  {name:'Chest Rig AOR2'},
+  {name:'Chest Rig AOR2',sub:[
+    {name:'Chargeurs',qty:7},
+    {name:'Grenades frag',qty:4},
+    {name:'Fumigènes',qty:2},
+    {name:'Flashbangs',qty:2},
+    {name:'Radio PRC152 OD',qty:1},
+    {name:'PTT noir',qty:1},
+    {name:'Déport d\'antenne',qty:1},
+    {name:'Antenne fouet',qty:1},
+    {name:'CAT noir',qty:1}
+  ]},
   {name:'Rigger Belt (OD / SAND / BLACK)'},
   {name:'Casque TC2001 / MICH2001'},
   {name:'Shroud L2G05'},
   {name:'Chaussures'},
   {name:'Gloves'},
   {name:'Équipements IR'},
-  {name:'Medic Pouch (Blow out / Ifak)'}
+  {name:'Medic Pouch (Blow out / Ifak)'},
+  {name:'Sac BTAP AOR2',sub:[
+    {name:'Grenades frag',qty:2},
+    {name:'Fumigènes',qty:2},
+    {name:'Flashbangs',qty:2},
+    {name:'Torche rouge',qty:1},
+    {name:'Chargeur',qty:1},
+    {name:'Camelbak 2 litres d\'eau',qty:1},
+    {name:'Nourriture',qty:1},
+    {name:'Tube de maquillage noir/vert',qty:1},
+    {name:'Carnet de notes',qty:1}
+  ]}
 ];
 var KIT_AOR1_DEF=[
   {name:'Combat Shirt AOR1 Navy Custom (Gen2)'},
@@ -1682,6 +1873,7 @@ function applyBranding(){
 }
 function startApp(){
   document.getElementById('login-screen').style.display='none';
+  if(window._stop3d)window._stop3d();
   document.getElementById('app-root').style.display='';
   if(SB_URL&&SB_KEY&&window.supabase){sb=window.supabase.createClient(SB_URL,SB_KEY);}
   /* récupérer le rôle (au cas où on revient via session) */
@@ -1857,6 +2049,10 @@ function dashWidgets(){
   var lvlScore={'':0,acq:1,ok:2,exp:3};var tot=0,cnt=0;
   membres.forEach(function(m){var d=m.drills||{};['acte1','acte2','acte3'].forEach(function(a){if(d[a]){tot+=lvlScore[d[a].level||'']||0;cnt++;}});});
   var pct=cnt?Math.round(tot/(cnt*3)*100):0;
+  /* kit moyen escouade */
+  var kTot=0,kHas=0;
+  membres.forEach(function(m){var k=m.kit||[];kTot+=k.length;kHas+=k.filter(function(x){return x.has;}).length;});
+  var kpct=kTot?Math.round(kHas/kTot*100):0;
   /* prochains */
   var nextHtml=futur.length?futur.slice(0,5).map(function(o){
     return '<div class="li"><span class="k">'+esc(o.name||'—')+'</span><span class="v">'+frDate(o.date)+'</span></div>';
@@ -1864,12 +2060,27 @@ function dashWidgets(){
   var rolesHtml=Object.keys(roles).length?Object.keys(roles).map(function(r){return '<span class="dw-chip">'+esc(r)+' · '+roles[r]+'</span>';}).join(''):'<div class="dw-sub">—</div>';
   var recent=ops.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,4);
   var recentHtml=recent.length?recent.map(function(o){return '<div class="li"><span class="k">'+esc(o.name||'—')+'</span><span class="v">'+(TYPE_LABEL[o.evtype]||'')+'</span></div>';}).join(''):'<div class="dw-sub">—</div>';
+  /* jauge circulaire animée (SVG) */
+  function ring(p,label,sub){
+    var R=46,C=2*Math.PI*R,off=C*(1-p/100);
+    var gid='gg'+Math.random().toString(36).slice(2,7);
+    return '<div class="gauge-wrap"><svg class="gauge" viewBox="0 0 120 120">'+
+      '<defs><linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="1">'+
+        '<stop offset="0" stop-color="#3d7ab5"/><stop offset="1" stop-color="#8fc4ee"/></linearGradient></defs>'+
+      '<circle class="g-bg" cx="60" cy="60" r="'+R+'"/>'+
+      '<circle class="g-fg" cx="60" cy="60" r="'+R+'" style="stroke:url(#'+gid+')" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+C.toFixed(1)+'" data-off="'+off.toFixed(1)+'"/>'+
+      '</svg><div class="gauge-mid"><span class="gp" data-target="'+p+'">0</span><i>%</i></div>'+
+      '<div class="gauge-lbl">'+label+'</div><div class="gauge-sub">'+sub+'</div></div>';
+  }
 
   return [
+    {id:'readiness',title:'Readiness escouade',cls:'dw-hero',body:
+      '<div class="hero-gauges">'+ring(pct,'DRILLS','niveau moyen')+ring(kpct,'KIT-LIST','complétion moyenne')+'</div>'},
     {id:'effectif',title:'Effectif',body:'<div class="dw-stat">'+membres.length+'<span class="u">membres</span></div><div class="dw-sub">de la Brown Squadron</div>'},
     {id:'events',title:'Événements',body:'<div class="dw-stat">'+ops.length+'<span class="u">total</span></div><div class="dw-sub">'+futur.length+' à venir</div>'},
     {id:'next',title:'Prochains événements',body:'<div class="dw-list">'+nextHtml+'</div>'},
-    {id:'drills',title:'Progression Drills',body:'<div class="dw-stat">'+pct+'<span class="u">%</span></div><div class="dw-sub">niveau moyen escouade</div>'},
+    {id:'drills',title:'Progression Drills',body:'<div class="dw-stat blue">'+pct+'<span class="u">%</span></div><div class="bigbar drill"><i style="width:'+pct+'%"></i></div><div class="dw-sub">niveau moyen escouade</div>'},
+    {id:'kit',title:'Kit-list escouade',body:'<div class="dw-stat blue">'+kpct+'<span class="u">%</span></div><div class="bigbar kit"><i style="width:'+kpct+'%"></i></div><div class="dw-sub">complétion moyenne</div>'},
     {id:'roles',title:'Rôles & spécialités',body:rolesHtml},
     {id:'recent',title:'Dernières opérations',body:'<div class="dw-list">'+recentHtml+'</div>'}
   ];
@@ -1882,7 +2093,7 @@ function renderDashboard(){
   var order=dashOrder();
   if(order.length){ws.sort(function(a,b){var ia=order.indexOf(a.id),ib=order.indexOf(b.id);return (ia<0?99:ia)-(ib<0?99:ib);});}
   grid.innerHTML=ws.map(function(w){
-    return '<div class="dwidget group relative overflow-hidden rounded-2xl border border-line2 bg-gradient-to-br from-surface to-bg2 shadow-tac transition duration-200 hover:-translate-y-1 hover:border-tan hover:shadow-glow" draggable="false" data-id="'+w.id+'">'+
+    return '<div class="dwidget '+(w.cls||'')+' group relative overflow-hidden rounded-2xl border border-line2 bg-gradient-to-br from-surface to-bg2 shadow-tac transition duration-200 hover:-translate-y-1 hover:border-tan hover:shadow-glow" draggable="false" data-id="'+w.id+'">'+
       '<div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-tan to-forest opacity-70"></div>'+
       '<div class="dw-head flex items-center gap-2 px-4 pt-4 pb-2">'+
         '<span class="dw-title flex-1 font-mono text-[10px] font-bold uppercase tracking-[2px] text-tan">'+w.title+'</span>'+
@@ -1891,6 +2102,26 @@ function renderDashboard(){
       '<div class="dw-body px-4 pb-4 pt-1">'+w.body+'</div></div>';
   }).join('');
   wireDashDrag();
+  animateDash(grid);
+}
+/* anime jauges circulaires (dashoffset) + compteurs + barres */
+function animateDash(grid){
+  /* jauges SVG */
+  [].slice.call(grid.querySelectorAll('.g-fg')).forEach(function(c){
+    var off=c.getAttribute('data-off');
+    requestAnimationFrame(function(){requestAnimationFrame(function(){c.style.strokeDashoffset=off;});});
+  });
+  /* compteurs % */
+  [].slice.call(grid.querySelectorAll('.gp')).forEach(function(el){
+    var target=parseInt(el.getAttribute('data-target'),10)||0;var t0=null,dur=1100;
+    function step(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur);
+      el.textContent=Math.round(target*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  });
+  /* barres */
+  [].slice.call(grid.querySelectorAll('.bigbar i')).forEach(function(b){
+    var w=b.style.width;b.style.width='0%';requestAnimationFrame(function(){requestAnimationFrame(function(){b.style.width=w;});});
+  });
 }
 var TAB_ORDER_KEY='bs_tab_order';
 function restoreTabOrder(){
@@ -2047,30 +2278,63 @@ function selectAor(sec){
   document.getElementById('aorpanel-aor1').classList.toggle('on',sec==='aor1');
   document.getElementById('aorpanel-aor2').classList.toggle('on',sec==='aor2');
 }
-/* rend une section de kit (aor2 / aor1 / annexe) dans son conteneur */
+/* état d'ouverture des contenants (sac/chest) */
+var kitOpen={};
+function kitItemHTML(sec,it,i){
+  var key=sec+'::'+it.name;var st=kitState[key]||{qty:0,has:false};
+  var hasSub=it.sub&&it.sub.length;
+  var op=kitOpen[key]!==false; /* ouvert par défaut */
+  var dragAttr=' draggable="false" data-sec="'+sec+'" data-idx="'+i+'"';
+  var h='<div class="kititem'+(st.has?' has':'')+(hasSub?' container':'')+'"'+dragAttr+'>'+
+    '<span class="kgrip kit-admin-only" title="Glisser pour réordonner">&#9776;</span>'+
+    '<div class="cb" onclick="toggleKit(\''+sec+'\','+i+')">'+(st.has?'&#10003;':'')+'</div>'+
+    '<div class="kmid"><div class="ktxt">'+esc(it.name)+
+      (hasSub?'<button class="kfold" onclick="foldKit(\''+key.replace(/'/g,"\\'")+'\')">'+(op?'&#9662;':'&#9656;')+' contenance ('+it.sub.length+')</button>':'')+
+    '</div></div>'+
+    '<div class="kqty"><input type="number" min="0" value="'+(st.qty||0)+'" onchange="setKitQty(\''+sec+'\','+i+',this.value)"></div>'+
+    '<button class="kdel kit-admin-only" onclick="delKitLine(\''+sec+'\','+i+')" title="Supprimer (admin)">&#128465;</button>'+
+  '</div>';
+  if(hasSub&&op){
+    h+='<div class="ksubwrap">'+it.sub.map(function(s,j){
+      var skey=key+'::'+s.name;var sst=kitState[skey]||{qty:s.qty||0,has:false};
+      return '<div class="kititem sub'+(sst.has?' has':'')+'">'+
+        '<div class="cb" onclick="toggleSub(\''+sec+'\','+i+','+j+')">'+(sst.has?'&#10003;':'')+'</div>'+
+        '<div class="kmid"><div class="ktxt">'+esc(s.name)+'</div></div>'+
+        '<div class="kqty"><input type="number" min="0" value="'+(sst.qty||0)+'" onchange="setSubQty(\''+sec+'\','+i+','+j+',this.value)"></div>'+
+        '<button class="kdel kit-admin-only" onclick="delSubLine(\''+sec+'\','+i+','+j+')" title="Supprimer (admin)">&#128465;</button>'+
+      '</div>';
+    }).join('')+
+    '<div class="kit-admin-add kit-admin-only ksubadd">'+
+      '<input type="text" placeholder="+ item dans '+esc(it.name)+'..." onkeydown="if(event.key===\'Enter\'){addSubLine(\''+sec+'\','+i+',this);}">'+
+    '</div>'+
+    '</div>';
+  }
+  return h;
+}
 function renderKitSection(sec,containerId){
   var model=kitModel();var items=model[sec]||[];
   var box=document.getElementById(containerId);if(!box)return;
-  var html=items.map(function(it,i){
-    var key=sec+'::'+it.name;var st=kitState[key]||{qty:0,has:false};
-    return '<div class="kititem'+(st.has?' has':'')+'">'+
-      '<div class="cb" onclick="toggleKit(\''+sec+'\','+i+')">'+(st.has?'&#10003;':'')+'</div>'+
-      '<div class="kmid"><div class="ktxt">'+esc(it.name)+'</div></div>'+
-      '<div class="kqty"><input type="number" min="0" value="'+(st.qty||0)+'" onchange="setKitQty(\''+sec+'\','+i+',this.value)"></div>'+
-      '<button class="kdel kit-admin-only" onclick="delKitLine(\''+sec+'\','+i+')" title="Supprimer (admin)">&#128465;</button>'+
-    '</div>';
-  }).join('');
-  box.innerHTML=html||'<div style="font-size:12px;color:var(--dim);font-family:var(--mono);padding:6px">— vide —</div>';
+  box.innerHTML=items.map(function(it,i){return kitItemHTML(sec,it,i);}).join('')||
+    '<div style="font-size:12px;color:var(--dim);font-family:var(--mono);padding:6px">— vide —</div>';
+  if(canAdmin())enableKitDrag(box,sec);
 }
 function renderKit(){
   renderKitSection('aor2','kit-aor2');
   renderKitSection('aor1','kit-aor1');
   renderKitSection('annexe','kit-annexe');
 }
+function foldKit(key){kitOpen[key]=(kitOpen[key]===false);renderKit();}
 function kitKeyAt(sec,i){var model=kitModel();var it=(model[sec]||[])[i];return it?sec+'::'+it.name:null;}
 function toggleKit(sec,i){var key=kitKeyAt(sec,i);if(!key)return;
   var st=kitState[key]||{qty:0,has:false};st.has=!st.has;kitState[key]=st;renderKit();}
 function setKitQty(sec,i,v){var key=kitKeyAt(sec,i);if(!key)return;
+  var st=kitState[key]||{qty:0,has:false};st.qty=Math.max(0,parseInt(v,10)||0);kitState[key]=st;}
+/* sous-items */
+function subKeyAt(sec,i,j){var model=kitModel();var it=(model[sec]||[])[i];if(!it||!it.sub)return null;
+  var s=it.sub[j];return s?sec+'::'+it.name+'::'+s.name:null;}
+function toggleSub(sec,i,j){var key=subKeyAt(sec,i,j);if(!key)return;
+  var st=kitState[key]||{qty:0,has:false};st.has=!st.has;kitState[key]=st;renderKit();}
+function setSubQty(sec,i,j,v){var key=subKeyAt(sec,i,j);if(!key)return;
   var st=kitState[key]||{qty:0,has:false};st.qty=Math.max(0,parseInt(v,10)||0);kitState[key]=st;}
 
 /* ===== MODIFICATION DU MODÈLE GLOBAL (admin uniquement, synchronisé cloud) ===== */
@@ -2086,9 +2350,63 @@ function delKitLine(sec,i){
   if(!confirm('Supprimer « '+it.name+' » de la kit-list (tous les comptes) ?'))return;
   model[sec].splice(i,1);saveKitModel(model);renderKit();
 }
+function addSubLine(sec,i,inp){
+  if(!canAdmin())return;var v=inp.value.trim();if(!v)return;
+  var model=kitModel();var it=model[sec][i];if(!it)return;
+  if(!it.sub)it.sub=[];it.sub.push({name:v,qty:1});
+  saveKitModel(model);renderKit();
+}
+function delSubLine(sec,i,j){
+  if(!canAdmin())return;var model=kitModel();var it=model[sec][i];if(!it||!it.sub)return;
+  if(!confirm('Supprimer « '+it.sub[j].name+' » ?'))return;
+  it.sub.splice(j,1);saveKitModel(model);renderKit();
+}
 function saveKitModel(model){
   db[KIT_DOC_KEY]={type:'kitlist',aor2:model.aor2,aor1:model.aor1,annexe:model.annexe};
   cacheLocal();if(sb)cloudSave(KIT_DOC_KEY);
+}
+
+/* ===== DRAG & DROP réordonnancement (admin) — maintien + glisser ===== */
+var kitDrag=null;
+function enableKitDrag(box,sec){
+  [].slice.call(box.querySelectorAll('.kititem:not(.sub)')).forEach(function(row){
+    var grip=row.querySelector('.kgrip');if(!grip)return;
+    grip.onpointerdown=function(ev){
+      ev.preventDefault();
+      var idx=parseInt(row.getAttribute('data-idx'),10);
+      kitDrag={sec:sec,from:idx,el:row,box:box};
+      row.classList.add('dragging');
+      document.addEventListener('pointermove',kitDragMove);
+      document.addEventListener('pointerup',kitDragEnd);
+    };
+  });
+}
+function kitDragMove(ev){
+  if(!kitDrag)return;
+  var rows=[].slice.call(kitDrag.box.querySelectorAll('.kititem:not(.sub)'));
+  var target=null;
+  rows.forEach(function(r){
+    if(r===kitDrag.el)return;
+    var b=r.getBoundingClientRect();
+    if(ev.clientY>b.top&&ev.clientY<b.bottom){target=r;}
+  });
+  rows.forEach(function(r){r.classList.remove('drop-above');});
+  if(target)target.classList.add('drop-above');
+  kitDrag.target=target;
+}
+function kitDragEnd(){
+  document.removeEventListener('pointermove',kitDragMove);
+  document.removeEventListener('pointerup',kitDragEnd);
+  if(!kitDrag){return;}
+  var d=kitDrag;kitDrag=null;
+  if(d.el)d.el.classList.remove('dragging');
+  if(!d.target){renderKit();return;}
+  var to=parseInt(d.target.getAttribute('data-idx'),10);
+  var model=kitModel();var arr=model[d.sec];
+  var moved=arr.splice(d.from,1)[0];
+  if(d.from<to)to--; /* compense le retrait */
+  arr.splice(to,0,moved);
+  saveKitModel(model);renderKit();
 }
 
 /* photos répliques */
@@ -2108,12 +2426,16 @@ function readForm(){
   m.pseudo=val('m_pseudo');m.role=val('m_role');m.nom=val('m_nom');m.prenom=val('m_prenom');
   m.tel=val('m_tel');m.email=val('m_email');m.adresse=val('m_adresse');
   m.sang=val('m_sang');m.taille=val('m_taille');m.urg_nom=val('m_urg_nom');m.urg_tel=val('m_urg_tel');m.notes=val('m_notes');
-  /* kit du membre : on parcourt le modèle global et on stocke l'état (has+qty) de chaque item */
+  /* kit du membre : on parcourt le modèle global et on stocke l'état (has+qty) de chaque item ET sous-item */
   var model=kitModel();var kitArr=[];
   ['aor2','aor1','annexe'].forEach(function(sec){
     (model[sec]||[]).forEach(function(it){
       var st=kitState[sec+'::'+it.name]||{qty:0,has:false};
       kitArr.push({sec:sec,name:it.name,qty:st.qty||0,has:!!st.has});
+      if(it.sub)it.sub.forEach(function(s){
+        var ss=kitState[sec+'::'+it.name+'::'+s.name]||{qty:0,has:false};
+        kitArr.push({sec:sec,name:it.name+'::'+s.name,sub:1,qty:ss.qty||0,has:!!ss.has});
+      });
     });
   });
   m.kit=kitArr;
@@ -3850,17 +4172,19 @@ function openGeoloc(){
   var ua=navigator.userAgent||'';
   var isAndroid=/android/i.test(ua);
   var isIOS=/iphone|ipad|ipod/i.test(ua);
+  var pkg='com.aresalpha.ares';
   if(isAndroid){
-    /* tente d'ouvrir l'app installée, sinon le Play Store */
-    var pkg='com.aresalpha.ares';
-    window.location.href='intent://open#Intent;scheme=aresalpha;package='+pkg+';S.browser_fallback_url='+
-      encodeURIComponent('https://play.google.com/store/apps/details?id='+pkg)+';end';
-    setTimeout(function(){window.location.href='https://play.google.com/store/apps/details?id='+pkg;},700);
+    /* intent LAUNCHER ciblant directement le package, avec fallback Play Store
+       intégré (S.browser_fallback_url) : si l'app est là elle s'ouvre, sinon
+       Android redirige tout seul. On ne déclenche PAS de redirection manuelle
+       (c'était elle qui ouvrait le store même app installée). */
+    var fallback=encodeURIComponent('https://play.google.com/store/apps/details?id='+pkg);
+    window.location.href='intent://#Intent;package='+pkg+
+      ';action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;'+
+      'S.browser_fallback_url='+fallback+';end';
   }else if(isIOS){
-    /* iOS : ouvre la fiche App Store (le deep link nécessiterait un schéma déclaré par l'app) */
     window.location.href='https://apps.apple.com/app/ares-alpha/id1467152818';
   }else{
-    /* PC : ouvre le site Ares Alpha */
     window.open('https://www.ares-alpha.com/','_blank');
   }
 }
