@@ -640,7 +640,7 @@
     background:linear-gradient(to top,#cfd8c0,#8a9478);clip-path:polygon(50% 100%,100% 0,0 0);}
   .map-readout{font-size:12px;color:var(--amber);font-family:var(--mono);margin-top:8px;min-height:16px;letter-spacing:.5px;}
   /* ===== Panneau indicatifs déployés ===== */
-  .deployed-panel{position:absolute;top:12px;left:12px;z-index:850;width:158px;
+  .deployed-panel{display:none!important;position:absolute;top:12px;left:12px;z-index:850;width:158px;
     background:rgba(11,14,10,.82);backdrop-filter:blur(7px);border:1px solid var(--line2);
     border-radius:11px;box-shadow:0 6px 18px rgba(0,0,0,.45);overflow:hidden;
     font-family:var(--mono);transition:width .18s;}
@@ -682,6 +682,19 @@
   .gps-btn.live{background:#c0392b;border-color:#e05a48;color:#fff;animation:gpspulse 1.6s infinite;}
   @keyframes gpspulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.5);}50%{box-shadow:0 0 0 6px rgba(192,57,43,0);}}
   .gps-status{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.5px;}
+  /* bouton MODE GÉOLOC (bascule Ares Alpha) */
+  .geoloc-btn{display:inline-flex;align-items:center;gap:9px;position:relative;
+    background:linear-gradient(135deg,#2e7d32,#1b5e20);border:1px solid #3a9a40;border-radius:11px;
+    color:#fff;font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:1.5px;
+    padding:13px 20px;cursor:pointer;text-transform:uppercase;
+    box-shadow:0 4px 16px rgba(46,125,50,.4),inset 0 1px 0 rgba(255,255,255,.15);
+    transition:transform .14s,filter .18s,box-shadow .2s;}
+  .geoloc-btn:hover{filter:brightness(1.1);box-shadow:0 6px 22px rgba(46,125,50,.6);transform:translateY(-1px);}
+  .geoloc-btn:active{transform:scale(.97);}
+  .geoloc-btn .geo-ic{font-size:18px;animation:geoPulse 2.2s ease-in-out infinite;}
+  @keyframes geoPulse{0%,100%{opacity:.7;}50%{opacity:1;}}
+  .geoloc-btn .geo-sub{position:absolute;bottom:-7px;right:12px;font-size:8px;letter-spacing:1px;
+    background:#0b0e0a;color:#8fbf6f;padding:1px 7px;border-radius:8px;border:1px solid #3a5a2a;}
   /* ===== Rôle LECTURE = rôle TERRAIN =====
      Map + outils : autorisés (c'est leur outil principal).
      Fiche membre : peut éditer Coordonnées + Infos op.
@@ -1282,12 +1295,11 @@
     </div>
 
     <div class="gps-bar">
-      <input type="text" id="gps-pseudo" placeholder="Ton indicatif (ex: BS-01)" maxlength="20">
-      <input type="color" id="gps-color" value="#46b29d" title="Ta couleur">
-      <button id="gps-btn" class="gps-btn" onclick="toggleGps()">&#128225; Activer ma position</button>
-      <button id="blackout-btn" class="gps-btn blackout-toggle" onclick="enterBlackout()">&#127761; Mode Blackout</button>
+      <button id="geoloc-btn" class="geoloc-btn" onclick="openGeoloc()" title="Basculer vers Ares Alpha pour le suivi GPS terrain">
+        <span class="geo-ic">&#9678;</span> MODE GÉOLOC
+        <span class="geo-sub">Ares Alpha</span>
+      </button>
       <button id="mapfs-btn" class="gps-btn" onclick="enterMapFullscreen()" title="Carte en mode tactique plein écran">&#9974; Mode Tactique</button>
-      <span class="gps-status" id="gps-status"></span>
     </div>
 
     <div class="map-hint" id="map-hint">Choisis un outil puis clique sur la carte. Pour un tracé : pose des points, puis clique sur le dernier point (ou « Valider ») pour terminer.</div>
@@ -1311,7 +1323,6 @@
         <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
         <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
         <button class="fsm" onclick="mapUndo()" ontouchend="event.preventDefault();event.stopPropagation();mapUndo();" title="Annuler la dernière suppression" id="map-undo-btn" style="display:none">&#8634;</button>
-        <button class="fsm fsm-black" onclick="enterBlackout()" ontouchend="event.preventDefault();event.stopPropagation();enterBlackout();" title="Mode Blackout">&#127761;</button>
         <button class="fsm fsm-exit" onclick="exitMapFullscreen()" ontouchend="event.preventDefault();event.stopPropagation();exitMapFullscreen();" title="Quitter le mode tactique">&#10005; QUITTER</button>
       </div>
       <!-- Panneau des indicatifs déployés (vertical, déplaçable, repliable) -->
@@ -2649,7 +2660,7 @@ function initMap(){
     mapReady=true;
     try{map.setProjection({type:'globe'});}catch(e){}
     addMapLayers();redrawMap();renderMapLegend();
-    if(sb){subscribeMapWorld();subscribePositions();}
+    if(sb){subscribeMapWorld();}
     wireDeployedDrag();renderDeployed();
   });
   map.on('click',onMapClick);
@@ -3691,6 +3702,26 @@ async function cloudSave(id){
     if(res.error)throw res.error;return true;}catch(err){collabStatus('// ECHEC CLOUD : '+(err.message||err));return false;}
 }
 async function cloudDelete(id){if(!sb)return;try{await sb.from('entries').delete().eq('id',id);}catch(err){}}
+
+/* ============ MODE GÉOLOC — bascule vers Ares Alpha ============ */
+function openGeoloc(){
+  var ua=navigator.userAgent||'';
+  var isAndroid=/android/i.test(ua);
+  var isIOS=/iphone|ipad|ipod/i.test(ua);
+  if(isAndroid){
+    /* tente d'ouvrir l'app installée, sinon le Play Store */
+    var pkg='com.aresalpha.ares';
+    window.location.href='intent://open#Intent;scheme=aresalpha;package='+pkg+';S.browser_fallback_url='+
+      encodeURIComponent('https://play.google.com/store/apps/details?id='+pkg)+';end';
+    setTimeout(function(){window.location.href='https://play.google.com/store/apps/details?id='+pkg;},700);
+  }else if(isIOS){
+    /* iOS : ouvre la fiche App Store (le deep link nécessiterait un schéma déclaré par l'app) */
+    window.location.href='https://apps.apple.com/app/ares-alpha/id1467152818';
+  }else{
+    /* PC : ouvre le site Ares Alpha */
+    window.open('https://www.ares-alpha.com/','_blank');
+  }
+}
 
 /* ============ MODE TACTIQUE (plein écran carte) ============ */
 var mapIsFs=false;
