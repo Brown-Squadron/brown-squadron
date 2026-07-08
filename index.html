@@ -215,6 +215,7 @@
   .comms-msg .msg-del{position:absolute;top:4px;right:5px;background:rgba(0,0,0,.3);border:none;color:#e88;
     font-size:12px;cursor:pointer;border-radius:5px;padding:1px 5px;opacity:0;transition:opacity .15s;}
   .comms-msg:hover .msg-del{opacity:1;}
+  @media (hover:none){.comms-msg .msg-del{opacity:1;font-size:16px;padding:4px 9px;}}
   .comms-bar{display:flex;gap:7px;padding:10px;border-top:1px solid var(--line2);background:var(--bg2);}
   .comms-bar #comms-call{flex:0 0 92px;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;color:var(--aor1);font-family:var(--mono);font-size:13px;padding:11px 9px;}
   .comms-bar #comms-input{flex:1;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;color:var(--txt);font-size:15px;padding:11px 13px;}
@@ -703,6 +704,10 @@
   .cours-addbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px;}
 
   /* ===== MAP ===== */
+  .basemap-switch{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:3px;margin-bottom:8px;}
+  .basemap-btn{border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;padding:6px 13px;border-radius:16px;cursor:pointer;transition:background .15s,color .15s;}
+  .basemap-btn:hover{color:var(--txt);}
+  .basemap-btn.on{background:var(--accent);color:#1b1f14;font-weight:600;}
   .map-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px;margin-bottom:8px;}
   .map-toolbar select{width:auto;flex:0 1 180px;padding:9px 10px;font-size:13px;}
   .map-toolbar button{background:var(--surface2);border:1px solid var(--line2);color:var(--txt);border-radius:var(--r);padding:9px 12px;cursor:pointer;font-size:16px;font-family:var(--mono);min-width:42px;}
@@ -832,6 +837,9 @@
   .gps-btn{background:var(--surface2);border:1px solid var(--aor1);color:var(--aor1);font-weight:700;font-family:var(--mono);font-size:13px;text-transform:uppercase;letter-spacing:1px;padding:10px 18px;border-radius:var(--r);cursor:pointer;white-space:nowrap;}
   .gps-btn:hover{background:var(--aor1);color:#1a1605;}
   .gps-btn.live{background:#c0392b;border-color:#e05a48;color:#fff;animation:gpspulse 1.6s infinite;}
+  .gps-btn.gps-bs{border-color:var(--aor2b);color:var(--aor2b);}
+  .gps-btn.gps-bs:hover{background:var(--aor2);color:#fff;}
+  .gps-bar-bs{border-color:var(--aor2);}
   @keyframes gpspulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.5);}50%{box-shadow:0 0 0 6px rgba(192,57,43,0);}}
   .gps-status{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.5px;}
   /* bouton MODE GÉOLOC (bascule Ares Alpha) */
@@ -853,25 +861,14 @@
      Bloqués : la progression des drills, et l'écriture sur Calendrier / Opérations / Drill. */
   /* la carte reste visible -> on ne cache PLUS l'onglet map */
   /* bloc progression drills : visible mais non modifiable */
-  body.role-lecture .drill-prog{opacity:.6;pointer-events:none;}
-  body.role-lecture [onclick*="new"],
-  body.role-lecture [onclick*="add"],
-  body.role-lecture [onclick*="save"],
-  body.role-lecture [onclick*="del"],
-  body.role-lecture [onclick*="gen"],
-  body.role-lecture [onclick*="import"]{display:none!important;}
-  body.role-lecture #map-fs-bar [onclick],
-  body.role-lecture .map-tools [onclick],
-  body.role-lecture [onclick*="finishMapShape"],
-  body.role-lecture [onclick*="cancelMapShape"],
-  body.role-lecture [onclick*="enterMapFullscreen"],
-  body.role-lecture [onclick*="exitMapFullscreen"],
-  body.role-lecture [onclick*="enterBlackout"],
-  body.role-lecture [onclick*="toggleGps"],
-  body.role-lecture [onclick*="mapSearch"]{display:inline-flex!important;}
-  body.role-lecture #view-fiche input:not(.kit-cb),
-  body.role-lecture #view-fiche textarea,
-  body.role-lecture #view-fiche select,
+  /* lecture : restrictions limitées aux vues calendrier/ops/drill/direction/effectif.
+     La fiche membre est entièrement éditable (identité, kit, répliques + photos)
+     et l'onglet Map est intégralement visible/utilisable. */
+  body.role-lecture :is(#view-membres,#view-calendrier,#view-operations,#view-drill,#view-direction) [onclick*="new"],
+  body.role-lecture :is(#view-membres,#view-calendrier,#view-operations,#view-drill,#view-direction) [onclick*="add"],
+  body.role-lecture :is(#view-membres,#view-calendrier,#view-operations,#view-drill,#view-direction) [onclick*="save"],
+  body.role-lecture :is(#view-membres,#view-calendrier,#view-operations,#view-drill,#view-direction) [onclick*="del"],
+  body.role-lecture :is(#view-membres,#view-calendrier,#view-operations,#view-drill,#view-direction) [onclick*="import"]{display:none!important;}
   body.role-lecture #view-membres input,
   body.role-lecture #view-calendrier input:not([type=color]),
   body.role-lecture #view-calendrier textarea,
@@ -916,7 +913,7 @@
       font-family:var(--mono);font-weight:800;font-size:15px;letter-spacing:1px;text-transform:uppercase;
       padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.5);cursor:pointer;}
     .save-fab:active{transform:scale(.98);}
-    body.role-lecture .save-fab{display:none!important;}
+    body.role-lecture :is(#view-operations,#view-drill) .save-fab{display:none!important;}
   }
   .blackout-toggle{border-color:#555!important;color:#999!important;}
   .blackout-toggle:hover{background:#222!important;color:#fff!important;}
@@ -1587,6 +1584,12 @@
       <div><h2>Map</h2><p class="view-sub">// Théâtre d'opérations</p></div>
     </div>
 
+    <div class="basemap-switch" id="basemap-switch">
+      <button class="basemap-btn" data-basemap="sat-ign" onclick="setBasemap('sat-ign')" title="Orthophotos IGN haute définition (France)">Satellite HD</button>
+      <button class="basemap-btn" data-basemap="sat-world" onclick="setBasemap('sat-world')" title="Imagerie satellite monde (Esri)">Satellite Monde</button>
+      <button class="basemap-btn" data-basemap="plan-ign" onclick="setBasemap('plan-ign')" title="Plan IGN officiel (data.geopf.fr)">Plan IGN</button>
+      <button class="basemap-btn" data-basemap="topo" onclick="setBasemap('topo')" title="OpenTopoMap : relief, courbes de niveau, sentiers">Topo</button>
+    </div>
     <div class="map-toolbar">
       <select id="map-op-select" onchange="mapFocusOp(this.value)" title="Centrer sur un point d'opération">
         <option value="">— Points d'opération —</option>
@@ -1596,6 +1599,7 @@
       <button class="mtool" data-tool="zone" onclick="setMapTool('zone')" title="Délimiter une zone">&#11036;</button>
       <button class="mtool" data-tool="foot" onclick="setMapTool('foot')" title="Chemin à pied (feutre)">&#128099;</button>
       <button class="mtool" data-tool="measure" onclick="setMapTool('measure')" title="Règle / mesure">&#128207;</button>
+      <button class="mtool" data-tool="erase" onclick="setMapTool('erase')" title="Gomme : clique sur un élément de la carte pour le supprimer">&#129529;</button>
       <span class="map-sep"></span>
       <button class="mtool icon-btn" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Autocollant véhicule"><span class="ic-veh"></span></button>
       <button class="mtool icon-btn" data-tool="bs-sticker" onclick="setMapTool('bs-sticker')" title="Autocollant BS (membre)"><span class="ic-bs"></span>BS</button>
@@ -1619,12 +1623,19 @@
       <button class="map-pdf-btn" onclick="genMapPDF()" title="Exporter la carte en PDF">&#128196; Exporter PDF</button>
     </div>
 
+    <div class="gps-bar gps-bar-bs">
+      <button id="gps-btn" class="gps-btn gps-bs" onclick="toggleGps()" title="Partage ta position en direct sur CETTE carte (GPS Brown Squadron)">&#128225; LOCALISATION BS — Activer</button>
+      <input type="text" id="gps-pseudo" placeholder="Ton indicatif (ex: BS-02)">
+      <input type="color" id="gps-color" value="#46b29d" title="Couleur de mon marqueur">
+      <span class="gps-status" id="gps-status"></span>
+    </div>
     <div class="gps-bar">
-      <button id="geoloc-btn" class="geoloc-btn" onclick="openGeoloc()" title="Basculer vers Ares Alpha pour le suivi GPS terrain">
-        <span class="geo-ic">&#9678;</span> MODE GÉOLOC
+      <button id="mapfs-btn" class="gps-btn" onclick="enterMapFullscreen()" title="Carte en mode tactique plein écran">&#9974; MODE TACTIQUE</button>
+      <button class="gps-btn blackout-toggle" onclick="enterBlackout()" title="Voile noir total (op de nuit) — 5 taps pour sortir">&#9899; BLACKOUT</button>
+      <button id="geoloc-btn" class="geoloc-btn" onclick="openGeoloc()" title="Quitte l'appli et ouvre Ares Alpha (application externe)">
+        <span class="geo-ic">&#8599;</span> APP EXTERNE
         <span class="geo-sub">Ares Alpha</span>
       </button>
-      <button id="mapfs-btn" class="gps-btn" onclick="enterMapFullscreen()" title="Carte en mode tactique plein écran">&#9974; Mode Tactique</button>
     </div>
 
     <div class="map-hint" id="map-hint">Choisis un outil puis clique sur la carte. Pour un tracé : pose des points, puis clique sur le dernier point (ou « Valider ») pour terminer.</div>
@@ -1644,6 +1655,7 @@
         <button class="fsm" data-tool="zone" onclick="setMapTool('zone')" title="Zone">&#11036;</button>
         <button class="fsm" data-tool="foot" onclick="setMapTool('foot')" title="Chemin à pied">&#128099;</button>
         <button class="fsm" data-tool="measure" onclick="setMapTool('measure')" title="Mesure">&#128207;</button>
+        <button class="fsm" data-tool="erase" onclick="setMapTool('erase')" title="Gomme">&#129529;</button>
         <button class="fsm" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Véhicule">&#128663;</button>
         <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
         <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
@@ -1911,13 +1923,6 @@ var KIT_ANNEXE_DEF=[
   {name:'Beyond Cold Fusion AOR1 - AOR2'},
   {name:'Patagonia lvl 3 / 3a / 5 AOR1 ou AOR2'},
   {name:'Arcteryx Minotaur Half Shell'},
-  {name:'Sac BTAP AOR1 / AOR2',sub:[
-    {name:'Chargeurs',qty:4},
-    {name:'Grenade M67',qty:2},
-    {name:'Flashbang',qty:2},
-    {name:'Fumigène',qty:2},
-    {name:'Nourriture',qty:1}
-  ]},
   {name:'LBT 2595G Backpack',sub:[
     {name:'Chargeurs',qty:4},
     {name:'Grenade M67',qty:2},
@@ -1943,7 +1948,7 @@ function hydrateSub(arr){
   var map=defaultSubMap();
   return (arr||[]).map(function(it){
     if((!it.sub||!it.sub.length)&&map[it.name]){
-      return {name:it.name,sub:map[it.name].map(function(s){return {name:s.name,qty:s.qty||1};})};
+      return {name:it.name,sub:map[it.name].map(function(s){return {name:s.name,qty:0};})};
     }
     return it;
   });
@@ -1952,7 +1957,7 @@ function hydrateSub(arr){
 function defaultKitModel(){
   return {aor2:KIT_AOR2_DEF.map(cloneItem),aor1:KIT_AOR1_DEF.map(cloneItem),annexe:KIT_ANNEXE_DEF.map(cloneItem)};
 }
-function cloneItem(k){return {name:k.name,sub:k.sub?k.sub.map(function(s){return {name:s.name,qty:s.qty||1};}):undefined};}
+function cloneItem(k){return {name:k.name,sub:k.sub?k.sub.map(function(s){return {name:s.name,qty:0};}):undefined};}
 function kitModel(){
   var d=db[KIT_DOC_KEY];
   if(d&&d.aor2&&d.aor1&&d.annexe){
@@ -2475,7 +2480,7 @@ function kitItemHTML(sec,it,i){
   '</div>';
   if(hasSub&&op){
     h+='<div class="ksubwrap">'+it.sub.map(function(s,j){
-      var skey=key+'::'+s.name;var sst=kitState[skey]||{qty:s.qty||0,has:false};
+      var skey=key+'::'+s.name;var sst=kitState[skey]||{qty:0,has:false};
       return '<div class="kititem sub'+(sst.has?' has':'')+'">'+
         '<div class="cb" onclick="toggleSub(\''+sec+'\','+i+','+j+')">'+(sst.has?'&#10003;':'')+'</div>'+
         '<div class="kmid"><div class="ktxt">'+esc(s.name)+'</div></div>'+
@@ -2962,7 +2967,10 @@ function renderCalendar(){
   var idx=eventsByDate();
   var months=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var dow=['L','M','M','J','V','S','D'];var todayStr=new Date().toISOString().slice(0,10);var html='';
-  for(var mo=0;mo<12;mo++){
+  /* le mois en cours s'affiche en premier (uniquement sur l'année courante) */
+  var _now=new Date();var _order=[];
+  for(var _k=0;_k<12;_k++){_order.push(calYear===_now.getFullYear()?(_now.getMonth()+_k)%12:_k);}
+  for(var _oi=0;_oi<12;_oi++){var mo=_order[_oi];
     var startDow=(new Date(calYear,mo,1).getDay()+6)%7;var nbDays=new Date(calYear,mo+1,0).getDate();
     html+='<div class="month"><div class="mh">'+months[mo]+'</div><div class="dow">'+dow.map(function(d){return '<span>'+d+'</span>';}).join('')+'</div><div class="days">';
     for(var p=0;p<startDow;p++)html+='<div class="day pad"></div>';
@@ -3468,18 +3476,46 @@ var mapOpMode=null;      /* id d'opération si on est venu placer le ping princi
 var mapReady=false;
 var MAP_WORLD_KEY='__mapworld__';
 
-var SATELLITE_STYLE={
-  version:8,
-  glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-  sources:{
-    sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Esri World Imagery'},
-    labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256}
+/* ---- Fonds de carte disponibles (façon Apple Plans : Satellite HD / Satellite Monde / Plan) ---- */
+var BASEMAP_STYLES={
+  /* Satellite HD France : orthophotos IGN (Géoplateforme), bien plus fines que Esri sur nos terrains */
+  'sat-ign':{
+    version:8,
+    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources:{
+      sat:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg'],tileSize:256,maxzoom:19,attribution:'IGN Géoplateforme — Orthophotos'},
+      labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256}
+    },
+    layers:[{id:'sat',type:'raster',source:'sat',maxzoom:22},{id:'labels',type:'raster',source:'labels'}]
   },
-  layers:[
-    {id:'sat',type:'raster',source:'sat'},
-    {id:'labels',type:'raster',source:'labels'}
-  ]
+  /* Satellite Monde : Esri, en secours hors France / si IGN indisponible */
+  'sat-world':{
+    version:8,
+    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources:{
+      sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Esri World Imagery'},
+      labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256}
+    },
+    layers:[{id:'sat',type:'raster',source:'sat'},{id:'labels',type:'raster',source:'labels'}]
+  },
+  /* Plan IGN : cartographie officielle française, très lisible pour la planif */
+  'plan-ign':{
+    version:8,
+    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources:{plan:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:19,attribution:'IGN Géoplateforme — Plan IGN'}},
+    layers:[{id:'plan',type:'raster',source:'plan',maxzoom:22}]
+  },
+  /* OpenTopoMap : courbes de niveau + sentiers, idéal lecture terrain / rando */
+  'topo':{
+    version:8,
+    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+    sources:{topo:{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:17,attribution:'© OpenTopoMap (CC-BY-SA)'}},
+    layers:[{id:'topo',type:'raster',source:'topo',maxzoom:22}]
+  }
 };
+var mapBasemap='sat-ign';
+try{mapBasemap=localStorage.getItem('bs_map_basemap')||'sat-ign';}catch(e){}
+function basemapStyle(mode){var s=BASEMAP_STYLES[mode];return s||BASEMAP_STYLES['sat-ign'];}
 
 function loadMapWorld(){
   var w=db[MAP_WORLD_KEY];var d=(w&&w.data)?w.data:(w||{});
@@ -3520,8 +3556,8 @@ function initMap(){
   if(!window.maplibregl){document.getElementById('map-canvas').innerHTML='<div style="padding:30px;color:#9aa6b4;font-family:monospace;text-align:center">Carte indisponible (connexion internet requise pour charger MapLibre + tuiles satellite).</div>';return;}
   loadMapWorld();
   map=new maplibregl.Map({
-    container:'map-canvas',style:SATELLITE_STYLE,
-    center:[4.8270,43.9034],zoom:4,attributionControl:true,preserveDrawingBuffer:true
+    container:'map-canvas',style:basemapStyle(mapBasemap),
+    center:[4.8270,43.9034],zoom:4,maxZoom:20,attributionControl:true,preserveDrawingBuffer:true
   });
   map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
   map.on('load',function(){
@@ -3530,6 +3566,7 @@ function initMap(){
     addMapLayers();redrawMap();renderMapLegend();
     if(sb){subscribeMapWorld();}
     wireDeployedDrag();renderDeployed();
+    updateBasemapUI();
   });
   map.on('click',onMapClick);
   map.on('mousemove',onMapMove);
@@ -3555,6 +3592,23 @@ function updateCompass(){
   });
 }
 function resetMapNorth(){if(map)map.easeTo({bearing:0,duration:300});}
+
+/* ---- Fond de carte (Satellite HD / Satellite Monde / Plan) ---- */
+function setBasemap(mode){
+  if(!map||!BASEMAP_STYLES[mode])return;
+  mapBasemap=mode;
+  try{localStorage.setItem('bs_map_basemap',mode);}catch(e){}
+  updateBasemapUI();
+  map.once('style.load',function(){
+    /* le changement de style efface les sources/calques custom : on les reconstruit,
+       les markers (pings, autocollants, GPS) sont eux des éléments DOM et survivent tels quels */
+    addMapLayers();redrawMap();updateDraft();
+  });
+  map.setStyle(basemapStyle(mode));
+}
+function updateBasemapUI(){
+  document.querySelectorAll('.basemap-btn').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-basemap')===mapBasemap);});
+}
 function addMapLayers(){
   map.addSource('shapes',{type:'geojson',data:emptyFC()});
   map.addLayer({id:'shape-fill',type:'fill',source:'shapes',filter:['==',['get','t'],'zone'],
@@ -3598,7 +3652,8 @@ function setMapTool(t){
     foot:'Maintiens le clic gauche et dessine le chemin (zigzag possible). Relâche pour terminer.',
     measure:'Clic gauche = poser un point · clic droit = figer la mesure (les distances restent affichées).',
     'veh-sticker':'Clique pour poser une icône véhicule.',
-    'bs-sticker':'Clique pour poser un autocollant BS (membre). La numérotation s\'incrémente.'};
+    'bs-sticker':'Clique pour poser un autocollant BS (membre). La numérotation s\'incrémente.',
+    erase:'GOMME : clique sur un ping, tracé, zone, mesure ou autocollant pour le supprimer.'};
   document.getElementById('map-hint').textContent=mapTool?hints[mapTool]:'Choisis un outil puis clique sur la carte.';
   document.getElementById('map-readout').textContent='';
 }
@@ -3606,6 +3661,7 @@ function pxDist(a,b){var pa=map.project(a),pb=map.project(b);return Math.hypot(p
 
 function onMapClick(e){
   var lng=e.lngLat.lng, lat=e.lngLat.lat;
+  if(mapTool==='erase'){eraseAtPoint(e);return;}
   if(mapTool==='ping'){
     var p={id:uid(),lat:lat,lon:lng,color:curColor(),note:'',op:mapCurrentOp()};
     mapWorld.pings.push(p);saveMapWorld();redrawMap();renderMapLegend();openPingPop(p.id);return;
@@ -3879,11 +3935,11 @@ function redrawMap(){
   mapWorld.shapes.forEach(function(s){
     if(s.kind==='zone'){
       var ring=s.coords.slice();if(ring.length)ring.push(ring[0]);
-      feats.push({type:'Feature',properties:{color:s.color,t:'zone'},geometry:{type:'Polygon',coordinates:[ring]}});
+      feats.push({type:'Feature',properties:{id:s.id,color:s.color,t:'zone'},geometry:{type:'Polygon',coordinates:[ring]}});
     }else if(s.kind==='measure'){
-      feats.push({type:'Feature',properties:{color:s.color,t:'measure'},geometry:{type:'LineString',coordinates:s.coords}});
+      feats.push({type:'Feature',properties:{id:s.id,color:s.color,t:'measure'},geometry:{type:'LineString',coordinates:s.coords}});
     }else{ /* foot */
-      feats.push({type:'Feature',properties:{color:s.color,t:'foot'},geometry:{type:'LineString',coordinates:s.coords}});
+      feats.push({type:'Feature',properties:{id:s.id,color:s.color,t:'foot'},geometry:{type:'LineString',coordinates:s.coords}});
     }
   });
   map.getSource('shapes').setData({type:'FeatureCollection',features:feats});
@@ -3923,6 +3979,18 @@ function redrawMap(){
     }
   });
 }
+/* ---- GOMME : suppression d'un élément par clic direct sur la carte ---- */
+function eraseAtPoint(e){
+  if(!canWrite())return;
+  var layers=['shape-fill','shape-zone-line','shape-line','shape-dash'].filter(function(l){return map.getLayer(l);});
+  var fs=layers.length?map.queryRenderedFeatures(e.point,{layers:layers}):[];
+  if(fs.length&&fs[0].properties&&fs[0].properties.id){
+    var id=fs[0].properties.id;
+    mapWorld.shapes=mapWorld.shapes.filter(function(x){return x.id!==id;});
+    saveMapWorld();redrawMap();renderMapLegend();
+    document.getElementById('map-readout').textContent='// élément supprimé (gomme)';
+  }
+}
 /* labels permanents (distances des tracés validés) */
 var permLabels=[];
 function clearPermLabels(){permLabels.forEach(function(m){m.remove();});permLabels=[];}
@@ -3955,6 +4023,10 @@ function addPingMarker(p,isOp){
     mapMarkers.push(lm);
   }
   el.addEventListener('click',function(ev){ev.stopPropagation();
+    if(mapTool==='erase'&&!isOp){
+      mapWorld.pings=mapWorld.pings.filter(function(x){return x.id!==p.id;});
+      saveMapWorld();redrawMap();renderMapLegend();return;
+    }
     if(isOp){return;} openPingPop(p.id);});
   marker.on('dragend',function(){
     var ll=marker.getLngLat();
@@ -4010,6 +4082,12 @@ function addStickerMarker(st){
     inp.addEventListener('input',function(){var s=findSticker(st.id);if(s){s.num=inp.value;saveMapWorld();renderMapLegend();}});
   }
   var marker=new maplibregl.Marker({element:el,draggable:true,anchor:'center'}).setLngLat([st.lon,st.lat]).addTo(map);
+  el.addEventListener('click',function(ev){
+    if(mapTool!=='erase')return;
+    ev.stopPropagation();
+    mapWorld.stickers=mapWorld.stickers.filter(function(x){return x.id!==st.id;});
+    saveMapWorld();redrawMap();renderMapLegend();
+  });
   el.addEventListener('contextmenu',function(ev){ev.preventDefault();ev.stopPropagation();
     if(confirm('Supprimer cet autocollant ?')){mapWorld.stickers=mapWorld.stickers.filter(function(x){return x.id!==st.id;});saveMapWorld();redrawMap();renderMapLegend();}});
   marker.on('dragend',function(){var ll=marker.getLngLat();var s=findSticker(st.id);if(s){s.lat=ll.lat;s.lon=ll.lng;saveMapWorld();}});
@@ -4399,7 +4477,7 @@ var gpsOn=false;          /* est-ce que j'émets ma position */
 var gpsWatchId=null;      /* id du watchPosition navigateur */
 var gpsSendTimer=null;    /* throttle envoi */
 var gpsLastSent=0;
-var GPS_SEND_MS=3000;     /* intervalle d'envoi normal ; allongé en blackout pour la batterie */
+var GPS_SEND_MS=2000;     /* intervalle d'envoi normal ; allongé en blackout pour la batterie */
 var gpsMyPseudo='';
 var gpsMarkers={};        /* pseudo -> {marker,label} affichés sur la carte */
 var gpsChannel=null;      /* abonnement realtime */
@@ -4419,11 +4497,11 @@ function startGps(){
   if(!pseudo){document.getElementById('gps-status').textContent='// entre ton indicatif d\'abord';return;}
   if(!navigator.geolocation){document.getElementById('gps-status').textContent='// GPS non supporté par ce navigateur';return;}
   gpsMyPseudo=pseudo;gpsOn=true;
-  var btn=document.getElementById('gps-btn');btn.classList.add('live');btn.innerHTML='&#128308; Arrêter ma position';
+  var btn=document.getElementById('gps-btn');btn.classList.add('live');btn.innerHTML='&#128308; LOCALISATION BS — Arrêter';
   document.getElementById('gps-status').textContent='// acquisition GPS...';
   subscribePositions();
   /* watch GPS haute précision, sans cache (maximumAge 0 = position fraîche) */
-  gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+  gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
   startHeading();         /* boussole du téléphone -> cap de la flèche */
   requestWakeLock();      /* garde l'écran allumé tant que possible */
   document.addEventListener('visibilitychange',gpsVisibility);
@@ -4432,7 +4510,7 @@ function stopGps(){
   gpsOn=false;
   var pf=document.getElementById('gps-pseudo');if(pf)pf.value='';
   try{localStorage.removeItem('bs_comms_call');}catch(e){}
-  var btn=document.getElementById('gps-btn');btn.classList.remove('live');btn.innerHTML='&#128225; Activer ma position';
+  var btn=document.getElementById('gps-btn');btn.classList.remove('live');btn.innerHTML='&#128225; LOCALISATION BS — Activer';
   document.getElementById('gps-status').textContent='// position désactivée';
   if(gpsWatchId!=null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;}
   stopHeading();releaseWakeLock();
@@ -4444,7 +4522,7 @@ function gpsVisibility(){
   if(document.visibilityState==='visible'&&gpsOn){
     requestWakeLock();
     if(gpsWatchId==null){
-      gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:5000,timeout:20000});
+      gpsWatchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:0,timeout:20000});
     }
     loadAllPositions();
   }
@@ -4461,7 +4539,7 @@ function onGpsPos(pos){
   var now=Date.now();
   var moved=prev?distMeters(prev.lat,prev.lon,lat,lon):999;
   var speed=(typeof pos.coords.speed==='number'&&pos.coords.speed>0)?pos.coords.speed:0;
-  var interval=(moved<6&&speed<0.6)?30000:GPS_SEND_MS;
+  var interval=(moved<6&&speed<0.6)?10000:GPS_SEND_MS;
   if(now-gpsLastSent<interval)return;
   sendMyPosition();
 }
