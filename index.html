@@ -3503,8 +3503,14 @@ var BASEMAP_STYLES={
   'topo':{
     version:8,
     glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-    sources:{topo:{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:17,attribution:'© OpenTopoMap (CC-BY-SA)'}},
-    layers:[{id:'topo',type:'raster',source:'topo',maxzoom:22}]
+    sources:{
+      topo:{type:'raster',tiles:['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:17,attribution:'© OpenTopoMap (CC-BY-SA)'},
+      planrelais:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png'],tileSize:256,maxzoom:19,attribution:'IGN'}
+    },
+    layers:[
+      {id:'topo',type:'raster',source:'topo',maxzoom:17.5},
+      {id:'topo-relais',type:'raster',source:'planrelais',minzoom:17.5,maxzoom:22}
+    ]
   }
 };
 var mapBasemap='sat-ign';
@@ -3552,7 +3558,7 @@ function initMap(){
   loadMapWorld();
   map=new maplibregl.Map({
     container:'map-canvas',style:basemapStyle(mapBasemap),
-    center:[4.8270,43.9034],zoom:4,maxZoom:22,maxPitch:85,antialias:true,attributionControl:true,preserveDrawingBuffer:true
+    center:[4.8270,43.9034],zoom:4,maxZoom:22,maxPitch:85,antialias:!(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)),attributionControl:true,preserveDrawingBuffer:true
   });
   map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
   map.on('load',function(){
@@ -4397,12 +4403,12 @@ function ensureBuildings(){
     }
     if(!map.getLayer('bldg3d')){
       var beforeId=map.getLayer('shape-fill')?'shape-fill':undefined;
-      map.addLayer({id:'bldg3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:13,
+      map.addLayer({id:'bldg3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:14,
         paint:{
           'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],6],0,'#c9c4b4',30,'#a09a88',80,'#7d7768'],
           'fill-extrusion-height':['coalesce',['get','render_height'],6],
           'fill-extrusion-base':['coalesce',['get','render_min_height'],0],
-          'fill-extrusion-opacity':0.88}},beforeId);
+          'fill-extrusion-opacity':1}},beforeId);
     }
     map.setLayoutProperty('bldg3d','visibility',mapIs3D?'visible':'none');
   }catch(e){}
