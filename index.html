@@ -704,10 +704,11 @@
   .cours-addbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px;}
 
   /* ===== MAP ===== */
-  .basemap-switch{display:inline-flex;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:3px;margin-bottom:8px;}
-  .basemap-btn{border:none;background:transparent;color:var(--muted);font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;padding:6px 13px;border-radius:16px;cursor:pointer;transition:background .15s,color .15s;}
-  .basemap-btn:hover{color:var(--txt);}
-  .basemap-btn.on{background:var(--accent);color:#1b1f14;font-weight:600;}
+  .basemap-switch{display:flex;gap:6px;background:var(--surface);border:2px solid var(--line2);border-radius:12px;padding:6px;margin-bottom:10px;}
+  .basemap-btn{flex:1;border:2px solid var(--line2);background:var(--surface2);color:var(--txt);font-family:var(--mono);font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:13px 10px;border-radius:9px;cursor:pointer;transition:.15s;}
+  .basemap-btn:hover{border-color:var(--aor1);color:var(--aor1);}
+  .basemap-btn.on{background:var(--accent);border-color:var(--aor1b);color:#1b1f14;box-shadow:0 3px 14px rgba(184,160,106,.35);}
+  @media (max-width:760px){.basemap-btn{font-size:12.5px;padding:12px 6px;}}
   .map-toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px;margin-bottom:8px;}
   .map-toolbar select{width:auto;flex:0 1 180px;padding:9px 10px;font-size:13px;}
   .map-toolbar button{background:var(--surface2);border:1px solid var(--line2);color:var(--txt);border-radius:var(--r);padding:9px 12px;cursor:pointer;font-size:16px;font-family:var(--mono);min-width:42px;}
@@ -797,7 +798,7 @@
     background:linear-gradient(to top,#cfd8c0,#8a9478);clip-path:polygon(50% 100%,100% 0,0 0);}
   .map-readout{font-size:12px;color:var(--amber);font-family:var(--mono);margin-top:8px;min-height:16px;letter-spacing:.5px;}
   /* ===== Panneau indicatifs déployés ===== */
-  .deployed-panel{display:none!important;position:absolute;top:12px;left:12px;z-index:850;width:158px;
+  .deployed-panel{display:none;position:absolute;top:12px;left:12px;z-index:850;width:158px;
     background:rgba(11,14,10,.82);backdrop-filter:blur(7px);border:1px solid var(--line2);
     border-radius:11px;box-shadow:0 6px 18px rgba(0,0,0,.45);overflow:hidden;
     font-family:var(--mono);transition:width .18s;}
@@ -1586,7 +1587,6 @@
 
     <div class="basemap-switch" id="basemap-switch">
       <button class="basemap-btn" data-basemap="sat-ign" onclick="setBasemap('sat-ign')" title="Orthophotos IGN haute définition (France)">Satellite HD</button>
-      <button class="basemap-btn" data-basemap="sat-world" onclick="setBasemap('sat-world')" title="Imagerie satellite monde (Esri)">Satellite Monde</button>
       <button class="basemap-btn" data-basemap="plan-ign" onclick="setBasemap('plan-ign')" title="Plan IGN officiel (data.geopf.fr)">Plan IGN</button>
       <button class="basemap-btn" data-basemap="topo" onclick="setBasemap('topo')" title="OpenTopoMap : relief, courbes de niveau, sentiers">Topo</button>
     </div>
@@ -1660,8 +1660,6 @@
         <button class="fsm fsm-ok" onclick="finishMapShape()" id="map-fs-finish" title="Valider" style="display:none">&#10003;</button>
         <button class="fsm fsm-cancel" onclick="cancelMapShape()" id="map-fs-cancel" title="Annuler" style="display:none">&#10005;</button>
         <button class="fsm" onclick="mapUndo()" ontouchend="event.preventDefault();event.stopPropagation();mapUndo();" title="Annuler la dernière suppression" id="map-undo-btn" style="display:none">&#8634;</button>
-        <button class="fsm" onclick="exportKML()" ontouchend="event.preventDefault();event.stopPropagation();exportKML();" title="Exporter KML">&#8681;KML</button>
-        <button class="fsm" onclick="document.getElementById('kml-import-input').click()" ontouchend="event.preventDefault();event.stopPropagation();document.getElementById('kml-import-input').click();" title="Importer KML/KMZ">&#8679;KML</button>
         <button class="fsm fsm-exit" onclick="exitMapFullscreen()" ontouchend="event.preventDefault();event.stopPropagation();exitMapFullscreen();" title="Quitter le mode tactique">&#10005; QUITTER</button>
       </div>
       <!-- Panneau des indicatifs déployés (vertical, déplaçable, repliable) -->
@@ -3488,16 +3486,6 @@ var BASEMAP_STYLES={
     },
     layers:[{id:'sat',type:'raster',source:'sat',maxzoom:22},{id:'labels',type:'raster',source:'labels'}]
   },
-  /* Satellite Monde : Esri, en secours hors France / si IGN indisponible */
-  'sat-world':{
-    version:8,
-    glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
-    sources:{
-      sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Esri World Imagery'},
-      labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256}
-    },
-    layers:[{id:'sat',type:'raster',source:'sat'},{id:'labels',type:'raster',source:'labels'}]
-  },
   /* Plan IGN : cartographie officielle française, très lisible pour la planif */
   'plan-ign':{
     version:8,
@@ -3515,6 +3503,7 @@ var BASEMAP_STYLES={
 };
 var mapBasemap='sat-ign';
 try{mapBasemap=localStorage.getItem('bs_map_basemap')||'sat-ign';}catch(e){}
+if(!BASEMAP_STYLES[mapBasemap])mapBasemap='sat-ign';
 function basemapStyle(mode){var s=BASEMAP_STYLES[mode];return s||BASEMAP_STYLES['sat-ign'];}
 
 function loadMapWorld(){
@@ -4691,6 +4680,8 @@ function loadAllPositions(){
   });
 }
 function renderDeployed(){
+  var panel=document.getElementById('deployed-panel');
+  if(panel)panel.style.display=Object.keys(gpsMarkers).length?'block':'none';
   var box=document.getElementById('deployed-list');if(!box)return;
   var keys=Object.keys(gpsMarkers);
   var cnt=document.getElementById('deployed-count');if(cnt)cnt.textContent=keys.length;
