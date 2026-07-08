@@ -792,6 +792,7 @@
   .compass-ring .ce{left:auto;right:10px;color:var(--muted);}
   .compass-ring .cw{left:10px;color:var(--muted);}
   .compass-needle{position:absolute;left:50%;top:50%;width:6px;height:46px;margin-left:-3px;margin-top:-23px;transform-origin:50% 50%;transition:transform .15s ease-out;z-index:1;}
+  .compass-deg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:11px;font-weight:800;color:var(--amber);text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;}
   .compass-needle:before{content:'';position:absolute;top:0;left:0;width:6px;height:23px;
     background:linear-gradient(to bottom,#e0533f,#a32d1c);clip-path:polygon(50% 0,100% 100%,0 100%);}
   .compass-needle:after{content:'';position:absolute;bottom:0;left:0;width:6px;height:23px;
@@ -1650,6 +1651,7 @@
         <div class="compass-ring">
           <span class="cdir cn">N</span><span class="cdir ce">E</span><span class="cdir cs">S</span><span class="cdir cw">O</span>
           <div class="compass-needle" id="compass-needle"></div>
+          <div class="compass-deg" id="compass-deg">0°</div>
         </div>
       </div>
       <!-- Barre d'outils flottante (visible seulement en plein écran) -->
@@ -3485,7 +3487,7 @@ var BASEMAP_STYLES={
     version:8,
     glyphs:'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources:{
-      sat:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg'],tileSize:256,maxzoom:19,attribution:'IGN Géoplateforme — Orthophotos'},
+      sat:{type:'raster',tiles:['https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/jpeg'],tileSize:256,maxzoom:20,attribution:'IGN Géoplateforme — Orthophotos HR'},
       labels:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}'],tileSize:256}
     },
     layers:[{id:'sat',type:'raster',source:'sat',maxzoom:22},{id:'labels',type:'raster',source:'labels'}]
@@ -3550,7 +3552,7 @@ function initMap(){
   loadMapWorld();
   map=new maplibregl.Map({
     container:'map-canvas',style:basemapStyle(mapBasemap),
-    center:[4.8270,43.9034],zoom:4,maxZoom:20,attributionControl:true,preserveDrawingBuffer:true
+    center:[4.8270,43.9034],zoom:4,maxZoom:22,maxPitch:85,antialias:true,attributionControl:true,preserveDrawingBuffer:true
   });
   map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
   map.on('load',function(){
@@ -3577,6 +3579,8 @@ function updateCompass(){
   var b=map?map.getBearing():0;
   var n=document.getElementById('compass-needle');
   if(n)n.style.transform='rotate('+(-b)+'deg)';
+  var dg=document.getElementById('compass-deg');
+  if(dg)dg.textContent=Math.round((b+360)%360)+'°';
   /* réoriente les flèches de cap des membres (cap absolu - rotation carte) */
   Object.keys(gpsMarkers).forEach(function(k){
     var ex=gpsMarkers[k];if(!ex||!ex.arrow)return;
@@ -3595,19 +3599,19 @@ function setBasemap(mode){
   map.once('style.load',function(){
     /* le changement de style efface les sources/calques custom : on les reconstruit,
        les markers (pings, autocollants, GPS) sont eux des éléments DOM et survivent tels quels */
-    addMapLayers();redrawMap();updateDraft();ensureTerrain();
+    addMapLayers();redrawMap();updateDraft();ensureTerrain();ensureBuildings();
   });
   map.setStyle(basemapStyle(mode));
 }
 function updateBasemapUI(){
-  document.querySelectorAll('.basemap-btn').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-basemap')===mapBasemap);});
+  document.querySelectorAll('.basemap-btn[data-basemap]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-basemap')===mapBasemap);});
 }
 function addMapLayers(){
   map.addSource('shapes',{type:'geojson',data:emptyFC()});
   map.addLayer({id:'shape-fill',type:'fill',source:'shapes',filter:['==',['get','t'],'zone'],
-    paint:{'fill-color':['get','color'],'fill-opacity':0.22}});
+    paint:{'fill-color':['get','color'],'fill-opacity':0.3}});
   map.addLayer({id:'shape-zone-line',type:'line',source:'shapes',filter:['==',['get','t'],'zone'],
-    paint:{'line-color':['get','color'],'line-width':2}});
+    paint:{'line-color':['get','color'],'line-width':3.5}});
   /* chemins à pied : ligne pleine */
   map.addLayer({id:'shape-line',type:'line',source:'shapes',filter:['==',['get','t'],'foot'],
     paint:{'line-color':['get','color'],'line-width':3}});
@@ -3658,6 +3662,7 @@ function onMapClick(e){
   if(mapTool==='erase'){eraseAtPoint(e);return;}
   if(mapTool==='street'){
     window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+lat.toFixed(6)+','+lng.toFixed(6),'_blank');
+    setMapTool('street'); /* auto-désactivation : le bouton ne reste pas allumé */
     document.getElementById('map-readout').textContent='// Street View ouvert ('+lat.toFixed(5)+', '+lng.toFixed(5)+')';
     return;
   }
@@ -4384,20 +4389,42 @@ function ensureTerrain(){
     if(mapIs3D)map.setTerrain({source:'dem',exaggeration:1.3});
   }catch(e){}
 }
+/* batiments 3D : emprises + hauteurs OSM (OpenFreeMap, gratuit sans cle), extrudees en volumes */
+function ensureBuildings(){
+  try{
+    if(!map.getSource('ofm')){
+      map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet'});
+    }
+    if(!map.getLayer('bldg3d')){
+      var beforeId=map.getLayer('shape-fill')?'shape-fill':undefined;
+      map.addLayer({id:'bldg3d',type:'fill-extrusion',source:'ofm','source-layer':'building',minzoom:13,
+        paint:{
+          'fill-extrusion-color':['interpolate',['linear'],['coalesce',['get','render_height'],6],0,'#c9c4b4',30,'#a09a88',80,'#7d7768'],
+          'fill-extrusion-height':['coalesce',['get','render_height'],6],
+          'fill-extrusion-base':['coalesce',['get','render_min_height'],0],
+          'fill-extrusion-opacity':0.88}},beforeId);
+    }
+    map.setLayoutProperty('bldg3d','visibility',mapIs3D?'visible':'none');
+  }catch(e){}
+}
 function toggle3D(){
   if(!map)return;
   mapIs3D=!mapIs3D;
-  var b=document.getElementById('map-3d-btn');if(b)b.classList.toggle('on',mapIs3D);
+  var b=document.getElementById('map-3d-btn');
+  if(b)b.innerHTML=mapIs3D?'&#11035; REPASSER EN 2D':'&#9968; RELIEF 3D';
   try{
     if(mapIs3D){
       try{map.setProjection({type:'mercator'});}catch(e){}
       ensureTerrain();
       map.setTerrain({source:'dem',exaggeration:1.3});
-      map.easeTo({pitch:62,duration:650});
-      document.getElementById('map-readout').textContent='// RELIEF 3D actif — 2 doigts (mobile) ou clic droit (PC) pour orienter la caméra';
+      ensureBuildings();
+      var z=map.getZoom();
+      map.easeTo({pitch:68,zoom:z<13?15.5:z,duration:750});
+      document.getElementById('map-readout').textContent='// RELIEF 3D + BÂTIMENTS — zoome sur une zone bâtie, 2 doigts (mobile) ou clic droit (PC) pour tourner autour';
     }else{
       map.setTerrain(null);
-      map.easeTo({pitch:0,bearing:map.getBearing(),duration:500});
+      ensureBuildings();
+      map.easeTo({pitch:0,duration:500});
       try{if(map.getZoom()<6)map.setProjection({type:'globe'});}catch(e){}
       document.getElementById('map-readout').textContent='// vue 2D';
     }
