@@ -792,13 +792,15 @@
   .compass-ring .ce{left:auto;right:10px;color:var(--muted);}
   .compass-ring .cw{left:10px;color:var(--muted);}
   .compass-needle{position:absolute;left:50%;top:50%;width:6px;height:46px;margin-left:-3px;margin-top:-23px;transform-origin:50% 50%;transition:transform .15s ease-out;z-index:1;}
-  .compass-deg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:11px;font-weight:800;color:var(--amber);text-shadow:0 1px 3px rgba(0,0,0,.8);pointer-events:none;}
+  .compass-deg{position:absolute;left:50%;top:calc(100% + 4px);transform:translateX(-50%);font-family:var(--mono);font-size:14px;font-weight:800;color:var(--amber);background:rgba(11,14,10,.85);border:1px solid var(--line2);border-radius:8px;padding:2px 9px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.5);}
   .compass-needle:before{content:'';position:absolute;top:0;left:0;width:6px;height:23px;
     background:linear-gradient(to bottom,#e0533f,#a32d1c);clip-path:polygon(50% 0,100% 100%,0 100%);}
   .compass-needle:after{content:'';position:absolute;bottom:0;left:0;width:6px;height:23px;
     background:linear-gradient(to top,#cfd8c0,#8a9478);clip-path:polygon(50% 100%,100% 0,0 0);}
   .map-readout{font-size:12px;color:var(--amber);font-family:var(--mono);margin-top:8px;min-height:16px;letter-spacing:.5px;}
   /* ===== Panneau indicatifs déployés ===== */
+  .street-badge{display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:860;max-width:88%;text-align:center;background:rgba(20,60,140,.92);border:1px solid #3d8bff;color:#dbe9ff;font-family:var(--mono);font-size:12px;letter-spacing:.4px;padding:8px 14px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.5);}
+  .street-badge.on{display:block;}
   .deployed-panel{display:none;position:absolute;top:12px;left:12px;z-index:850;width:158px;
     background:rgba(11,14,10,.82);backdrop-filter:blur(7px);border:1px solid var(--line2);
     border-radius:11px;box-shadow:0 6px 18px rgba(0,0,0,.45);overflow:hidden;
@@ -1669,6 +1671,7 @@
         <button class="fsm fsm-exit" onclick="exitMapFullscreen()" ontouchend="event.preventDefault();event.stopPropagation();exitMapFullscreen();" title="Quitter le mode tactique">&#10005; QUITTER</button>
       </div>
       <!-- Panneau des indicatifs déployés (vertical, déplaçable, repliable) -->
+      <div id="street-badge" class="street-badge">&#128694; MODE STREET VIEW &mdash; les routes couvertes s'affichent en bleu, clique un point pour ouvrir la vue au sol</div>
       <div id="deployed-panel" class="deployed-panel">
         <div class="dep-head" id="dep-head">
           <span class="dep-grip">&#10021;</span>
@@ -2881,14 +2884,35 @@ function genMembrePDF(){
     if(!k.lvl){ lastMasterChecked=!!k.has; return k.has; }
     return k.has && lastMasterChecked;
   });
-  var rows='';var grpBuf='';var grpHas=false;var anyVis=false;
-  function flush(){ if(grpHas)rows+=grpBuf; grpBuf='';grpHas=false; }
-  kit.forEach(function(k,i){
-    if(k.grp){ flush(); grpBuf+='<tr><td colspan="2" class="kg">'+esc(k.grp)+'</td></tr>'; }
-    if(visible[i]){ grpBuf+='<tr><td'+(k.lvl?' class="ind"':'')+'>'+esc(k.name)+'</td><td class="q">x'+(k.qty==null?0:k.qty)+'</td></tr>'; grpHas=true;anyVis=true; }
-  });
-  flush();
-  if(!anyVis)rows='<tr><td colspan="2" style="color:#888">Aucun équipement coché.</td></tr>';
+  /* rendu par section AOR2 / AOR1 / ANNEXE (visuel, meme logique onglets que l'appli) */
+  var anyVis=false;
+  function kitSectionHTML(sec,label,klass){
+    var rows='';var lastMaster=true;
+    kit.forEach(function(k){
+      if(k.sec!==sec)return;
+      if(!k.sub){lastMaster=!!k.has;
+        if(k.has){rows+='<tr><td>'+esc(k.name)+'</td><td class="q">x'+(k.qty==null?0:k.qty)+'</td></tr>';anyVis=true;}
+      }else if(k.has&&lastMaster){
+        var nm=k.name.indexOf('::')>-1?k.name.split('::')[1]:k.name;
+        rows+='<tr><td class="ind">&#8627; '+esc(nm)+'</td><td class="q">x'+(k.qty==null?0:k.qty)+'</td></tr>';anyVis=true;
+      }
+    });
+    if(!rows)return '';
+    return '<div class="ksec"><div class="kshd '+klass+'">'+label+'</div><table>'+rows+'</table></div>';
+  }
+  var hasSec=kit.some(function(k){return k.sec;});
+  var kitHTML;
+  if(hasSec){
+    kitHTML=kitSectionHTML('aor2','AOR2 &mdash; FOREST // NSWDG - NSW','aor2')+
+            kitSectionHTML('aor1','AOR1 &mdash; DESERT // DEVGRU','aor1')+
+            kitSectionHTML('annexe','ÉQUIPEMENT ANNEXE // GEAR AOR1-AOR2','annexe');
+    if(!anyVis)kitHTML='<table><tr><td style="color:#888">Aucun équipement coché.</td></tr></table>';
+  }else{
+    /* anciennes fiches sans section : tableau simple */
+    var rows='';
+    kit.forEach(function(k,i){if(visible[i]){rows+='<tr><td'+(k.lvl?' class="ind"':'')+'>'+esc(k.name)+'</td><td class="q">x'+(k.qty==null?0:k.qty)+'</td></tr>';anyVis=true;}});
+    kitHTML='<table>'+(anyVis?rows:'<tr><td style="color:#888">Aucun équipement coché.</td></tr>')+'</table>';
+  }
 
   function kv(l,v){return v?'<tr><td class="l">'+l+'</td><td>'+nl2br(v)+'</td></tr>':'';}
   function repBlock(t,r){if(!r||(!r.model&&!r.up&&!r.img))return '';
@@ -2916,6 +2940,12 @@ function genMembrePDF(){
     'table{width:100%;border-collapse:collapse;}td{padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top;}'+
     'td.l{color:#777;width:190px;font-weight:600;}td.c{text-align:center;width:34px;font-size:15px;}td.q{text-align:right;width:48px;color:#888;font-family:monospace;}'+
     'td.kg{background:#f0efe6;color:#5a6b3b;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;font-size:10.5px;padding:7px 8px;}td.ind{padding-left:26px;color:#555;}'+
+    '.ksec{margin-bottom:14px;border:1px solid #ddd;border-radius:7px;overflow:hidden;page-break-inside:avoid;}'+
+    '.kshd{padding:9px 12px;font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase;}'+
+    '.kshd.aor2{background:linear-gradient(rgba(90,107,59,.88),rgba(90,107,59,.88)),url('+CAMO_AOR2+');background-size:auto,130px;color:#fff;}'+
+    '.kshd.aor1{background:linear-gradient(rgba(184,160,106,.9),rgba(184,160,106,.9)),url('+CAMO_AOR1+');background-size:auto,130px;color:#2a2410;}'+
+    '.kshd.annexe{background:#3a3f33;color:#e4e9da;}'+
+    '.ksec table{margin:0;}'+
     '.reps{display:flex;gap:16px;flex-wrap:wrap;}.rep{flex:1;min-width:230px;border:1px solid #ddd;border-radius:6px;padding:12px;}'+
     '.rep .rt{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#b8860b;font-weight:700;margin-bottom:8px;}'+
     '.rep .ri{width:100%;height:auto;max-height:none;object-fit:contain;border-radius:4px;margin-bottom:8px;background:#f4f3ee;border:1px solid #e2e0d6;}'+
@@ -2934,7 +2964,7 @@ function genMembrePDF(){
     '<h2>Infos opérationnelles</h2><table>'+
       kv('Groupe sanguin',m.sang)+kv("Taille",m.taille)+kv("Contact urgence",[m.urg_nom,m.urg_tel].filter(Boolean).join(' — '))+kv('Autres',m.notes)+'</table>'+
     '<h2>Drills &amp; progression</h2>'+drillsTable+
-    '<h2>Kit-list</h2><table>'+rows+'</table>'+
+    '<h2>Kit-list</h2>'+kitHTML+
     '<h2>Armement</h2><div class="reps">'+repBlock('Réplique principale',m.rep1)+repBlock('Réplique secondaire',m.rep2)+'</div>'+
     '</body></html>';
   var w=window.open('','_blank');w.document.write(html);w.document.close();
@@ -3558,7 +3588,8 @@ function initMap(){
   loadMapWorld();
   map=new maplibregl.Map({
     container:'map-canvas',style:basemapStyle(mapBasemap),
-    center:[4.8270,43.9034],zoom:4,maxZoom:22,maxPitch:85,antialias:!(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)),attributionControl:true,preserveDrawingBuffer:true
+    center:[4.8270,43.9034],zoom:4,maxZoom:22,maxPitch:85,antialias:!(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent)),
+    pixelRatio:(/Mobi|Android|iPhone|iPad/.test(navigator.userAgent))?(window.devicePixelRatio||1):Math.max(window.devicePixelRatio||1,2),attributionControl:true,preserveDrawingBuffer:true
   });
   map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
   map.on('load',function(){
@@ -3605,7 +3636,7 @@ function setBasemap(mode){
   map.once('style.load',function(){
     /* le changement de style efface les sources/calques custom : on les reconstruit,
        les markers (pings, autocollants, GPS) sont eux des éléments DOM et survivent tels quels */
-    addMapLayers();redrawMap();updateDraft();ensureTerrain();ensureBuildings();
+    addMapLayers();redrawMap();updateDraft();ensureTerrain();ensureBuildings();updateStreetUI();
   });
   map.setStyle(basemapStyle(mode));
 }
@@ -3660,6 +3691,7 @@ function setMapTool(t){
     street:'STREET VIEW : clique un point de la carte → la vue au sol s\'ouvre à cet endroit (Google Street View).'};
   document.getElementById('map-hint').textContent=mapTool?hints[mapTool]:'Choisis un outil puis clique sur la carte.';
   document.getElementById('map-readout').textContent='';
+  if(typeof updateStreetUI==='function')updateStreetUI();
 }
 function pxDist(a,b){var pa=map.project(a),pb=map.project(b);return Math.hypot(pa.x-pb.x,pa.y-pb.y);}
 
@@ -4232,11 +4264,38 @@ function legendDel(kind,id){
 function findShape(id){for(var i=0;i<mapWorld.shapes.length;i++)if(mapWorld.shapes[i].id===id)return mapWorld.shapes[i];return null;}
 
 /* ===== RECHERCHE adresse / ville / coordonnées ===== */
+/* affichage du mode Street View : routes en bleu (facon pegman) + badge + curseur */
+function updateStreetUI(){
+  var on=(mapTool==='street');
+  var b=document.getElementById('street-badge');if(b)b.classList.toggle('on',on);
+  if(!map||!mapReady)return;
+  try{
+    if(on){
+      if(!map.getSource('ofm'))map.addSource('ofm',{type:'vector',url:'https://tiles.openfreemap.org/planet'});
+      if(!map.getLayer('street-roads')){
+        map.addLayer({id:'street-roads',type:'line',source:'ofm','source-layer':'transportation',minzoom:9,
+          paint:{'line-color':'#3d8bff','line-width':['interpolate',['linear'],['zoom'],9,1.2,14,4,17,8],'line-opacity':0.7}});
+      }
+      map.setLayoutProperty('street-roads','visibility','visible');
+      map.getCanvas().style.cursor='crosshair';
+    }else{
+      if(map.getLayer('street-roads'))map.setLayoutProperty('street-roads','visibility','none');
+      map.getCanvas().style.cursor='';
+    }
+  }catch(e){}
+}
+/* pose un ping au resultat d'une recherche d'adresse */
+function searchPing(lat,lon,note){
+  if(!canWrite())return;
+  var p={id:uid(),lat:lat,lon:lon,color:'#d8a23a',note:note||'Recherche',op:mapCurrentOp()};
+  mapWorld.pings.push(p);saveMapWorld();redrawMap();renderMapLegend();
+}
 function mapSearch(){
   var q=document.getElementById('map-search-input').value.trim();if(!q||!map)return;
   /* coordonnées directes ? */
   var c=q.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
-  if(c){var lat=parseFloat(c[1]),lon=parseFloat(c[2]);map.flyTo({center:[lon,lat],zoom:14});
+  if(c){var lat=parseFloat(c[1]),lon=parseFloat(c[2]);map.flyTo({center:[lon,lat],zoom:15});
+    searchPing(lat,lon,q);
     document.getElementById('map-readout').textContent='// '+lat.toFixed(5)+', '+lon.toFixed(5);return;}
   /* sinon géocodage via Nominatim (OpenStreetMap) */
   document.getElementById('map-readout').textContent='// recherche...';
@@ -4244,7 +4303,8 @@ function mapSearch(){
     .then(function(r){return r.json();})
     .then(function(d){
       if(d&&d.length){var lat=parseFloat(d[0].lat),lon=parseFloat(d[0].lon);
-        map.flyTo({center:[lon,lat],zoom:13});
+        map.flyTo({center:[lon,lat],zoom:15});
+        searchPing(lat,lon,(d[0].display_name||q).split(',').slice(0,2).join(','));
         document.getElementById('map-readout').textContent='// '+(d[0].display_name||q);}
       else document.getElementById('map-readout').textContent='// Lieu introuvable.';
     })
