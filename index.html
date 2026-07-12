@@ -1054,9 +1054,141 @@
   @media (max-width:760px) and (orientation:landscape){
     #map-canvas{height:82vh;}
   }
+
+  /* ============================================================
+     ===== REFONTE V2 — SYSTÈME MOTION & POLISH PREMIUM =========
+     couche additive : n'écrase aucune logique, standardise le
+     motion design et amplifie la finition tactique.
+     ============================================================ */
+  :root{
+    --ease-tactical:cubic-bezier(.2,.8,.2,1);
+    --ease-out-strong:cubic-bezier(.16,1,.3,1);
+    --ease-snap:cubic-bezier(.34,1.56,.64,1);
+    --d-fast:150ms; --d-base:250ms; --d-slow:400ms;
+    --elev-1:0 1px 3px rgba(0,0,0,.45);
+    --elev-2:0 6px 20px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);
+    --elev-3:0 22px 54px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);
+    --glow-tan:0 0 22px rgba(184,160,106,.24);
+  }
+
+  /* ---- ambiance globale : vignette + grain lumineux très discret ---- */
+  body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(130% 100% at 50% -10%,rgba(184,160,106,.05),transparent 45%),
+      radial-gradient(120% 90% at 50% 115%,rgba(90,107,59,.06),transparent 50%);
+    mix-blend-mode:screen;}
+  body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+    background:linear-gradient(180deg,transparent 65%,rgba(0,0,0,.35));}
+
+  /* ---- sélection & scrollbars tactiques ---- */
+  ::selection{background:rgba(184,160,106,.34);color:#fff;}
+  ::-moz-selection{background:rgba(184,160,106,.34);color:#fff;}
+  html{scrollbar-color:var(--line2) var(--bg2);scrollbar-width:thin;}
+  *::-webkit-scrollbar{width:10px;height:10px;}
+  *::-webkit-scrollbar-track{background:var(--bg2);}
+  *::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--line2),var(--line));
+    border-radius:6px;border:2px solid var(--bg2);}
+  *::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,var(--aor1),var(--line2));}
+  *::-webkit-scrollbar-corner{background:var(--bg2);}
+
+  /* ---- focus visible : anneau tactique net ---- */
+  a:focus-visible,button:focus-visible,.icon-btn:focus-visible,[tabindex]:focus-visible{
+    outline:2px solid var(--aor1);outline-offset:3px;border-radius:7px;}
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;}
+
+  /* ---- liens (défaut + hover) alignés palette ---- */
+  a{color:var(--aor1b);text-decoration:none;transition:color var(--d-fast) ease;}
+  a:hover{color:var(--amber);}
+
+  /* ============ ORCHESTRATION DES VUES ============ */
+  /* stagger des enfants directs à l'arrivée d'un onglet (map/comms exclus) */
+  .view.active:not(#view-map):not(#view-comms) > *{
+    animation:bsChildIn var(--d-slow) var(--ease-out-strong) both;}
+  .view.active > *:nth-child(1){animation-delay:.02s;}
+  .view.active > *:nth-child(2){animation-delay:.07s;}
+  .view.active > *:nth-child(3){animation-delay:.12s;}
+  .view.active > *:nth-child(4){animation-delay:.17s;}
+  .view.active > *:nth-child(5){animation-delay:.22s;}
+  .view.active > *:nth-child(n+6){animation-delay:.26s;}
+  @keyframes bsChildIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+
+  /* ============ TABBAR : physique + halo actif ============ */
+  .tabbar button{position:relative;overflow:hidden;
+    transition:transform var(--d-fast) var(--ease-tactical),background var(--d-base),
+      color var(--d-base),border-color var(--d-base),box-shadow var(--d-base);}
+  .tabbar button:active{transform:scale(.93);}
+  .tabbar button.on{box-shadow:0 8px 22px rgba(184,160,106,.4),0 0 0 1px rgba(216,192,137,.45);
+    transform:translateY(-1px);}
+  .tabbar button.on .ico,.tabbar button.on .ico-bslogo{animation:bsPop var(--d-base) var(--ease-snap);}
+  @keyframes bsPop{0%{transform:scale(.6);}60%{transform:scale(1.22);}100%{transform:scale(1);}}
+
+  /* ============ BOUTONS : press states physiques + ripple ============ */
+  .add-btn,button.primary,.savebtn,.backbtn,.login-btn,.basemap-btn,.sp-upload,
+  .comms-send,.tchat-new,.eval-del,button.pdf,button.ghost,.save-fab,.pdf-fab{
+    position:relative;overflow:hidden;isolation:isolate;
+    transition:transform var(--d-fast) var(--ease-tactical),filter var(--d-base),box-shadow var(--d-base),background var(--d-base);}
+  .add-btn:active,button.primary:active,.savebtn:active,.backbtn:active,.login-btn:active,
+  .basemap-btn:active,.sp-upload:active,.comms-send:active,.eval-del:active,button.pdf:active,button.ghost:active{
+    transform:scale(.95);}
+  .add-btn:hover,button.primary:hover{filter:brightness(1.07);box-shadow:0 8px 22px rgba(184,160,106,.32);}
+  .bs-ripple{position:absolute;border-radius:50%;transform:scale(0);pointer-events:none;z-index:5;
+    background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,0) 70%);
+    animation:bsRipple .55s var(--ease-out-strong) forwards;}
+  @keyframes bsRipple{to{transform:scale(2.4);opacity:0;}}
+
+  /* ============ CHECKBOXES : validation satisfaisante ============ */
+  @keyframes bsCheckPop{0%{transform:scale(.35);}55%{transform:scale(1.28);}100%{transform:scale(1);}}
+  .kititem.has .cb,.drow.done .dcb,.pmember.on .pcb{animation:bsCheckPop var(--d-base) var(--ease-snap);}
+  .kititem.has,.drow.done,.pmember.on{animation:bsRowFlash var(--d-slow) ease;}
+  @keyframes bsRowFlash{0%{box-shadow:0 0 0 0 rgba(124,145,82,.55);}100%{box-shadow:0 0 0 0 rgba(124,145,82,0);}}
+
+  /* ============ DASHBOARD HERO : scanlines HUD ============ */
+  .dwidget.dw-hero::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.4;z-index:0;
+    background:repeating-linear-gradient(to bottom,rgba(143,196,238,.05) 0 1px,transparent 1px 3px);}
+  .dwidget.dw-hero .dw-head,.dwidget.dw-hero .dw-body{position:relative;z-index:1;}
+  /* équerres HUD sur le hero */
+  .dwidget.dw-hero{box-shadow:0 6px 30px rgba(0,0,0,.4),inset 0 0 50px rgba(61,122,181,.06),
+    inset 0 0 0 1px rgba(61,122,181,.12);}
+
+  /* ============ PANNEAU DÉPLOYÉS : radar sweep discret ============ */
+  .deployed-panel{position:absolute;}
+  .deployed-panel::before{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.14;
+    background:conic-gradient(from 0deg,rgba(122,160,90,.6),transparent 52%);
+    animation:bsSweep 3.8s linear infinite;}
+  .deployed-panel .dep-head,.deployed-panel .dep-body{position:relative;z-index:1;}
+  @keyframes bsSweep{to{transform:rotate(360deg);}}
+
+  /* ============ TOASTS SYSTÈME ============ */
+  #bs-toasts{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0));z-index:99999;
+    display:flex;flex-direction:column;align-items:center;gap:9px;pointer-events:none;padding:0 14px;}
+  .bs-toast{pointer-events:auto;display:flex;align-items:center;gap:11px;max-width:440px;
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.4px;color:var(--txt);
+    background:linear-gradient(160deg,rgba(28,33,22,.97),rgba(15,18,12,.98));
+    border:1px solid rgba(184,160,106,.4);border-left:3px solid var(--aor1);border-radius:11px;
+    padding:12px 17px;box-shadow:var(--elev-3);backdrop-filter:blur(9px);
+    transform:translateY(20px);opacity:0;transition:transform var(--d-base) var(--ease-out-strong),opacity var(--d-base);}
+  .bs-toast.in{transform:none;opacity:1;}
+  .bs-toast.ok{border-left-color:var(--aor2b);}
+  .bs-toast.err{border-left-color:var(--op);}
+  .bs-toast .tk{width:16px;height:16px;flex-shrink:0;}
+  .bs-toast .tk-spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(184,160,106,.25);
+    border-top-color:var(--aor1);animation:pwspin .8s linear infinite;}
+  .bs-toast .tk-check{color:var(--aor2b);font-size:15px;line-height:1;animation:bsPop var(--d-base) var(--ease-snap);}
+
+  /* ============ RÉDUCTION DE MOUVEMENT ============ */
+  @media (prefers-reduced-motion:reduce){
+    .view.active > *,.tabbar button.on .ico,.tabbar button.on .ico-bslogo,
+    .kititem.has .cb,.drow.done .dcb,.pmember.on .pcb,
+    .kititem.has,.drow.done,.pmember.on,.bs-toast .tk-check{animation:none!important;}
+    .deployed-panel::before{animation:none!important;opacity:.08;}
+    .bs-ripple{display:none!important;}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+<script>window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader){var dl=new THREE.DRACOLoader();dl.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');gl.setDRACOLoader(dl);}return gl;}catch(e){return new THREE.GLTFLoader();}};</script>
 <script>
 /* ===== SCÈNE 3D LOGIN (Three.js) — badge Brown Squadron + champ de particules =====
    Motion design : badge flottant en métal brossé, sweep lumineux bleu, particules
@@ -1251,6 +1383,7 @@
   <div class="tabbar" id="tabbar">
     <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Accueil</span></button>
     <button data-view="view-membres" onclick="switchTab(this)"><span class="ico ico-bslogo"></span><span class="lbl">Membres</span></button>
+    <button data-view="view-equip" onclick="switchTab(this)"><span class="ico">&#9881;</span><span class="lbl">Loadout</span></button>
     <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico">&#9636;</span><span class="lbl">Calendrier</span></button>
     <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#9678;</span><span class="lbl">Op&eacute;rations</span></button>
     <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#9783;</span><span class="lbl">Drill</span></button>
@@ -1279,6 +1412,36 @@
       <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newMembre()"><span class="plus">+</span> Fiche</button>
     </div>
     <div id="membres-list"></div>
+  </div>
+
+  <!-- ===== ÉQUIPEMENT / LOADOUT 3D (style Call of Duty) ===== -->
+  <div class="view" id="view-equip">
+    <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
+      <div><h2 class="text-tan tracking-widest">Loadout</h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
+      <select id="equip-member" onchange="equipSelect(this.value)" style="min-width:150px"></select>
+    </div>
+    <div class="equip-stage" id="equip-stage">
+      <canvas id="equip-canvas"></canvas>
+      <div class="eq-photo" id="eq-photo" aria-hidden="true"></div>
+      <button class="eq-photo-btn" id="eq-photo-btn" onclick="equipUploadPhoto()">&#128247; Photo opérateur</button>
+      <button class="eq-photo-del" id="eq-photo-del" onclick="equipDelPhoto()" title="Retirer la photo">&times; photo</button>
+      <input type="file" id="eq-photo-input" accept="image/*" style="display:none">
+      <div class="eq-scan" aria-hidden="true"></div>
+      <span class="eq-corner tl"></span><span class="eq-corner tr"></span><span class="eq-corner bl"></span><span class="eq-corner br"></span>
+      <div class="eq-nameplate" id="eq-nameplate"></div>
+      <div class="eq-items" id="eq-items"></div>
+      <div class="eq-col left" id="eq-weapons"></div>
+      <div class="eq-col right" id="eq-gear"></div>
+      <div class="eq-bottom">
+        <div class="eq-aor" id="eq-aor">
+          <button class="eq-aor-btn on" data-aor="aor2" onclick="equipSetAor('aor2')">AOR2<span>WOODLAND</span></button>
+          <button class="eq-aor-btn" data-aor="aor1" onclick="equipSetAor('aor1')">AOR1<span>DESERT</span></button>
+        </div>
+        <div class="eq-readout" id="eq-readout"></div>
+      </div>
+      <div class="eq-loading" id="eq-loading">// INITIALISATION MODÈLE 3D…</div>
+      <div class="eq-hint">Glisse pour faire pivoter</div>
+    </div>
   </div>
 
   <!-- ===== FICHE ===== -->
@@ -2116,6 +2279,7 @@ function switchTab(btn){
   if(id==='view-direction'){renderDirDocs();}
   if(id==='view-eval'){enterEval();}
   if(id==='view-comms'){enterComms();}
+  if(id==='view-equip'){enterEquip();}
 }
 function showView(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -2131,7 +2295,8 @@ function goMembres(){
   document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')==='view-membres');});
   showView('view-membres');renderMembres();
 }
-function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();}
+function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();
+  try{var ev=document.getElementById('view-equip');if(ev&&ev.classList.contains('active')&&window.enterEquip)window.enterEquip();}catch(e){}}
 
 /* ============ DIRECTION (documents internes par thème) ============ */
 var DIR_THEMES=['Direction','Compta','Social','Doc technique','Doc Commerciale'];
@@ -5249,6 +5414,965 @@ try{
   var _bv=document.getElementById('blackout-veil');if(_bv)_bv.style.display='none';
 }catch(e){}
 try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
+</script>
+<!-- ============ REFONTE V2 — MOTION RUNTIME (additif, non intrusif) ============ -->
+<script>
+(function(){
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* ---------- TOASTS ---------- */
+  function toastHost(){
+    var h=document.getElementById('bs-toasts');
+    if(!h){h=document.createElement('div');h.id='bs-toasts';document.body.appendChild(h);}
+    return h;
+  }
+  window.bsToast=function(msg,opts){
+    opts=opts||{};var type=opts.type||'ok';var dur=opts.duration||2600;
+    var host=toastHost();
+    var t=document.createElement('div');t.className='bs-toast '+type;
+    var ico=document.createElement('span');ico.className='tk';
+    if(opts.spinner){ico.innerHTML='<span class="tk-spin"></span>';}
+    else{ico.innerHTML='<span class="tk-check">'+(type==='err'?'\u2715':'\u2714')+'</span>';}
+    var txt=document.createElement('span');txt.textContent=msg;
+    t.appendChild(ico);t.appendChild(txt);host.appendChild(t);
+    requestAnimationFrame(function(){requestAnimationFrame(function(){t.classList.add('in');});});
+    var api={
+      el:t,
+      resolve:function(m){var s=ico.querySelector('.tk-spin');if(s)ico.innerHTML='<span class="tk-check">\u2714</span>';
+        if(m)txt.textContent=m;api.close(1500);},
+      close:function(after){setTimeout(function(){t.classList.remove('in');
+        setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},280);},after||0);}
+    };
+    if(!opts.spinner)api.close(dur);
+    return api;
+  };
+
+  /* ---------- RIPPLE (délégué, pointerdown) ---------- */
+  if(!reduce){
+    var RIPPLE_SEL='.add-btn,button.primary,.savebtn,.backbtn,.login-btn,.basemap-btn,.sp-upload,.comms-send,.eval-del,button.pdf,button.ghost,.tabbar button';
+    document.addEventListener('pointerdown',function(e){
+      var btn=e.target.closest&&e.target.closest(RIPPLE_SEL);
+      if(!btn)return;
+      var r=btn.getBoundingClientRect();
+      var size=Math.max(r.width,r.height)*1.1;
+      var rip=document.createElement('span');rip.className='bs-ripple';
+      rip.style.width=rip.style.height=size+'px';
+      rip.style.left=(e.clientX-r.left-size/2)+'px';
+      rip.style.top=(e.clientY-r.top-size/2)+'px';
+      var cs=getComputedStyle(btn);
+      if(cs.position==='static')btn.style.position='relative';
+      if(cs.overflow!=='hidden')btn.style.overflow='hidden';
+      btn.appendChild(rip);
+      rip.addEventListener('animationend',function(){if(rip.parentNode)rip.parentNode.removeChild(rip);});
+    },{passive:true});
+  }
+
+  /* ---------- FEEDBACK SAUVEGARDE (wrap non destructif) ---------- */
+  var SAVE_MAP={saveMembre:'Fiche enregistr\u00e9e',saveOp:'Op\u00e9ration enregistr\u00e9e',
+    saveCours:'Cours enregistr\u00e9',saveEval:'\u00c9valuation enregistr\u00e9e'};
+  Object.keys(SAVE_MAP).forEach(function(fn){
+    if(typeof window[fn]!=='function')return;
+    var orig=window[fn];
+    window[fn]=function(){
+      var t=window.bsToast('// Enregistrement\u2026',{spinner:true,type:'ok'});
+      try{var out=orig.apply(this,arguments);}
+      catch(err){t.el.classList.add('err');t.resolve('\u00c9chec enregistrement');throw err;}
+      setTimeout(function(){t.resolve('\u2714 '+SAVE_MAP[fn]);},680);
+      return out;
+    };
+  });
+})();
+</script>
+<style>
+  /* ============ ÉQUIPEMENT / LOADOUT 3D (style COD) ============ */
+  .equip-stage{position:relative;height:min(76vh,720px);border-radius:16px;overflow:hidden;
+    border:1px solid var(--line2);touch-action:none;user-select:none;
+    background:
+      radial-gradient(120% 90% at 50% 6%,rgba(184,160,106,.10),transparent 55%),
+      radial-gradient(90% 70% at 50% 110%,rgba(90,107,59,.18),transparent 60%),
+      linear-gradient(180deg,#0d110a,#070906 72%);
+    box-shadow:inset 0 0 90px rgba(0,0,0,.72),0 20px 50px rgba(0,0,0,.5);}
+  .equip-stage.aor1{
+    background:
+      radial-gradient(120% 90% at 50% 6%,rgba(216,192,137,.13),transparent 55%),
+      radial-gradient(90% 70% at 50% 110%,rgba(184,160,106,.2),transparent 60%),
+      linear-gradient(180deg,#12100a,#0a0806 72%);}
+  #equip-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;z-index:2;}
+  #equip-canvas:active{cursor:grabbing;}
+  .equip-stage.has-photo #equip-canvas{opacity:0;pointer-events:none;}
+  .eq-photo{position:absolute;inset:0;z-index:2;display:none;align-items:flex-end;justify-content:center;pointer-events:none;}
+  .equip-stage.has-photo .eq-photo{display:flex;}
+  .eq-photo img{max-width:82%;max-height:98%;object-fit:contain;object-position:bottom center;
+    filter:drop-shadow(0 30px 40px rgba(0,0,0,.7)) drop-shadow(0 0 30px rgba(0,0,0,.5));
+    animation:eqPhotoIn .6s var(--ease-out-strong) both;}
+  @keyframes eqPhotoIn{from{opacity:0;transform:translateY(18px) scale(.98);}to{opacity:1;transform:none;}}
+  .eq-photo-btn{position:absolute;top:12px;right:14px;z-index:6;cursor:pointer;
+    font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--aor1);background:rgba(11,14,10,.72);border:1px solid var(--line2);border-radius:9px;
+    padding:8px 12px;backdrop-filter:blur(6px);display:flex;align-items:center;gap:6px;
+    transition:border-color var(--d-base),color var(--d-base),transform var(--d-fast);}
+  .eq-photo-btn:hover{border-color:var(--aor1);color:var(--aor1b);}
+  .eq-photo-btn:active{transform:scale(.95);}
+  .eq-photo-del{position:absolute;top:12px;right:14px;z-index:6;display:none;cursor:pointer;
+    font-family:var(--mono);font-size:12px;color:var(--muted);background:rgba(11,14,10,.72);
+    border:1px solid var(--line2);border-radius:9px;padding:7px 11px;backdrop-filter:blur(6px);transition:.15s;}
+  .equip-stage.has-photo .eq-photo-del{display:block;}
+  .equip-stage.has-photo .eq-photo-btn{display:none;}
+  .eq-photo-del:hover{color:#fff;background:var(--op);border-color:var(--op);}
+  .equip-stage.dragover{outline:2px dashed var(--aor1);outline-offset:-6px;}
+  .equip-stage.has-photo .eq-scan,.equip-stage.has-photo .eq-hint{display:none;}
+  .eq-scan{position:absolute;top:50%;left:50%;width:min(72%,540px);aspect-ratio:1;transform:translate(-50%,-46%);
+    border-radius:50%;pointer-events:none;z-index:1;opacity:.55;
+    background:conic-gradient(from 0deg,transparent 0deg,rgba(184,160,106,.16) 42deg,transparent 92deg);
+    -webkit-mask:radial-gradient(circle,transparent 52%,#000 53%,#000 71%,transparent 73%);
+    mask:radial-gradient(circle,transparent 52%,#000 53%,#000 71%,transparent 73%);
+    animation:bsSweep 6s linear infinite;}
+  .equip-stage.aor1 .eq-scan{background:conic-gradient(from 0deg,transparent 0deg,rgba(216,192,137,.18) 42deg,transparent 92deg);}
+  .eq-corner{position:absolute;width:26px;height:26px;border:2px solid rgba(184,160,106,.5);z-index:4;pointer-events:none;}
+  .eq-corner.tl{top:12px;left:12px;border-right:none;border-bottom:none;}
+  .eq-corner.tr{top:12px;right:12px;border-left:none;border-bottom:none;}
+  .eq-corner.bl{bottom:12px;left:12px;border-right:none;border-top:none;}
+  .eq-corner.br{bottom:12px;right:12px;border-left:none;border-top:none;}
+  .eq-nameplate{position:absolute;top:14px;left:20px;z-index:4;text-align:left;pointer-events:none;}
+  .eq-nameplate:before{content:'// PERSONNALISER L\'OP\00c9RATEUR';display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;}
+  .eq-nameplate .np-name{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:2px;
+    background:linear-gradient(180deg,#f0e6cf,#b8a06a);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .eq-nameplate .np-role{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;margin-top:2px;}
+  .eq-items{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:56%;}
+  .eq-item-chip{cursor:pointer;font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--muted);background:rgba(11,14,10,.72);border:1px solid var(--line2);border-radius:9px;padding:7px 11px;
+    display:flex;align-items:center;gap:6px;backdrop-filter:blur(6px);transition:.15s;white-space:nowrap;}
+  .eq-item-chip .ci{font-size:12px;opacity:.8;}
+  .eq-item-chip:hover{border-color:var(--aor1);color:var(--aor1b);}
+  .eq-item-chip.on{background:linear-gradient(160deg,#c4ab6f,#9a7f43);color:#1a1605;border-color:var(--aor1b);box-shadow:0 4px 14px rgba(154,127,67,.3);}
+  .eq-item-chip.loading{opacity:.6;pointer-events:none;}
+  @media(max-width:760px){.eq-items{position:static;transform:none;max-width:100%;margin:10px 0 0;}}
+  .eq-col{position:absolute;top:66px;bottom:80px;width:212px;z-index:4;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;padding:2px;scrollbar-width:none;}
+  .eq-col::-webkit-scrollbar{display:none;}
+  .eq-col.left{left:14px;}
+  .eq-col.right{right:14px;}
+  .eq-slot{width:100%;position:relative;overflow:hidden;cursor:default;
+    background:linear-gradient(160deg,rgba(22,27,18,.84),rgba(11,14,10,.8));
+    border:1px solid var(--line2);border-radius:11px;padding:11px 13px;backdrop-filter:blur(7px);
+    box-shadow:var(--elev-2);opacity:0;transform:translateY(10px);
+    transition:transform var(--d-base) var(--ease-out-strong),border-color var(--d-base),box-shadow var(--d-base);}
+  .eq-col.left .eq-slot{border-left:3px solid var(--aor1);}
+  .eq-col.right .eq-slot{border-right:3px solid var(--aor2b);text-align:right;}
+  .eq-slot.in{opacity:1;transform:none;}
+  .eq-slot:hover{border-color:var(--aor1);transform:translateY(-2px) scale(1.02);
+    box-shadow:0 14px 30px rgba(0,0,0,.5),0 0 20px rgba(184,160,106,.18);}
+  .eq-slot .es-kind{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);}
+  .eq-slot .es-name{font-family:var(--mono);font-size:14px;font-weight:800;color:var(--txt);margin-top:3px;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .eq-slot .es-sub{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.35;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .eq-slot .es-ico{position:absolute;top:9px;font-size:15px;opacity:.5;}
+  .eq-col.left .es-ico{right:11px;}
+  .eq-col.right .es-ico{left:11px;}
+  .es-dots{display:flex;gap:4px;margin-top:7px;}
+  .es-dot{width:7px;height:7px;border-radius:50%;background:var(--line2);}
+  .es-dot.on{background:var(--amber);box-shadow:0 0 6px rgba(216,162,58,.65);}
+  .es-level{height:4px;border-radius:3px;background:rgba(0,0,0,.45);margin-top:8px;overflow:hidden;border:1px solid var(--line);}
+  .es-level i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--aor1),var(--amber));
+    transition:width .8s var(--ease-out-strong);}
+  .es-lvltxt{font-family:var(--mono);font-size:8.5px;letter-spacing:1px;color:var(--dim);margin-top:4px;text-transform:uppercase;}
+  .eq-bottom{position:absolute;left:0;right:0;bottom:12px;z-index:5;display:flex;align-items:center;
+    justify-content:center;gap:14px;flex-wrap:wrap;padding:0 14px;}
+  .eq-aor{display:flex;border:1px solid var(--line2);border-radius:12px;overflow:hidden;
+    background:rgba(11,14,10,.7);backdrop-filter:blur(6px);}
+  .eq-aor-btn{position:relative;border:none;background:none;cursor:pointer;color:var(--muted);
+    font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:2px;padding:11px 20px;min-width:98px;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    transition:color var(--d-base),background var(--d-base),box-shadow var(--d-base);}
+  .eq-aor-btn span{font-size:8px;letter-spacing:2px;opacity:.85;font-weight:600;}
+  .eq-aor-btn[data-aor=aor2].on{background:linear-gradient(160deg,#5a6b3b,#3e4a29);color:#fff;box-shadow:inset 0 0 20px rgba(124,145,82,.55);}
+  .eq-aor-btn[data-aor=aor1].on{background:linear-gradient(160deg,#c4a878,#9a7f43);color:#1a1605;box-shadow:inset 0 0 20px rgba(216,192,137,.55);}
+  .eq-aor-btn:active{transform:scale(.96);}
+  .eq-readout{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--muted);display:flex;gap:14px;
+    background:rgba(11,14,10,.7);border:1px solid var(--line2);border-radius:10px;padding:9px 14px;backdrop-filter:blur(6px);}
+  .eq-readout b{color:var(--amber);}
+  .eq-loading{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:12px;letter-spacing:3px;color:var(--aor1);
+    background:rgba(7,9,6,.86);backdrop-filter:blur(3px);transition:opacity .5s;}
+  .eq-loading.hide{opacity:0;pointer-events:none;}
+  .eq-hint{position:absolute;bottom:62px;left:50%;transform:translateX(-50%);z-index:3;pointer-events:none;
+    font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;opacity:.7;}
+  @media(max-width:760px){
+    .equip-stage{height:auto;min-height:0;display:flex;flex-direction:column;}
+    #equip-canvas{position:relative;height:46vh;flex:0 0 auto;}
+    .eq-col{position:static;width:100%;flex-direction:row;flex-wrap:wrap;gap:8px;padding:10px 10px 0;overflow:visible;}
+    .eq-slot{flex:1 1 44%;min-width:0;}
+    .eq-col.right .eq-slot{text-align:left;border-right:none;border-left:3px solid var(--aor2b);}
+    .eq-nameplate{position:static;transform:none;margin:10px 0 0;text-align:center;}
+    .eq-nameplate:before{text-align:center;}
+    .eq-bottom{position:static;margin:12px 0;}
+    .eq-scan,.eq-hint,.eq-corner{display:none;}
+    .eq-loading{position:absolute;}
+  }
+  @media (prefers-reduced-motion:reduce){.eq-scan{animation:none!important;}}
+</style>
+<!-- ============ LOADOUT 3D — moteur Three.js (opérateur procédural) ============ -->
+<script>
+(function(){
+  var EQ={inited:false,aor:'aor2',member:null,raf:0,rotY:-0.28,rotX:0,tRotY:-0.28,tRotX:0,drag:false,px:0,py:0,vY:0,userTouched:false,uniform:[],shirt:[],carrier:[],knee:[],accentMats:[],accent:null,rim:null,ring:null,t0:0};
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  function stage(){return document.getElementById('equip-stage');}
+
+  /* ---------- textures camo (data-URI SVG -> repeat) ---------- */
+  function loadCamo(url,cb){
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement('canvas');c.width=c.height=256;
+      var g=c.getContext('2d');g.drawImage(img,0,0,256,256);
+      var tex=new THREE.CanvasTexture(c);
+      tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(3,3);
+      if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;
+      cb(tex);
+    };
+    img.onerror=function(){cb(null);};
+    img.src=url;
+  }
+  function groundTex(){
+    var c=document.createElement('canvas');c.width=c.height=256;var g=c.getContext('2d');
+    var grd=g.createRadialGradient(128,128,10,128,128,128);
+    grd.addColorStop(0,'rgba(120,110,80,.55)');grd.addColorStop(.5,'rgba(40,44,30,.25)');grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grd;g.fillRect(0,0,256,256);
+    var t=new THREE.CanvasTexture(c);return t;
+  }
+  function shadowTex(){
+    var c=document.createElement('canvas');c.width=c.height=128;var g=c.getContext('2d');
+    var grd=g.createRadialGradient(64,64,4,64,64,64);
+    grd.addColorStop(0,'rgba(0,0,0,.75)');grd.addColorStop(.7,'rgba(0,0,0,.25)');grd.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grd;g.fillRect(0,0,128,128);
+    return new THREE.CanvasTexture(c);
+  }
+  function bgTex(){
+    var c=document.createElement('canvas');c.width=c.height=512;var g=c.getContext('2d');
+    var grd=g.createRadialGradient(256,200,40,256,300,460);
+    grd.addColorStop(0,'#2a2f34');grd.addColorStop(.42,'#171a1d');grd.addColorStop(1,'#050607');
+    g.fillStyle=grd;g.fillRect(0,0,512,512);
+    var t=new THREE.CanvasTexture(c);if(THREE.sRGBEncoding)t.encoding=THREE.sRGBEncoding;return t;
+  }
+
+  /* ---------- construction de l'opérateur (SEAL/Devgru en AOR) ---------- */
+  function buildOperator(scene){
+    var op=new THREE.Group();
+    var CY=THREE.CylinderGeometry,BX=THREE.BoxGeometry,SP=THREE.SphereGeometry;
+    var V3=THREE.Vector3;
+
+    /* ---- matériaux (AOR-aware, mis à jour par applyAor) ---- */
+    var camoMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.95,metalness:.02});  /* manches + jambes */
+    var shirtMat=new THREE.MeshStandardMaterial({color:0x556047,roughness:.9,metalness:.03});  /* combat-shirt torse uni */
+    var carrierMat=new THREE.MeshStandardMaterial({color:0x4d5738,roughness:.72,metalness:.12});/* porte-plaques */
+    var kneeMat=new THREE.MeshStandardMaterial({color:0x2c3020,roughness:.6,metalness:.15});
+    EQ.uniform=[camoMat];EQ.shirt=[shirtMat];EQ.carrier=[carrierMat];EQ.knee=[kneeMat];
+    var gear=new THREE.MeshStandardMaterial({color:0x14180f,roughness:.7,metalness:.18});
+    var gearL=new THREE.MeshStandardMaterial({color:0x1e2416,roughness:.75,metalness:.14});
+    var glove=new THREE.MeshStandardMaterial({color:0x0c0e09,roughness:.85,metalness:.06});
+    var boot=new THREE.MeshStandardMaterial({color:0x6b5a38,roughness:.72,metalness:.08});
+    var skin=new THREE.MeshStandardMaterial({color:0xc39a70,roughness:.82,metalness:0});
+    var metal=new THREE.MeshStandardMaterial({color:0x232520,roughness:.42,metalness:.7});
+    var tanMetal=new THREE.MeshStandardMaterial({color:0x9a7f43,roughness:.5,metalness:.5});
+    var glassMat=new THREE.MeshStandardMaterial({color:0x141a1e,roughness:.15,metalness:.6,emissive:0x0a1518,emissiveIntensity:.5});
+    var lensMat=new THREE.MeshStandardMaterial({color:0x2a5a4a,roughness:.1,metalness:.8,emissive:0x123d30,emissiveIntensity:.7});
+    var accentMat=new THREE.MeshStandardMaterial({color:0xd8c089,roughness:.5,metalness:.3,emissive:0x3a3016,emissiveIntensity:.35});
+    EQ.accentMats=[accentMat];
+
+    function add(geo,mat,x,y,z,rx,ry,rz){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);
+      if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0);op.add(m);return m;}
+    /* segment tronconique orienté entre 2 points (membre organique) */
+    function seg(mat,a,b,r1,r2){
+      var A=new V3(a[0],a[1],a[2]),B=new V3(b[0],b[1],b[2]);
+      var dir=B.clone().sub(A),len=dir.length();
+      var m=new THREE.Mesh(new CY(r2,r1,len,16),mat);
+      m.position.copy(A).add(B).multiplyScalar(.5);
+      m.quaternion.setFromUnitVectors(new V3(0,1,0),dir.normalize());
+      op.add(m);return m;
+    }
+    function joint(mat,p,r){return add(new SP(r,16,16),mat,p[0],p[1],p[2]);}
+
+    /* ======================= JAMBES ======================= */
+    [[-0.14,1],[0.14,-1]].forEach(function(L){
+      var x=L[0];
+      var hip=[x,1.26,0.01],knee=[x*1.02,0.72,0.05],ankle=[x*1.05,0.14,0.03];
+      seg(camoMat,hip,knee,0.135,0.115);            /* cuisse */
+      seg(camoMat,knee,ankle,0.11,0.085);           /* mollet (pantalon blousé) */
+      joint(camoMat,knee,0.12);
+      /* genouillère */
+      var kp=add(new SP(0.115,16,16),kneeMat,x*1.02,0.72,0.14);kp.scale.set(1,1.15,.55);
+      /* poche cargo cuisse */
+      add(new BX(0.14,0.2,0.1),camoMat,x*1.28,0.92,0.06);
+      /* rangers */
+      add(new BX(0.15,0.13,0.2),boot,x*1.05,0.1,0.02);         /* tige */
+      add(new BX(0.16,0.08,0.34),boot,x*1.05,0.05,0.08);       /* semelle+pied */
+    });
+    /* ======================= BASSIN / CEINTURON ======================= */
+    add(new BX(0.42,0.22,0.3),shirtMat,0,1.3,0);
+    add(new BX(0.46,0.07,0.32),gear,0,1.19,0);                 /* ceinturon */
+    add(new BX(0.08,0.09,0.34),accentMat,0,1.19,0.01);         /* boucle */
+    /* holster cuisse droite */
+    add(new BX(0.13,0.22,0.09),gear,0.24,0.95,0.14,0.12,0,0);
+    add(new BX(0.06,0.14,0.05),metal,0.24,0.86,0.16);          /* crosse pistolet */
+
+    /* ======================= TORSE ======================= */
+    seg(shirtMat,[0,1.34,0],[0,1.72,0],0.2,0.22);              /* abdomen/chest (combat shirt) */
+    add(new BX(0.44,0.16,0.28),shirtMat,0,1.86,0);             /* haut poitrine/épaules */
+    /* trapèzes */
+    add(new BX(0.5,0.1,0.24),shirtMat,0,1.9,-0.01);
+
+    /* ======================= PLATE CARRIER ======================= */
+    var frontPlate=add(new BX(0.42,0.52,0.13),carrierMat,0,1.62,0.15,0.04,0,0);
+    add(new BX(0.42,0.5,0.1),carrierMat,0,1.62,-0.15);         /* plaque dos */
+    add(new BX(0.5,0.2,0.34),carrierMat,0,1.44,0);             /* cummerbund */
+    [-0.15,0.15].forEach(function(sx){add(new BX(0.12,0.3,0.16),carrierMat,sx,1.82,0.03);}); /* bretelles */
+    /* pouches chargeurs (3 rangée basse) */
+    [-0.13,0,0.13].forEach(function(px){add(new BX(0.105,0.19,0.09),gearL,px,1.47,0.24);});
+    /* admin pouch */
+    add(new BX(0.22,0.14,0.06),gearL,0,1.72,0.25);
+    /* placard cartouches (rangée style ref) */
+    for(var s=0;s<7;s++){add(new CY(0.016,0.016,0.05,8),accentMat,-0.15+s*0.05,1.8,0.25,1.5708,0,0);}
+    /* pouch radio latéral + antenne */
+    add(new BX(0.1,0.16,0.09),gearL,-0.27,1.55,0.02);
+    add(new CY(0.008,0.008,0.24,8),metal,-0.27,1.78,-0.02);
+    /* IR strobe / patch accent épaule */
+    add(new BX(0.09,0.06,0.02),accentMat,0.2,1.86,0.12);
+
+    /* ======================= SAC D'ASSAUT ======================= */
+    add(new BX(0.34,0.46,0.2),gear,0,1.6,-0.3);
+    add(new BX(0.3,0.16,0.06),gearL,0,1.74,-0.41);            /* rabat haut */
+    add(new BX(0.26,0.2,0.05),gearL,0,1.5,-0.41);            /* poche */
+
+    /* ======================= TÊTE ======================= */
+    add(new CY(0.075,0.09,0.12,14),skin,0,2.0,0);            /* cou */
+    var head=add(new SP(0.14,22,22),skin,0,2.12,0.005);head.scale.set(.92,1.08,.96);
+    add(new BX(0.15,0.09,0.06),skin,0,2.03,0.1);            /* mâchoire */
+    /* lunettes balistiques */
+    var gog=add(new BX(0.29,0.075,0.05),glassMat,0,2.13,0.11,0.02,0,0);gog.scale.set(1,1,1);
+    add(new BX(0.31,0.03,0.02),gear,0,2.13,0.02);          /* sangle */
+
+    /* ======================= CASQUE FAST ======================= */
+    var shell=add(new SP(0.165,24,24),carrierMat,0,2.19,-0.01);shell.scale.set(1.06,.82,1.12);
+    add(new BX(0.34,0.05,0.12),carrierMat,0,2.1,0.11,0.2,0,0); /* visière avant */
+    /* rails latéraux ARC */
+    [-1,1].forEach(function(sg){add(new BX(0.03,0.06,0.2),gear,sg*0.17,2.18,-0.01);});
+    /* casque audio Comtac (oreillettes) */
+    [-1,1].forEach(function(sg){var ec=add(new CY(0.055,0.055,0.05,16),gear,sg*0.185,2.02,0.0,0,0,1.5708);});
+    /* micro-perche */
+    add(new CY(0.006,0.006,0.16,8),gear,-0.14,1.98,0.08,0,-0.5,0.6);
+    add(new SP(0.02,10,10),gear,-0.05,1.96,0.13);
+    /* shroud + JVN relevées (dual tube) */
+    add(new BX(0.07,0.06,0.06),metal,0,2.26,0.08);           /* shroud/mount */
+    var nvgArm=add(new BX(0.04,0.12,0.04),metal,0,2.34,0.11,-0.5,0,0);
+    [-0.035,0.035].forEach(function(nx){add(new CY(0.026,0.028,0.11,14),tanMetal,nx,2.42,0.14,-0.5,0,0);});
+    [-0.035,0.035].forEach(function(nx){add(new CY(0.03,0.03,0.02,14),lensMat,nx,2.47,0.17,-0.5,0,0);});
+    /* contrepoids arrière */
+    add(new BX(0.12,0.1,0.08),gear,0,2.2,-0.14);
+
+    /* ======================= BRAS (bas ready, 2 mains sur l'arme) ======================= */
+    var shL=[-0.26,1.86,0.02],shR=[0.26,1.86,0.02];
+    var elR=[0.28,1.55,0.2],haR=[0.12,1.46,0.34];   /* main droite = poignée */
+    var elL=[-0.14,1.62,0.24],haL=[0.24,1.5,0.52];  /* main gauche = garde-main */
+    joint(shirtMat,shL,0.13);joint(shirtMat,shR,0.13);   /* épaules (manches camo dessous) */
+    seg(camoMat,shR,elR,0.1,0.078);seg(glove,elR,haR,0.072,0.058);joint(camoMat,elR,0.075);
+    seg(camoMat,shL,elL,0.1,0.078);seg(glove,elL,haL,0.072,0.058);joint(camoMat,elL,0.075);
+    add(new BX(0.09,0.1,0.11),glove,haR[0],haR[1],haR[2]);
+    add(new BX(0.09,0.1,0.11),glove,haL[0],haL[1],haL[2]);
+
+    /* ======================= RÉPLIQUE M4 (tenue à 2 mains) ======================= */
+    var rifle=new THREE.Group();
+    function rp(geo,mat,x,y,z,rx){var m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);if(rx)m.rotation.x=rx;rifle.add(m);return m;}
+    rp(new BX(0.05,0.09,0.26),metal,0,0,0);                 /* lower receiver */
+    rp(new BX(0.05,0.07,0.4),metal,0,0.005,0.3);            /* handguard RIS */
+    rp(new BX(0.055,0.02,0.42),gear,0,0.05,0.28);           /* rail sup */
+    rp(new CY(0.02,0.02,0.22,12),metal,0,0.01,0.56,1.5708); /* canon */
+    rp(new CY(0.032,0.032,0.14,14),tanMetal,0,0.01,0.72,1.5708); /* silencieux tan */
+    rp(new BX(0.05,0.09,0.16),gear,0,0,-0.2);               /* crosse */
+    rp(new CY(0.028,0.028,0.14,12),metal,0,0.005,-0.12,1.5708); /* buffer tube */
+    var mg=rp(new BX(0.045,0.18,0.06),gear,0,-0.13,0.03);mg.rotation.x=0.28; /* chargeur */
+    var pg=rp(new BX(0.04,0.11,0.05),gear,0,-0.08,-0.05);pg.rotation.x=-0.3; /* poignée pistolet */
+    rp(new BX(0.035,0.055,0.09),gear,0,0.085,0.06);         /* optique corps */
+    rp(new CY(0.026,0.026,0.05,14),lensMat,0,0.085,0.11,1.5708); /* optique lentille */
+    rp(new BX(0.03,0.09,0.03),gear,0,-0.06,0.4);            /* poignée avant */
+    rifle.position.set(0.16,1.5,0.42);rifle.rotation.set(0.06,-0.62,0.05);
+    op.add(rifle);EQ.rifle=rifle;
+    /* sangle (ligne) crosse -> épaule */
+    seg(gear,[0.02,1.36,0.24],[-0.22,1.72,0.06],0.012,0.012);
+
+    op.traverse(function(o){if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});
+    op.position.y=0;scene.add(op);
+    return op;
+  }
+
+  /* ---------- camo haute def (vraies images AOR) pour les vêtements ---------- */
+  function loadCamoHi(url,cb){
+    var img=new Image();
+    img.onload=function(){var c=document.createElement('canvas');c.width=c.height=512;var g=c.getContext('2d');
+      g.drawImage(img,0,0,512,512);var tex=new THREE.CanvasTexture(c);
+      tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(3.4,3.4);
+      if(THREE.sRGBEncoding)tex.encoding=THREE.sRGBEncoding;cb(tex);};
+    img.onerror=function(){cb(null);};img.src=url;
+  }
+  function applyClothing(){
+    var tex=(EQ.aor==='aor1')?EQ.camoHi1:EQ.camoHi2;
+    if(tex&&EQ.clothMats){EQ.clothMats.forEach(function(m){m.map=tex;if(m.color)m.color.setHex(0xffffff);m.needsUpdate=true;});}
+    var green=(EQ.aor==='aor2');var carC=green?0x3f4a2c:0x7d6a45;
+    if(EQ.armorMats)EQ.armorMats.forEach(function(m){if(m.color)m.color.setHex(carC);m.needsUpdate=true;});
+  }
+
+  /* ---------- chargement du modèle 3D réaliste (GLB) ---------- */
+  function loadModel(scene){
+    if(!THREE.GLTFLoader)return;
+    try{
+      var loader=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
+      loader.load('operator.glb',function(gltf){
+        var model=gltf.scene;
+        var box=new THREE.Box3().setFromObject(model);
+        var size=new THREE.Vector3();box.getSize(size);
+        var s=1.9/(size.y||1);model.scale.setScalar(s);
+        box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);
+        model.position.set(-c.x,-box.min.y,-c.z);
+        EQ.clothMats=[];EQ.armorMats=[];
+        model.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
+          if(o.material){
+            var mats=Array.isArray(o.material)?o.material:[o.material];
+            mats.forEach(function(mm){
+              if(mm.roughness==null)mm.roughness=.8;
+              mm.metalness=Math.min(mm.metalness!=null?mm.metalness:.2,0.12);
+              if(mm.emissive)mm.emissive.setHex(0x000000);
+              var n=(mm.name||'').toLowerCase();
+              if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
+              else if(/armour|armor|carrier|plate|vest|body|^material/.test(n))EQ.armorMats.push(mm);
+            });
+          }}});
+        applyClothing();
+        var g=new THREE.Group();g.add(model);scene.add(g);
+        EQ.model=g;EQ.rotTarget=g;EQ.modelInner=model;
+        if(EQ.op)EQ.op.visible=false;
+        var l=document.getElementById('eq-loading');if(l)l.classList.add('hide');
+      },undefined,function(){/* échec -> on garde l'opérateur procédural */});
+    }catch(e){}
+  }
+
+  function init(){
+    var canvas=document.getElementById('equip-canvas');var st=stage();if(!canvas||!st||!window.THREE)return false;
+    var scene=new THREE.Scene();
+    scene.background=bgTex();
+    var cam=new THREE.PerspectiveCamera(33,1,0.1,50);cam.position.set(0.15,1.2,4.5);cam.lookAt(0,1.15,0);
+    var r=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
+    if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;}
+
+    /* éclairage portrait studio : clé chaude, rim froid + rim chaud, fill doux */
+    scene.add(new THREE.AmbientLight(0x2b3126,0.4));
+    var hemi=new THREE.HemisphereLight(0xaeb9a0,0x0a0d08,0.4);scene.add(hemi);
+    var key=new THREE.DirectionalLight(0xfff1d4,1.85);key.position.set(2.4,3.6,3.1);scene.add(key);
+    var fill=new THREE.DirectionalLight(0x8a7c5a,0.5);fill.position.set(-3.2,2,2);scene.add(fill);
+    var rimC=new THREE.DirectionalLight(0xd8c9a6,1.35);rimC.position.set(-2.6,2.6,-2.6);scene.add(rimC);
+    var rimW=new THREE.DirectionalLight(0xc9a15e,1.1);rimW.position.set(2.6,2.2,-2.4);scene.add(rimW);EQ.rim=rimW;
+    var face=new THREE.PointLight(0xfff4e0,0.35,8);face.position.set(0,1.95,2.4);scene.add(face);
+    var accent=new THREE.PointLight(0xc9a15e,0.6,9);accent.position.set(0,1.3,-2.2);scene.add(accent);EQ.accent=accent;
+
+    /* sol : ombre de contact + halo + anneau discret */
+    var floor=new THREE.Mesh(new THREE.CircleGeometry(2.0,48),
+      new THREE.MeshBasicMaterial({map:groundTex(),transparent:true,depthWrite:false,opacity:.7}));
+    floor.rotation.x=-Math.PI/2;floor.position.y=0.001;scene.add(floor);
+    var ring=new THREE.Mesh(new THREE.RingGeometry(1.28,1.33,64),
+      new THREE.MeshBasicMaterial({color:0x9fbf6a,transparent:true,opacity:.32,side:THREE.DoubleSide,depthWrite:false}));
+    ring.rotation.x=-Math.PI/2;ring.position.y=0.002;scene.add(ring);EQ.ring=ring;
+    var shad=new THREE.Mesh(new THREE.CircleGeometry(0.62,32),
+      new THREE.MeshBasicMaterial({map:shadowTex(),transparent:true,depthWrite:false}));
+    shad.rotation.x=-Math.PI/2;shad.position.y=0.003;scene.add(shad);
+
+    var op=buildOperator(scene);
+    EQ.rotTarget=op;
+    loadModel(scene);
+
+    EQ.scene=scene;EQ.cam=cam;EQ.r=r;EQ.op=op;EQ.floor=floor;
+
+    /* textures camo */
+    loadCamo(window.CAMO_AOR2,function(t){EQ.tex2=t;applyAor(EQ.aor,true);});
+    loadCamo(window.CAMO_AOR1,function(t){EQ.tex1=t;});
+    loadCamoHi('camo_aor2.jpg',function(t){EQ.camoHi2=t;applyClothing();});
+    loadCamoHi('camo_aor1.avif',function(t){EQ.camoHi1=t;applyClothing();});
+
+    /* interaction : glisser pour pivoter */
+    function down(e){EQ.drag=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;}
+    function move(e){if(!EQ.drag)return;var p=pt(e);var dx=p.x-EQ.px,dy=p.y-EQ.py;EQ.px=p.x;EQ.py=p.y;
+      EQ.tRotY+=dx*0.008;EQ.vY=dx*0.008;EQ.tRotX=Math.max(-0.5,Math.min(0.5,EQ.tRotX+dy*0.004));e.preventDefault&&e.preventDefault();}
+    function up(){EQ.drag=false;}
+    function pt(e){var t=e.touches&&e.touches[0];return{x:(t?t.clientX:e.clientX),y:(t?t.clientY:e.clientY)};}
+    canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+    canvas.addEventListener('touchstart',down,{passive:true});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up);
+
+    resize();window.addEventListener('resize',resize);
+    EQ.t0=performance.now();
+    EQ.inited=true;
+    loop();
+    return true;
+  }
+
+  function resize(){
+    if(!EQ.r)return;var st=stage();if(!st)return;
+    var w=st.clientWidth,h=st.clientHeight;
+    var cv=document.getElementById('equip-canvas');
+    if(window.matchMedia('(max-width:760px)').matches){w=cv.clientWidth;h=cv.clientHeight;}
+    if(w<10||h<10)return;
+    EQ.r.setSize(w,h,false);EQ.cam.aspect=w/h;EQ.cam.updateProjectionMatrix();
+  }
+
+  function applyAor(aor,silent){
+    EQ.aor=aor;
+    var tex=(aor==='aor1')?EQ.tex1:EQ.tex2;
+    if(tex&&EQ.uniform){EQ.uniform.forEach(function(m){m.map=tex;m.needsUpdate=true;});}
+    var green=(aor==='aor2');
+    /* combat-shirt torse uni + porte-plaques + genouillères teintés selon l'AOR */
+    var shirtC=green?0x556047:0x9c8963, carC=green?0x4d5738:0x8a7550, kneeC=green?0x2c3020:0x5c4d31, accC=green?0x9fbf6a:0xd8c089;
+    (EQ.shirt||[]).forEach(function(m){m.color.setHex(shirtC);});
+    (EQ.carrier||[]).forEach(function(m){m.color.setHex(carC);});
+    (EQ.knee||[]).forEach(function(m){m.color.setHex(kneeC);});
+    (EQ.accentMats||[]).forEach(function(m){m.color.setHex(accC);});
+    if(typeof applyClothing==='function')applyClothing();
+    if(EQ.accent)EQ.accent.color.setHex(green?0x8a9a5e:0xc9a15e);
+    if(EQ.rim)EQ.rim.color.setHex(green?0xc9b98a:0xc9a15e);
+    if(EQ.ring)EQ.ring.material.color.setHex(green?0x8a9a5e:0xc9a15e);
+    var st=stage();if(st)st.classList.toggle('aor1',aor==='aor1');
+    document.querySelectorAll('#eq-aor .eq-aor-btn').forEach(function(b){
+      b.classList.toggle('on',b.getAttribute('data-aor')===aor);});
+  }
+
+  function loop(){
+    EQ.raf=requestAnimationFrame(loop);
+    var view=document.getElementById('view-equip');
+    if(!view||!view.classList.contains('active')||!EQ.r)return;
+    var now=performance.now();var t=(now-EQ.t0)/1000;
+    if(!EQ.userTouched&&!reduce){EQ.tRotY=-0.28+Math.sin(t*0.32)*0.4;}
+    else if(!EQ.drag){EQ.tRotY+=EQ.vY;EQ.vY*=0.94;}
+    EQ.rotY+=(EQ.tRotY-EQ.rotY)*0.12;
+    EQ.rotX+=(EQ.tRotX-EQ.rotX)*0.12;
+    if(EQ.rotTarget){
+      EQ.rotTarget.rotation.y=EQ.rotY;EQ.rotTarget.rotation.x=EQ.rotX*0.4;
+      EQ.rotTarget.position.y=Math.sin(t*1.3)*0.012;                 /* respiration */
+    }
+    if(EQ.ring){EQ.ring.material.opacity=0.35+0.2*Math.abs(Math.sin(t*1.5));}
+    EQ.r.render(EQ.scene,EQ.cam);
+  }
+
+  /* ---------- LOADOUT (données réelles de la fiche) ---------- */
+  function pct(m){var kit=m.kit||[];var has=kit.filter(function(k){return k.has;}).length;
+    return{kit:kit.length?Math.round(has/kit.length*100):0,has:has,tot:kit.length};}
+  function drillPct(m){var dl={'':0,acq:1,ok:2,exp:3};var dd=m.drills||{};var s=0;
+    ['acte1','acte2','acte3'].forEach(function(a){if(dd[a])s+=dl[(dd[a].level)||'']||0;});return Math.round(s/9*100);}
+  function findKit(m,re){var kit=m.kit||[];for(var i=0;i<kit.length;i++){if(re.test(kit[i].name||''))return kit[i].name;}return '';}
+
+  function renderLoadout(m){
+    /* nameplate */
+    var np=document.getElementById('eq-nameplate');
+    if(np)np.innerHTML='<div class="np-name">'+esc(m.pseudo||'OP\u00c9RATEUR')+'</div>'+
+      '<div class="np-role">'+esc(m.role||'Sans affectation')+'</div>';
+    /* armes (gauche) */
+    var w=[
+      {kind:'Arme principale',name:(m.rep1&&m.rep1.model)||'\u2014',sub:(m.rep1&&m.rep1.up)||'Configuration standard',ico:'\u25B8',rar:true,slot:'p'},
+      {kind:'Arme secondaire',name:(m.rep2&&m.rep2.model)||'\u2014',sub:(m.rep2&&m.rep2.up)||'Aucune r\u00e9plique secondaire',ico:'\u25B8',rar:true,slot:'s'}
+    ];
+    /* équipement (droite) — extrait du kit réel, sinon standard */
+    var gear=[
+      {kind:'Casque',name:findKit(m,/casque|helmet|fast|ops.?core|balist/i)||'FAST / bump',ico:'\u26D1'},
+      {kind:'Gilet',name:findKit(m,/gilet|plate|jpc|chest|porte|carrier/i)||'Porte-plaques',ico:'\u25A3'},
+      {kind:'Optique',name:findKit(m,/red.?dot|holo|optique|acog|scope|vise|eotech|aimpoint|point.?rouge/i)||'Point rouge',ico:'\u25C9'},
+      {kind:'Comms',name:findKit(m,/radio|ptt|talkie|baofeng|comm/i)||'Radio PMR / PTT',ico:'\u2609'},
+      {kind:'Vision noct.',name:findKit(m,/nvg|jvn|vision|nocturne|pvs/i)||'\u2014',ico:'\u25D1'}
+    ];
+    fillCol('eq-weapons',w);fillCol('eq-gear',gear);
+    /* readout */
+    var p=pct(m),d=drillPct(m);
+    var ro=document.getElementById('eq-readout');
+    if(ro)ro.innerHTML='KIT <b>'+p.has+'/'+p.tot+'</b>'+
+      '<span>READINESS <b>'+d+'%</b></span>';
+  }
+  function fillCol(id,arr){
+    var box=document.getElementById(id);if(!box)return;box.innerHTML='';
+    arr.forEach(function(s,i){
+      var el=document.createElement('div');el.className='eq-slot';
+      var extra='';
+      if(s.rar){
+        var up=(s.sub||'');var n=up&&up!=='Configuration standard'&&up.indexOf('Aucune')<0
+          ?Math.min(5,up.split(/[,;\n]/).filter(function(x){return x.trim();}).length):(s.name&&s.name!=='\u2014'?1:0);
+        var dots='';for(var k=0;k<5;k++)dots+='<span class="es-dot'+(k<n?' on':'')+'"></span>';
+        var lvl=Math.max(6,Math.min(100,n*20));
+        extra='<div class="es-dots">'+dots+'</div>'+
+          '<div class="es-level"><i style="width:'+lvl+'%"></i></div>'+
+          '<div class="es-lvltxt">Niveau '+(n||1)+' \u2014 '+(n>=4?'Optimis\u00e9e':n>=2?'\u00c9quip\u00e9e':'Standard')+'</div>';
+      }
+      el.innerHTML='<span class="es-ico">'+s.ico+'</span>'+
+        '<div class="es-kind">'+esc(s.kind)+'</div>'+
+        '<div class="es-name">'+esc(s.name)+'</div>'+
+        (s.sub?'<div class="es-sub">'+esc(s.sub)+'</div>':'')+extra;
+      if(s.rar){el.style.cursor='pointer';el.setAttribute('data-weapon',s.slot);
+        el.title='Personnaliser l\'arme';
+        el.onclick=function(){if(window.openGunsmith)window.openGunsmith(s.slot);};
+        var edit=document.createElement('span');edit.className='es-edit';edit.textContent='\u270E';el.appendChild(edit);}
+      box.appendChild(el);
+      setTimeout(function(){el.classList.add('in');},80+i*70);
+    });
+  }
+
+  function fillSelect(){
+    var sel=document.getElementById('equip-member');if(!sel)return null;
+    var list=(typeof membresOf==='function')?membresOf():[];
+    var prev=sel.value;
+    sel.innerHTML=list.map(function(m){return '<option value="'+m._id+'">'+esc(m.pseudo||'Op\u00e9rateur')+'</option>';}).join('');
+    if(!list.length){sel.innerHTML='<option value="">Aucune fiche</option>';return null;}
+    if(prev&&list.some(function(m){return m._id===prev;}))sel.value=prev;
+    return list[[].slice.call(sel.options).findIndex(function(o){return o.value===sel.value;})]||list[0];
+  }
+
+  /* ---------- ITEMS 3D montables sur l'opérateur ---------- */
+  var ITEMS={
+    nvgq:{file:'item_nvg_quad.glb',label:'JVN Quad',ico:'\u25D1',grp:'nvg',pos:[0,1.86,0.1],size:0.16,rot:[0,0,0]},
+    nvgt:{file:'item_nvg_tnvd.glb',label:'JVN TNVD',ico:'\u25D1',grp:'nvg',pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
+    e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
+    mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
+    m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',pos:[-0.15,1.4,0.17],size:0.075,rot:[0,0,0]}
+  };
+  var ITEMORDER=['nvgq','nvgt','e553','mag','m67'];
+  function renderItemBar(){
+    var bar=document.getElementById('eq-items');if(!bar)return;
+    if(!EQ.mounted)EQ.mounted={};
+    bar.innerHTML=ITEMORDER.map(function(id){
+      var c=ITEMS[id];var on=!!EQ.mounted[id];
+      return '<button class="eq-item-chip'+(on?' on':'')+'" data-item="'+id+'" onclick="equipToggleItem(\''+id+'\')"><span class="ci">'+c.ico+'</span>'+c.label+'</button>';
+    }).join('');
+  }
+  window.equipToggleItem=function(id){
+    if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};
+    var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;if(!parent)return;
+    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];renderItemBar();return;}
+    Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];}});
+    var chip=document.querySelector('.eq-item-chip[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
+    function place(obj){
+      obj.scale.set(1,1,1);obj.position.set(0,0,0);obj.rotation.set(0,0,0);
+      var box=new THREE.Box3().setFromObject(obj);var sz=new THREE.Vector3();box.getSize(sz);
+      var sc=cfg.size/(Math.max(sz.x,sz.y,sz.z)||1);obj.scale.setScalar(sc);
+      box.setFromObject(obj);var c=new THREE.Vector3();box.getCenter(c);
+      obj.position.set(cfg.pos[0]-c.x,cfg.pos[1]-c.y,cfg.pos[2]-c.z);
+      obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
+      (EQ.model||EQ.scene).add(obj);EQ.mounted[id]=obj;
+      if(chip)chip.classList.remove('loading');renderItemBar();
+    }
+    if(EQ.itemObj[id]){place(EQ.itemObj[id]);return;}
+    var ld=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
+    ld.load(cfg.file,function(g){
+      g.scene.traverse(function(o){if(o.isMesh)o.frustumCulled=false;});
+      EQ.itemObj[id]=g.scene;place(g.scene);
+    },undefined,function(){if(chip)chip.classList.remove('loading');});
+  };
+
+  /* ---------- API publique ---------- */
+  window.enterEquip=function(){
+    if(!window.THREE){var l=document.getElementById('eq-loading');if(l)l.textContent='// THREE.JS INDISPONIBLE';return;}
+    if(!EQ.inited){init();}
+    setTimeout(resize,60);
+    renderItemBar();
+    var m=fillSelect();
+    if(m){EQ.member=m;renderLoadout(m);
+      var l=document.getElementById('eq-loading');if(l)setTimeout(function(){l.classList.add('hide');},420);}
+    else{var l2=document.getElementById('eq-loading');if(l2){l2.textContent='// AUCUNE FICHE \u2014 CR\u00c9E UN MEMBRE';l2.classList.remove('hide');}}
+  };
+  window.equipSelect=function(id){
+    var m=(db&&db[id])?db[id]:null;if(!m)return;m._id=id;EQ.member=m;renderLoadout(m);
+  };
+  window.equipSetAor=function(aor){applyAor(aor);};
+})();
+</script>
+<!-- ============ LOADOUT — opérateur PHOTO (réaliste, déposé par l'utilisateur) ============ -->
+<script>
+(function(){
+  function stage(){return document.getElementById('equip-stage');}
+  function curId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
+  function curAor(){var b=document.querySelector('#eq-aor .eq-aor-btn.on');return b?b.getAttribute('data-aor'):'aor2';}
+  function key(id,aor){return 'bs_op_photo_'+id+'_'+aor;}
+  function get(id,aor){try{return localStorage.getItem(key(id,aor))||'';}catch(e){return '';}}
+  function refresh(){
+    var st=stage();if(!st)return;
+    var id=curId(),aor=curAor();var data=id?get(id,aor):'';
+    var box=document.getElementById('eq-photo');
+    if(data){box.innerHTML='<img src="'+data+'" alt="Opérateur">';st.classList.add('has-photo');}
+    else{box.innerHTML='';st.classList.remove('has-photo');}
+  }
+  window.equipUploadPhoto=function(){
+    var id=curId();if(!id){if(window.bsToast)bsToast('Sélectionne un opérateur d\'abord',{type:'err'});return;}
+    var inp=document.getElementById('eq-photo-input');if(!inp)return;
+    inp.value='';inp.onchange=function(){
+      var f=inp.files[0];if(!f)return;
+      var save=function(data){try{localStorage.setItem(key(id,curAor()),data);}catch(e){if(window.bsToast)bsToast('Image trop lourde',{type:'err'});return;}refresh();
+        if(window.bsToast)bsToast('\u2714 Photo '+curAor().toUpperCase()+' enregistrée');};
+      if(typeof compressImage==='function')compressImage(f,save);
+      else{var r=new FileReader();r.onload=function(){save(r.result);};r.readAsDataURL(f);}
+    };
+    inp.click();
+  };
+  window.equipDelPhoto=function(){
+    var id=curId();if(!id)return;try{localStorage.removeItem(key(id,curAor()));}catch(e){}refresh();
+  };
+  /* glisser-déposer une image sur le cadre */
+  var st=stage();
+  if(st){
+    ['dragenter','dragover'].forEach(function(ev){st.addEventListener(ev,function(e){e.preventDefault();st.classList.add('dragover');});});
+    ['dragleave','drop'].forEach(function(ev){st.addEventListener(ev,function(e){e.preventDefault();st.classList.remove('dragover');});});
+    st.addEventListener('drop',function(e){
+      var id=curId();if(!id)return;
+      var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(!f||f.type.indexOf('image')<0)return;
+      var save=function(data){try{localStorage.setItem(key(id,curAor()),data);}catch(err){return;}refresh();
+        if(window.bsToast)bsToast('\u2714 Photo '+curAor().toUpperCase()+' enregistrée');};
+      if(typeof compressImage==='function')compressImage(f,save);
+      else{var r=new FileReader();r.onload=function(){save(r.result);};r.readAsDataURL(f);}
+    });
+  }
+  /* brancher sur les changements d'opérateur / d'AOR / d'entrée dans l'onglet */
+  ['equipSelect','equipSetAor','enterEquip'].forEach(function(fn){
+    var orig=window[fn];if(typeof orig!=='function')return;
+    window[fn]=function(){var r=orig.apply(this,arguments);setTimeout(refresh,20);return r;};
+  });
+  window.equipRefreshPhoto=refresh;
+})();
+</script>
+<!-- ============ GUNSMITH — personnalisation d'arme (emplacements remplissables COD) ============ -->
+<style>
+  .es-edit{position:absolute;bottom:9px;font-size:11px;color:var(--dim);opacity:.7;transition:color .15s,opacity .15s;}
+  .eq-col.left .es-edit{right:11px;}
+  .eq-col.left .eq-slot:hover .es-edit{color:var(--aor1);opacity:1;}
+  .gs-overlay{position:fixed;inset:0;z-index:99990;display:none;align-items:center;justify-content:center;padding:18px;
+    background:rgba(5,7,5,.82);backdrop-filter:blur(6px);}
+  .gs-overlay.show{display:flex;animation:evfade .22s ease;}
+  .gs-panel{width:820px;max-width:100%;max-height:92vh;overflow:auto;position:relative;
+    background:
+      radial-gradient(120% 80% at 100% 0%,rgba(184,160,106,.08),transparent 55%),
+      linear-gradient(180deg,#141812,#0b0e0a);
+    border:1px solid var(--line2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.7);
+    padding:22px 22px 18px;}
+  .gs-head{display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line2);padding-bottom:16px;margin-bottom:16px;flex-wrap:wrap;}
+  .gs-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;}
+  .gs-class{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
+  .gs-name{background:transparent;border:none;border-bottom:2px solid var(--line2);color:var(--txt);
+    font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:2px;padding:2px 0;width:100%;max-width:420px;
+    text-transform:uppercase;transition:border-color .2s;}
+  .gs-name:focus{outline:none;border-color:var(--aor1);}
+  .gs-head-right{margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  .gs-count{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;}
+  .gs-count b{color:var(--amber);}
+  .gs-x{background:var(--surface2);border:1px solid var(--line2);color:var(--muted);width:34px;height:34px;border-radius:9px;
+    font-size:18px;cursor:pointer;transition:.15s;}
+  .gs-x:hover{color:#fff;border-color:var(--aor1);}
+  /* barre "arme" décorative avec noeuds */
+  .gs-weapon{position:relative;height:172px;margin:0 0 18px;border-radius:12px;
+    background:radial-gradient(120% 90% at 50% 30%,rgba(184,160,106,.07),transparent 60%),linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.15));
+    border:1px solid var(--line);overflow:hidden;}
+  #gs-weapon-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
+  .gs-weapon .gs-wlabel{position:absolute;top:10px;left:14px;z-index:1;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;transition:opacity .4s;}
+  .gs-weapon .gs-wtag{position:absolute;bottom:10px;right:14px;z-index:1;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;pointer-events:none;}
+  .gs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
+  .gs-slot{position:relative;background:linear-gradient(160deg,rgba(22,27,18,.9),rgba(11,14,10,.85));
+    border:1px solid var(--line2);border-radius:11px;padding:11px 13px;transition:border-color .2s,box-shadow .2s;}
+  .gs-slot.filled{border-color:var(--aor1);box-shadow:0 0 16px rgba(184,160,106,.14) inset;}
+  .gs-slot .gs-slabel{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--amber);margin-bottom:7px;}
+  .gs-slot .gs-sico{font-size:14px;opacity:.7;}
+  .gs-slot.filled .gs-slabel{color:var(--aor1b);}
+  .gs-slot input{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;color:var(--txt);
+    font-size:13.5px;padding:9px 10px;font-family:inherit;transition:border-color .15s;}
+  .gs-slot input:focus{outline:none;border-color:var(--aor1);box-shadow:0 0 0 2px rgba(184,160,106,.16);}
+  .gs-slot input::placeholder{color:var(--dim);font-style:italic;}
+  .gs-slot .gs-dot{position:absolute;top:11px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--line2);transition:.2s;}
+  .gs-slot.filled .gs-dot{background:var(--amber);box-shadow:0 0 8px rgba(216,162,58,.7);}
+  .gs-foot{display:flex;align-items:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);flex-wrap:wrap;}
+  .gs-hint{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.5px;flex:1;min-width:160px;}
+  .gs-reset{background:var(--surface2);border:1px solid var(--line2);color:var(--muted);border-radius:9px;
+    font-family:var(--mono);font-size:12px;padding:11px 16px;cursor:pointer;letter-spacing:1px;transition:.15s;}
+  .gs-reset:hover{color:#fff;border-color:var(--op);}
+  .gs-save{background:linear-gradient(180deg,#c4ab6f,#9a7f43);border:none;border-radius:9px;color:#1a1605;
+    font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:2px;padding:12px 26px;cursor:pointer;
+    text-transform:uppercase;box-shadow:0 6px 18px rgba(154,127,67,.35);transition:filter .15s,transform .12s;}
+  .gs-save:hover{filter:brightness(1.08);}.gs-save:active{transform:scale(.97);}
+  @media(max-width:620px){.gs-panel{padding:16px;}.gs-name{font-size:20px;}.gs-grid{grid-template-columns:1fr;}}
+</style>
+<script>
+(function(){
+  var SLOTS=[
+    {k:'muzzle',label:'Bouche',ico:'\u25CE',ph:'Silencieux, cache-flamme, frein\u2026'},
+    {k:'barrel',label:'Canon',ico:'\u2015',ph:'Longueur, mat\u00e9riau, RIS\u2026'},
+    {k:'optic',label:'Optique',ico:'\u25C9',ph:'Point rouge, holo, lunette\u2026'},
+    {k:'laser',label:'Laser / PEQ',ico:'\u2727',ph:'PEQ-15, DBAL, laser\u2026'},
+    {k:'under',label:'Sous-canon',ico:'\u2533',ph:'Poign\u00e9e avant, bipied\u2026'},
+    {k:'rear',label:'Poign\u00e9e arri\u00e8re',ico:'\u2517',ph:'Grip, angle, texture\u2026'},
+    {k:'mag',label:'Chargeur',ico:'\u25AF',ph:'Capacit\u00e9, mid-cap, hi-cap\u2026'},
+    {k:'stock',label:'Crosse',ico:'\u25E7',ph:'Fixe, r\u00e9tractable, CTR\u2026'},
+    {k:'ammo',label:'Munitions',ico:'\u2219',ph:'Billes, gr, hop-up\u2026'},
+    {k:'guard',label:'Garde-main',ico:'\u25AD',ph:'RIS, M-LOK, KeyMod\u2026'}
+  ];
+  var curId=null,curSlot=null,el=null;
+  function db(){return window.db||{};}
+  function memId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
+  function key(id,slot){return 'bs_gun_'+id+'_'+slot;}
+  function load(id,slot){try{return JSON.parse(localStorage.getItem(key(id,slot))||'null');}catch(e){return null;}}
+  function build(){
+    el=document.createElement('div');el.className='gs-overlay';el.id='gunsmith';
+    el.innerHTML=''+
+      '<div class="gs-panel">'+
+        '<div class="gs-head">'+
+          '<div style="flex:1;min-width:200px">'+
+            '<div class="gs-badge">// Gunsmith</div>'+
+            '<div class="gs-class" id="gs-class">Arme principale</div>'+
+            '<input class="gs-name" id="gs-name" maxlength="28" placeholder="NOM DE L\'ARME">'+
+          '</div>'+
+          '<div class="gs-head-right">'+
+            '<button class="gs-x" onclick="closeGunsmith()" title="Fermer">&times;</button>'+
+            '<div class="gs-count" id="gs-count"><b>0</b>/'+SLOTS.length+' accessoires</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Aper\u00e7u 3D</span><span class="gs-wtag">MK18 \u00b7 glisse pour tourner</span></div>'+
+        '<div class="gs-grid" id="gs-grid"></div>'+
+        '<div class="gs-foot">'+
+          '<span class="gs-hint">Remplis les emplacements avec ton mat\u00e9riel r\u00e9el \u2014 tout est sauvegard\u00e9 par op\u00e9rateur.</span>'+
+          '<button class="gs-reset" onclick="gunsmithReset()">R\u00e9initialiser</button>'+
+          '<button class="gs-save" onclick="gunsmithSave()">Enregistrer</button>'+
+        '</div>'+
+      '</div>';
+    document.body.appendChild(el);
+    el.addEventListener('click',function(e){if(e.target===el)closeGunsmith();});
+    var grid=el.querySelector('#gs-grid');
+    grid.innerHTML=SLOTS.map(function(s){
+      return '<div class="gs-slot" data-k="'+s.k+'">'+
+        '<span class="gs-dot"></span>'+
+        '<div class="gs-slabel"><span class="gs-sico">'+s.ico+'</span>'+s.label+'</div>'+
+        '<input type="text" data-k="'+s.k+'" placeholder="'+s.ph+'">'+
+      '</div>';
+    }).join('');
+    grid.addEventListener('input',function(e){
+      var inp=e.target;if(inp.tagName!=='INPUT')return;
+      inp.closest('.gs-slot').classList.toggle('filled',!!inp.value.trim());
+      updateCount();
+    });
+  }
+  function updateCount(){
+    var n=[].slice.call(el.querySelectorAll('.gs-grid input')).filter(function(i){return i.value.trim();}).length;
+    el.querySelector('#gs-count').innerHTML='<b>'+n+'</b>/'+SLOTS.length+' accessoires';
+  }
+  /* ---------- viewer 3D de l'arme (MK18) ---------- */
+  var GW={inited:false,raf:0,rot:-0.5,tRot:-0.5,rx:0,drag:false,px:0,py:0,touched:false};
+  function initWeapon(){
+    var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!window.THREE)return;
+    var scene=new THREE.Scene();
+    var cam=new THREE.PerspectiveCamera(32,1,0.01,50);cam.position.set(0,0.02,1.25);cam.lookAt(0,0,0);
+    var r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
+    if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;}
+    scene.add(new THREE.AmbientLight(0x42483c,0.7));
+    var k=new THREE.DirectionalLight(0xfff2d6,1.7);k.position.set(2,3,2.5);scene.add(k);
+    var rc=new THREE.DirectionalLight(0xd8c9a6,1.15);rc.position.set(-2.5,1,-2);scene.add(rc);
+    var rw=new THREE.DirectionalLight(0xc9a15e,0.8);rw.position.set(2,-1,-1.5);scene.add(rw);
+    var grp=new THREE.Group();scene.add(grp);
+    GW.scene=scene;GW.cam=cam;GW.r=r;GW.grp=grp;GW.inited=true;
+    if(THREE.GLTFLoader){
+      new (window.bsGLTF||THREE.GLTFLoader)().load('weapon_mk18.glb',function(g){
+        var model=g.scene;var box=new THREE.Box3().setFromObject(model);var size=new THREE.Vector3();box.getSize(size);
+        var s=0.92/(Math.max(size.x,size.y,size.z)||1);model.scale.setScalar(s);
+        box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);model.position.set(-c.x,-c.y,-c.z);
+        model.traverse(function(o){if(o.isMesh)o.frustumCulled=false;});
+        grp.add(model);GW.loaded=true;
+        var wl=el.querySelector('.gs-wlabel');if(wl)wl.style.opacity=0;
+      },undefined,function(){});
+    }
+    /* rotation à la souris/doigt */
+    function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
+    cv.addEventListener('mousedown',function(e){GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
+    window.addEventListener('mousemove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.rx=Math.max(-0.6,Math.min(0.6,GW.rx+(p.y-GW.py)*0.006));GW.px=p.x;GW.py=p.y;});
+    window.addEventListener('mouseup',function(){GW.drag=false;});
+    cv.addEventListener('touchstart',function(e){GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;},{passive:true});
+    cv.addEventListener('touchmove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.px=p.x;GW.py=p.y;e.preventDefault();},{passive:false});
+    cv.addEventListener('touchend',function(){GW.drag=false;});
+    resizeWeapon();
+  }
+  function resizeWeapon(){var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!GW.r)return;
+    var w=cv.clientWidth,h=cv.clientHeight;if(w<10||h<10)return;GW.r.setSize(w,h,false);GW.cam.aspect=w/h;GW.cam.updateProjectionMatrix();}
+  function weaponLoop(){
+    if(!el||!el.classList.contains('show')){GW.raf=0;return;}
+    GW.raf=requestAnimationFrame(weaponLoop);
+    if(!GW.touched)GW.tRot+=0.006;
+    GW.rot+=(GW.tRot-GW.rot)*0.12;
+    if(GW.grp){GW.grp.rotation.y=GW.rot;GW.grp.rotation.x=GW.rx;}
+    if(GW.r)GW.r.render(GW.scene,GW.cam);
+  }
+  window.openGunsmith=function(slot){
+    if(!el)build();
+    curSlot=slot;curId=memId();
+    var m=(curId&&db()[curId])?db()[curId]:{};
+    var rep=(slot==='p')?(m.rep1||{}):(m.rep2||{});
+    var saved=load(curId,slot)||{};
+    el.querySelector('#gs-class').textContent=(slot==='p')?'Arme principale':'Arme secondaire';
+    el.querySelector('#gs-name').value=saved.name||rep.model||'';
+    var att=saved.att||{};
+    SLOTS.forEach(function(s){
+      var inp=el.querySelector('.gs-grid input[data-k="'+s.k+'"]');
+      inp.value=att[s.k]||'';
+      inp.closest('.gs-slot').classList.toggle('filled',!!inp.value.trim());
+    });
+    updateCount();
+    el.classList.add('show');
+    if(!GW.inited)initWeapon();
+    setTimeout(resizeWeapon,60);
+    if(!GW.raf)weaponLoop();
+  };
+  window.closeGunsmith=function(){if(el)el.classList.remove('show');};
+  window.gunsmithReset=function(){
+    if(!el)return;
+    el.querySelectorAll('.gs-grid input').forEach(function(i){i.value='';i.closest('.gs-slot').classList.remove('filled');});
+    updateCount();
+  };
+  window.gunsmithSave=function(){
+    if(!el||!curId){if(window.bsToast)bsToast('S\u00e9lectionne un op\u00e9rateur',{type:'err'});return;}
+    var name=el.querySelector('#gs-name').value.trim();
+    var att={},list=[];
+    SLOTS.forEach(function(s){
+      var v=el.querySelector('.gs-grid input[data-k="'+s.k+'"]').value.trim();
+      if(v){att[s.k]=v;list.push(s.label+': '+v);}
+    });
+    try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
+    /* refléter sur la carte d'arme */
+    var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
+    if(card){
+      if(name)card.querySelector('.es-name').textContent=name;
+      var sub=card.querySelector('.es-sub');if(sub)sub.textContent=list.length?list.join('  \u00b7  '):'Configuration standard';
+      var n=list.length,dots=card.querySelectorAll('.es-dot');
+      dots.forEach(function(d,i){d.classList.toggle('on',i<Math.min(5,n));});
+      var lvl=card.querySelector('.es-level i');if(lvl)lvl.style.width=Math.max(6,Math.min(100,n*10))+'%';
+      var lt=card.querySelector('.es-lvltxt');if(lt)lt.textContent='Niveau '+(n||1)+' \u2014 '+(n>=6?'Optimis\u00e9e':n>=3?'\u00c9quip\u00e9e':'Standard');
+    }
+    if(window.bsToast)bsToast('\u2714 Arme enregistr\u00e9e ('+list.length+' accessoires)');
+    closeGunsmith();
+  };
+  /* quand on ré-affiche le loadout, réappliquer les accessoires sauvegardés sur les cartes */
+  var origSel=window.equipSelect;
+  window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);},30);return r;};
+  var origEnter=window.enterEquip;
+  window.enterEquip=function(){var r=origEnter?origEnter.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(memId());},60);return r;};
+  function applySavedToCards(id){
+    if(!id)return;
+    ['p','s'].forEach(function(slot){
+      var saved=load(id,slot);if(!saved)return;
+      var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+slot+'"]');if(!card)return;
+      var list=[];SLOTS.forEach(function(s){if(saved.att&&saved.att[s.k])list.push(s.label+': '+saved.att[s.k]);});
+      if(saved.name)card.querySelector('.es-name').textContent=saved.name;
+      var sub=card.querySelector('.es-sub');if(sub&&list.length)sub.textContent=list.join('  \u00b7  ');
+      var n=list.length,dots=card.querySelectorAll('.es-dot');
+      dots.forEach(function(d,i){d.classList.toggle('on',i<Math.min(5,n));});
+      var lvl=card.querySelector('.es-level i');if(lvl)lvl.style.width=Math.max(6,Math.min(100,n*10))+'%';
+    });
+  }
+})();
 </script>
 </body>
 </html>
