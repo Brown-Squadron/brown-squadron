@@ -5819,6 +5819,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(tex&&EQ.clothMats){EQ.clothMats.forEach(function(m){m.map=tex;if(m.color)m.color.setHex(0xffffff);m.needsUpdate=true;});}
     var green=(EQ.aor==='aor2');var carC=green?0x3f4a2c:0x7d6a45;
     if(EQ.armorMats)EQ.armorMats.forEach(function(m){if(m.color)m.color.setHex(carC);m.needsUpdate=true;});
+    /* AOR2 : casque 100% Olive Drab, aucune texture camo dessus */
+    (EQ.helmetMats||[]).forEach(function(m){
+      if(green){m.map=null;if(m.color)m.color.setHex(0x4a5233);}      /* OD green uni */
+      else{if(EQ.helmetTexOrig)m.map=EQ.helmetTexOrig;if(m.color)m.color.setHex(0xffffff);}
+      m.needsUpdate=true;
+    });
   }
 
   /* ---------- chargement du modèle 3D réaliste (GLB) ---------- */
@@ -5833,7 +5839,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         var s=1.9/(size.y||1);model.scale.setScalar(s);
         box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);
         model.position.set(-c.x,-box.min.y,-c.z);
-        EQ.clothMats=[];EQ.armorMats=[];
+        EQ.clothMats=[];EQ.armorMats=[];EQ.helmetMats=[];
         model.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
           if(o.material){
             var mats=Array.isArray(o.material)?o.material:[o.material];
@@ -5841,9 +5847,18 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(mm.roughness==null)mm.roughness=.8;
               mm.metalness=Math.min(mm.metalness!=null?mm.metalness:.2,0.12);
               if(mm.emissive)mm.emissive.setHex(0x000000);
+              if(mm.envMapIntensity!=null)mm.envMapIntensity=0.25;
+              /* purge de tout bleu/blanc r\u00e9siduel : on d\u00e9sature les teintes froides vers du neutre/terre */
+              if(mm.color&&!mm.map){
+                var hsl={};mm.color.getHSL(hsl);
+                if(hsl.h>0.5&&hsl.h<0.75){mm.color.setHSL(0.09,0.15,Math.min(hsl.l,0.32));} /* bleu -> terre sombre */
+                else if(hsl.l>0.75&&hsl.s<0.25){mm.color.setHex(0x2a2c26);}                 /* blanc -> anthracite */
+              }
               var n=(mm.name||'').toLowerCase();
+              if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
-              else if(/armour|armor|carrier|plate|vest|body|^material/.test(n))EQ.armorMats.push(mm);
+              else if(/armour|armor|carrier|plate|vest|body/.test(n))EQ.armorMats.push(mm);
+              else if(/glove|hand|boot|shoe|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
         applyClothing();
@@ -6035,9 +6050,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     nvgt:{file:'item_nvg_tnvd.glb',label:'JVN TNVD',ico:'\u25D1',grp:'nvg',pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
-    m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',pos:[-0.15,1.4,0.17],size:0.075,rot:[0,0,0]}
+    m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',pos:[-0.15,1.4,0.17],size:0.075,rot:[0,0,0]},
+    sp226:{file:'item_sp226.glb',label:'SP226 Holster',ico:'\u25B8',grp:'sec',pos:[0.2,1.05,0.14],size:0.14,rot:[0,0,-0.15]},
+    radio:{file:'item_radio.glb',label:'Radio PMR',ico:'\u2584',grp:'radio',pos:[-0.2,1.5,0.14],size:0.12,rot:[0,0,0]}
   };
-  var ITEMORDER=['nvgq','nvgt','e553','mag','m67'];
+  var ITEMORDER=['nvgq','nvgt','m67','sp226','radio'];
   function renderItemBar(){
     var bar=document.getElementById('eq-items');if(!bar)return;
     if(!EQ.mounted)EQ.mounted={};
@@ -6147,12 +6164,13 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-overlay{position:fixed;inset:0;z-index:99990;display:none;align-items:center;justify-content:center;padding:18px;
     background:rgba(5,7,5,.82);backdrop-filter:blur(6px);}
   .gs-overlay.show{display:flex;animation:evfade .22s ease;}
-  .gs-panel{width:820px;max-width:100%;max-height:92vh;overflow:auto;position:relative;
+  .gs-panel{width:100%;height:100%;max-width:1400px;max-height:100vh;overflow:hidden;position:relative;
     background:
-      radial-gradient(120% 80% at 100% 0%,rgba(184,160,106,.08),transparent 55%),
-      linear-gradient(180deg,#141812,#0b0e0a);
-    border:1px solid var(--line2);border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.7);
-    padding:22px 22px 18px;}
+      radial-gradient(90% 70% at 50% 34%,rgba(184,160,106,.06),transparent 60%),
+      radial-gradient(120% 90% at 50% 100%,rgba(60,72,40,.14),transparent 55%),
+      linear-gradient(180deg,#12140f 0%,#0a0c08 60%,#060704 100%);
+    border:1px solid var(--line2);border-radius:16px;box-shadow:0 30px 90px rgba(0,0,0,.8);
+    padding:0;}
   .gs-head{display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--line2);padding-bottom:16px;margin-bottom:16px;flex-wrap:wrap;}
   .gs-badge{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;}
   .gs-class{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:6px;}
@@ -6166,53 +6184,130 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-x{background:var(--surface2);border:1px solid var(--line2);color:var(--muted);width:34px;height:34px;border-radius:9px;
     font-size:18px;cursor:pointer;transition:.15s;}
   .gs-x:hover{color:#fff;border-color:var(--aor1);}
-  /* barre "arme" décorative avec noeuds */
-  .gs-weapon{position:relative;height:172px;margin:0 0 18px;border-radius:12px;
-    background:radial-gradient(120% 90% at 50% 30%,rgba(184,160,106,.07),transparent 60%),linear-gradient(180deg,rgba(0,0,0,.4),rgba(0,0,0,.15));
-    border:1px solid var(--line);overflow:hidden;}
-  #gs-weapon-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;}
-  .gs-weapon .gs-wlabel{position:absolute;top:10px;left:14px;z-index:1;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;transition:opacity .4s;}
-  .gs-weapon .gs-wtag{position:absolute;bottom:10px;right:14px;z-index:1;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;pointer-events:none;}
-  .gs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;}
-  .gs-slot{position:relative;background:linear-gradient(160deg,rgba(22,27,18,.9),rgba(11,14,10,.85));
-    border:1px solid var(--line2);border-radius:11px;padding:11px 13px;transition:border-color .2s,box-shadow .2s;}
-  .gs-slot.filled{border-color:var(--aor1);box-shadow:0 0 16px rgba(184,160,106,.14) inset;}
-  .gs-slot .gs-slabel{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;
-    text-transform:uppercase;color:var(--amber);margin-bottom:7px;}
-  .gs-slot .gs-sico{font-size:14px;opacity:.7;}
-  .gs-slot.filled .gs-slabel{color:var(--aor1b);}
-  .gs-slot input{width:100%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;color:var(--txt);
-    font-size:13.5px;padding:9px 10px;font-family:inherit;transition:border-color .15s;}
-  .gs-slot input:focus{outline:none;border-color:var(--aor1);box-shadow:0 0 0 2px rgba(184,160,106,.16);}
-  .gs-slot input::placeholder{color:var(--dim);font-style:italic;}
-  .gs-slot .gs-dot{position:absolute;top:11px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--line2);transition:.2s;}
-  .gs-slot.filled .gs-dot{background:var(--amber);box-shadow:0 0 8px rgba(216,162,58,.7);}
-  .gs-foot{display:flex;align-items:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);flex-wrap:wrap;}
-  .gs-hint{font-family:var(--mono);font-size:10px;color:var(--dim);letter-spacing:.5px;flex:1;min-width:160px;}
-  .gs-reset{background:var(--surface2);border:1px solid var(--line2);color:var(--muted);border-radius:9px;
-    font-family:var(--mono);font-size:12px;padding:11px 16px;cursor:pointer;letter-spacing:1px;transition:.15s;}
+  /* ===== gunsmith plein écran MW ===== */
+  .gs-weapon{position:absolute;inset:0;margin:0;border-radius:16px;background:transparent;border:none;overflow:hidden;}
+  #gs-weapon-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;}
+  #gs-weapon-canvas:active{cursor:grabbing;}
+  .gs-weapon .gs-wlabel{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1;font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;transition:opacity .4s;}
+  .gs-weapon .gs-wtag{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:3;font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;pointer-events:none;opacity:.7;}
+  /* en-tête arme (haut-gauche) facon MW */
+  .gs-hero{position:absolute;top:20px;left:24px;z-index:5;pointer-events:none;}
+  .gs-hero .gs-badge{margin-bottom:4px;}
+  .gs-hero .gs-wname{font-family:var(--mono);font-size:40px;font-weight:800;letter-spacing:2px;line-height:.95;
+    background:linear-gradient(180deg,#f2e8cf,#b49a63);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .gs-hero .gs-wlvl{font-family:var(--mono);font-size:10px;letter-spacing:3px;color:var(--amber);text-transform:uppercase;margin-top:5px;}
+  .gs-topbar{position:absolute;top:18px;left:50%;transform:translateX(-50%);z-index:6;display:flex;gap:6px;
+    background:rgba(8,10,7,.7);border:1px solid var(--line2);border-radius:11px;padding:5px;backdrop-filter:blur(8px);}
+  .gs-tab{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+    background:transparent;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;transition:.15s;}
+  .gs-tab.on{background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#181305;}
+  /* points de montage */
+  .gs-node{position:absolute;z-index:7;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;cursor:pointer;
+    background:none;border:none;padding:0;}
+  .gs-node .nd-dot{width:30px;height:30px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,13,9,.72);border:1.5px solid rgba(216,192,137,.6);color:var(--aor1b);font-size:16px;font-weight:700;
+    backdrop-filter:blur(4px);transition:transform .18s var(--ease-out-strong),border-color .18s,background .18s,box-shadow .18s;}
+  .gs-node .nd-lab{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#e7dcc2;
+    background:rgba(8,10,7,.66);border:1px solid var(--line2);border-radius:7px;padding:5px 9px;white-space:nowrap;
+    transition:border-color .18s,color .18s;text-shadow:0 1px 3px rgba(0,0,0,.7);}
+  .gs-node .nd-sub{display:block;font-size:8px;letter-spacing:1px;color:var(--amber);margin-top:1px;}
+  .gs-node.right{flex-direction:row-reverse;}
+  .gs-node:hover .nd-dot,.gs-node.active .nd-dot{transform:scale(1.15);border-color:var(--aor1b);
+    background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#181305;box-shadow:0 0 22px rgba(196,171,111,.55);}
+  .gs-node:hover .nd-lab,.gs-node.active .nd-lab{border-color:var(--aor1);color:#fff;}
+  .gs-node.filled .nd-dot{border-color:var(--aor1b);background:rgba(154,127,67,.35);color:#f2e8cf;}
+  .gs-node .nd-dot .pulse{position:absolute;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(216,192,137,.5);animation:ndPulse 2.4s ease-out infinite;}
+  @keyframes ndPulse{0%{transform:scale(1);opacity:.7;}70%{transform:scale(1.9);opacity:0;}100%{opacity:0;}}
+  /* popover de catégorie */
+  .gs-pop{position:absolute;z-index:12;width:250px;max-width:78vw;
+    background:linear-gradient(180deg,rgba(20,24,16,.97),rgba(10,13,9,.97));border:1px solid var(--line2);border-radius:13px;
+    box-shadow:0 24px 60px rgba(0,0,0,.7);padding:13px;display:none;animation:gsPopIn .2s var(--ease-out-strong);}
+  .gs-pop.show{display:block;}
+  @keyframes gsPopIn{from{opacity:0;transform:translateY(8px) scale(.97);}to{opacity:1;transform:none;}}
+  .gs-pop .pop-h{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+  .gs-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
+    background:rgba(11,14,10,.6);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;margin-bottom:7px;transition:.14s;}
+  .gs-opt:last-child{margin-bottom:0;}
+  .gs-opt .o-ic{width:26px;height:26px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    background:rgba(154,127,67,.16);color:var(--aor1b);font-size:14px;}
+  .gs-opt .o-tx{flex:1;min-width:0;}
+  .gs-opt .o-name{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;color:#e7dcc2;}
+  .gs-opt .o-sub{font-size:9px;letter-spacing:.5px;color:var(--dim);text-transform:uppercase;margin-top:1px;}
+  .gs-opt .o-chk{width:16px;height:16px;flex:none;border-radius:50%;border:1.5px solid var(--line2);transition:.15s;}
+  .gs-opt:hover{border-color:var(--aor1);}
+  .gs-opt.on{border-color:var(--aor1b);background:rgba(154,127,67,.2);}
+  .gs-opt.on .o-chk{background:var(--aor1b);border-color:var(--aor1b);box-shadow:0 0 8px rgba(196,171,111,.6);}
+  .gs-opt.na{opacity:.5;}.gs-opt.na .o-sub{color:var(--op);}
+  /* barre stats bas-gauche */
+  .gs-stats{position:absolute;left:24px;bottom:22px;z-index:5;width:230px;pointer-events:none;}
+  .gs-stats .st-h{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:8px;display:flex;justify-content:space-between;}
+  .gs-stats .st-h b{color:var(--amber);}
+  .gs-modrow{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+  .gs-modrow .m-l{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;width:78px;}
+  .gs-modrow .m-bar{flex:1;height:5px;border-radius:3px;background:rgba(0,0,0,.5);overflow:hidden;}
+  .gs-modrow .m-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--aor1),var(--amber));transition:width .6s var(--ease-out-strong);}
+  /* pied d'action */
+  .gs-foot{position:absolute;right:22px;bottom:22px;z-index:8;display:flex;align-items:center;gap:10px;margin:0;padding:0;border:none;}
+  .gs-x{position:absolute;top:18px;right:20px;z-index:9;background:rgba(8,10,7,.7);border:1px solid var(--line2);color:var(--muted);width:38px;height:38px;border-radius:10px;font-size:19px;cursor:pointer;transition:.15s;backdrop-filter:blur(6px);}
+  .gs-namewrap{position:absolute;left:24px;top:120px;z-index:5;}
+  .gs-name{background:transparent;border:none;border-bottom:2px solid var(--line2);color:var(--txt);
+    font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:2px;padding:2px 0;width:240px;
+    text-transform:uppercase;transition:border-color .2s;}
+  .gs-name:focus{outline:none;border-color:var(--aor1);}
+  .gs-reset{background:rgba(8,10,7,.7);border:1px solid var(--line2);color:var(--muted);border-radius:9px;
+    font-family:var(--mono);font-size:11px;padding:11px 15px;cursor:pointer;letter-spacing:1px;transition:.15s;backdrop-filter:blur(6px);}
   .gs-reset:hover{color:#fff;border-color:var(--op);}
   .gs-save{background:linear-gradient(180deg,#c4ab6f,#9a7f43);border:none;border-radius:9px;color:#1a1605;
-    font-family:var(--mono);font-weight:800;font-size:13px;letter-spacing:2px;padding:12px 26px;cursor:pointer;
+    font-family:var(--mono);font-weight:800;font-size:12px;letter-spacing:2px;padding:12px 24px;cursor:pointer;
     text-transform:uppercase;box-shadow:0 6px 18px rgba(154,127,67,.35);transition:filter .15s,transform .12s;}
   .gs-save:hover{filter:brightness(1.08);}.gs-save:active{transform:scale(.97);}
-  @media(max-width:620px){.gs-panel{padding:16px;}.gs-name{font-size:20px;}.gs-grid{grid-template-columns:1fr;}}
+  .gs-note{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);z-index:5;font-family:var(--mono);font-size:9px;
+    letter-spacing:1px;color:var(--dim);text-align:center;max-width:60%;pointer-events:none;}
+  @media(max-width:760px){
+    .gs-hero .gs-wname{font-size:26px;}.gs-topbar{top:64px;}
+    .gs-node .nd-lab{font-size:8px;padding:4px 6px;}.gs-node .nd-dot{width:26px;height:26px;font-size:14px;}
+    .gs-stats{display:none;}.gs-namewrap{top:96px;}.gs-pop{width:210px;}
+  }
 </style>
 <script>
 (function(){
-  var SLOTS=[
-    {k:'muzzle',label:'Bouche',ico:'\u25CE',ph:'Silencieux, cache-flamme, frein\u2026'},
-    {k:'barrel',label:'Canon',ico:'\u2015',ph:'Longueur, mat\u00e9riau, RIS\u2026'},
-    {k:'optic',label:'Optique',ico:'\u25C9',ph:'Point rouge, holo, lunette\u2026'},
-    {k:'laser',label:'Laser / PEQ',ico:'\u2727',ph:'PEQ-15, DBAL, laser\u2026'},
-    {k:'under',label:'Sous-canon',ico:'\u2533',ph:'Poign\u00e9e avant, bipied\u2026'},
-    {k:'rear',label:'Poign\u00e9e arri\u00e8re',ico:'\u2517',ph:'Grip, angle, texture\u2026'},
-    {k:'mag',label:'Chargeur',ico:'\u25AF',ph:'Capacit\u00e9, mid-cap, hi-cap\u2026'},
-    {k:'stock',label:'Crosse',ico:'\u25E7',ph:'Fixe, r\u00e9tractable, CTR\u2026'},
-    {k:'ammo',label:'Munitions',ico:'\u2219',ph:'Billes, gr, hop-up\u2026'},
-    {k:'guard',label:'Garde-main',ico:'\u25AD',ph:'RIS, M-LOK, KeyMod\u2026'}
-  ];
   var curId=null,curSlot=null,el=null;
+  /* modèles 3D d'accessoires réellement présents (montés sur l'arme) */
+  var GUN3D=[
+    {id:'e553',file:'item_eotech_553.glb',grp:'optic',pos:[0,0.075,0.02],size:0.17,rot:[0,0,0],tan:true},
+    {id:'mag',file:'item_eotech_magnifier.glb',grp:'optic2',pos:[0,0.072,-0.12],size:0.15,rot:[0,0,0]},
+    {id:'peq15',file:'item_peq15.glb',grp:'laser',pos:[0.05,0.055,0.16],size:0.1,rot:[0,0,0]},
+    {id:'dbal',file:'item_peq15.glb',grp:'laser',pos:[0.05,0.055,0.16],size:0.1,rot:[0,0,0],dark:true}
+  ];
+  /* modèle 3D exact par arme (aucun modèle générique) */
+  var WEAPONS={
+    p:{file:'weapon_mk18.glb',name:'MK18',cls:'Fusil d\'assaut',fit:0.92},
+    s:{file:'item_sp226.glb',name:'SP226',cls:'Arme de poing',fit:0.6}
+  };
+  /* points de montage MW : position en % du stage + options de la catégorie */
+  var CATS=[
+    {k:'muzzle',label:'Bouche',x:16,y:60,mode:'text',opts:[
+      {v:'Silencieux tan',sub:'R\u00e9duction signature'},{v:'Cache-flamme',sub:'Anti-flash'},
+      {v:'Frein de bouche',sub:'Anti-recul'},{v:'Lampe M600C',sub:'Tan / sable'},{v:'Aucun',sub:'Nu'}]},
+    {k:'barrel',label:'Canon',x:27,y:33,mode:'text',opts:[
+      {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
+    {k:'laser',label:'Laser / PEQ',x:43,y:20,mode:'mount3d',opts:[
+      {v:'peq15',name:'AN/PEQ-15',sub:'Tan / sable'},{v:'dbal',name:'DBAL-A2',sub:'Dark earth'}]},
+    {k:'optic',label:'Optique',x:60,y:23,mode:'mount3d',opts:[
+      {v:'e553',name:'EOTech 552 TAN',sub:'Holographique'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'}]},
+    {k:'stock',label:'Crosse',x:87,y:33,right:true,mode:'text',opts:[
+      {v:'Fixe',sub:'Rigide'},{v:'R\u00e9tractable',sub:'Ajustable'},{v:'CTR',sub:'Magpul'},{v:'PDW',sub:'Compacte'}]},
+    {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,right:true,mode:'text',opts:[
+      {v:'Standard',sub:'A2'},{v:'Angle',sub:'Ergonomique'},{v:'Textur\u00e9e',sub:'Grip+'},{v:'Speed',sub:'Rapide'}]},
+    {k:'mag',label:'Chargeur',x:54,y:77,mode:'text',opts:[
+      {v:'20 coups',sub:'Compact'},{v:'30 coups',sub:'Standard'},{v:'40 coups',sub:'\u00c9tendu'},{v:'60 coups',sub:'Tambour'}]},
+    {k:'under',label:'Sous-canon',x:34,y:68,mode:'text',opts:[
+      {v:'Poign\u00e9e AV',sub:'Verticale'},{v:'Bipied',sub:'Stabilit\u00e9'},{v:'Angle grip',sub:'Hybride'},{v:'Aucun',sub:'\u2014'}]}
+  ];
+  function catByK(k){for(var i=0;i<CATS.length;i++)if(CATS[i].k===k)return CATS[i];return null;}
+  var mount3D={};    /* id -> THREE.Object3D actuellement monté */
+  var mount3Dcache={};
+  var SEL={};        /* état courant : catKey -> valeur (string) ou array (optic) */
   function db(){return window.db||{};}
   function memId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
   function key(id,slot){return 'bs_gun_'+id+'_'+slot;}
@@ -6221,44 +6316,111 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     el=document.createElement('div');el.className='gs-overlay';el.id='gunsmith';
     el.innerHTML=''+
       '<div class="gs-panel">'+
-        '<div class="gs-head">'+
-          '<div style="flex:1;min-width:200px">'+
-            '<div class="gs-badge">// Gunsmith</div>'+
-            '<div class="gs-class" id="gs-class">Arme principale</div>'+
-            '<input class="gs-name" id="gs-name" maxlength="28" placeholder="NOM DE L\'ARME">'+
-          '</div>'+
-          '<div class="gs-head-right">'+
-            '<button class="gs-x" onclick="closeGunsmith()" title="Fermer">&times;</button>'+
-            '<div class="gs-count" id="gs-count"><b>0</b>/'+SLOTS.length+' accessoires</div>'+
-          '</div>'+
-        '</div>'+
-        '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Aper\u00e7u 3D</span><span class="gs-wtag">MK18 \u00b7 glisse pour tourner</span></div>'+
-        '<div class="gs-grid" id="gs-grid"></div>'+
+        '<button class="gs-x" onclick="closeGunsmith()" title="Fermer">&times;</button>'+
+        '<div class="gs-topbar"><button class="gs-tab on">Build Weapon</button><button class="gs-tab" onclick="closeGunsmith()">Op\u00e9rateur</button></div>'+
+        '<div class="gs-hero"><div class="gs-badge" id="gs-class">// Fusil d\'assaut</div>'+
+          '<div class="gs-wname" id="gs-wname">MK18</div>'+
+          '<div class="gs-wlvl" id="gs-wlvl">Niveau 1 / 28</div></div>'+
+        '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
+        '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Chargement 3D\u2026</span><span class="gs-wtag">glisse pour tourner</span></div>'+
+        '<div id="gs-nodes"></div>'+
+        '<div class="gs-pop" id="gs-pop"></div>'+
+        '<div class="gs-stats"><div class="st-h">Modifications <span><b id="gs-count">0</b>/'+CATS.length+'</span></div><div id="gs-mods"></div></div>'+
+        '<div class="gs-note" id="gs-note"></div>'+
         '<div class="gs-foot">'+
-          '<span class="gs-hint">Remplis les emplacements avec ton mat\u00e9riel r\u00e9el \u2014 tout est sauvegard\u00e9 par op\u00e9rateur.</span>'+
-          '<button class="gs-reset" onclick="gunsmithReset()">R\u00e9initialiser</button>'+
+          '<button class="gs-reset" onclick="gunsmithReset()">Tout retirer</button>'+
           '<button class="gs-save" onclick="gunsmithSave()">Enregistrer</button>'+
         '</div>'+
       '</div>';
     document.body.appendChild(el);
     el.addEventListener('click',function(e){if(e.target===el)closeGunsmith();});
-    var grid=el.querySelector('#gs-grid');
-    grid.innerHTML=SLOTS.map(function(s){
-      return '<div class="gs-slot" data-k="'+s.k+'">'+
-        '<span class="gs-dot"></span>'+
-        '<div class="gs-slabel"><span class="gs-sico">'+s.ico+'</span>'+s.label+'</div>'+
-        '<input type="text" data-k="'+s.k+'" placeholder="'+s.ph+'">'+
-      '</div>';
+    /* points de montage */
+    var nodesBox=el.querySelector('#gs-nodes');
+    nodesBox.innerHTML=CATS.map(function(c){
+      return '<button class="gs-node'+(c.right?' right':'')+'" data-k="'+c.k+'" style="left:'+c.x+'%;top:'+c.y+'%">'+
+        '<span class="nd-dot"><span class="pulse"></span>+</span>'+
+        '<span class="nd-lab">'+c.label+'<span class="nd-sub" data-sub></span></span>'+
+      '</button>';
     }).join('');
-    grid.addEventListener('input',function(e){
-      var inp=e.target;if(inp.tagName!=='INPUT')return;
-      inp.closest('.gs-slot').classList.toggle('filled',!!inp.value.trim());
-      updateCount();
+    nodesBox.addEventListener('click',function(e){var b=e.target.closest('.gs-node');if(b)openCat(b.getAttribute('data-k'),b);});
+    /* barres de stats décoratives */
+    var mods=[['Pr\u00e9cision',62],['D\u00e9g\u00e2ts',54],['Port\u00e9e',48],['Cadence',70],['Contr\u00f4le',58],['Mobilit\u00e9',66]];
+    el.querySelector('#gs-mods').innerHTML=mods.map(function(m){
+      return '<div class="gs-modrow"><span class="m-l">'+m[0]+'</span><span class="m-bar"><i style="width:'+m[1]+'%"></i></span></div>';
+    }).join('');
+    document.addEventListener('click',function(e){
+      if(!el||!el.classList.contains('show'))return;
+      if(e.target.closest('.gs-pop')||e.target.closest('.gs-node'))return;
+      closePop();
+    });
+  }
+  var popCat=null;
+  function closePop(){var p=el&&el.querySelector('#gs-pop');if(p)p.classList.remove('show');
+    if(el)el.querySelectorAll('.gs-node').forEach(function(n){n.classList.remove('active');});popCat=null;}
+  function openCat(k,btn){
+    var c=catByK(k);if(!c)return;var p=el.querySelector('#gs-pop');
+    if(popCat===k){closePop();return;}
+    el.querySelectorAll('.gs-node').forEach(function(n){n.classList.toggle('active',n.getAttribute('data-k')===k);});
+    popCat=k;
+    var cur=SEL[k];
+    p.innerHTML='<div class="pop-h">'+c.label+(c.mode==='mount3d'?' \u2014 3D':'')+'</div>'+
+      c.opts.map(function(o,oi){
+        var on=(c.mode==='mount3d')?(Array.isArray(cur)&&cur.indexOf(o.v)>=0):(cur===o.v&&o.v!=='Aucun');
+        var nm=o.name||o.v;
+        return '<button class="gs-opt'+(on?' on':'')+'" data-i="'+oi+'"><span class="o-ic">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+
+          '<span class="o-tx"><span class="o-name">'+nm+'</span><span class="o-sub">'+(o.sub||'')+'</span></span>'+
+          '<span class="o-chk"></span></button>';
+      }).join('');
+    /* positionnement du popover près du node, dans le cadre */
+    var pr=el.getBoundingClientRect(),nr=btn.getBoundingClientRect();
+    var left=nr.left-pr.left+nr.width/2;var top=nr.top-pr.top+nr.height/2+22;
+    left=Math.max(14,Math.min(pr.width-264,left-125));
+    top=Math.max(70,Math.min(pr.height-260,top));
+    p.style.left=left+'px';p.style.top=top+'px';p.classList.add('show');
+    p.querySelectorAll('.gs-opt').forEach(function(btn2){
+      btn2.addEventListener('click',function(){var oi=+btn2.getAttribute('data-i');var o=c.opts[oi];if(o)chooseOpt(k,o.v);});
+    });
+  }
+  function chooseOpt(k,v){
+    var c=catByK(k);if(!c)return;
+    if(c.mode==='mount3d'){
+      /* SEL optimiste : on ne dépend pas du chargement async du GLB */
+      var arr=Array.isArray(SEL[k])?SEL[k].slice():[];
+      var idx=arr.indexOf(v);
+      if(idx>=0)arr.splice(idx,1); else{
+        /* exclusivité par groupe 3D */
+        var g=null;GUN3D.forEach(function(a){if(a.id===v)g=a;});
+        if(g){arr=arr.filter(function(id){var x=null;GUN3D.forEach(function(a){if(a.id===id)x=a;});return !(x&&x.grp===g.grp);});}
+        arr.push(v);
+      }
+      SEL[k]=arr.length?arr:null;
+      toggleMount(v);
+      var p=el.querySelector('#gs-pop');
+      if(p)p.querySelectorAll('.gs-opt').forEach(function(b){var oi=+b.getAttribute('data-i');var o=c.opts[oi];b.classList.toggle('on',!!o&&arr.indexOf(o.v)>=0);});
+    }else{
+      SEL[k]=(v==='Aucun')?null:v;closePop();
+    }
+    refreshNodes();updateCount();
+  }
+  function mountedIds(){return Object.keys(mount3D);}
+  function refreshNodes(){
+    if(!el)return;
+    CATS.forEach(function(c){
+      var node=el.querySelector('.gs-node[data-k="'+c.k+'"]');if(!node)return;
+      var val=SEL[c.k];var has=(c.mode==='mount3d')?(Array.isArray(val)&&val.length):(!!val);
+      node.classList.toggle('filled',!!has);
+      var sub=node.querySelector('[data-sub]');
+      if(sub){
+        if(c.mode==='mount3d'&&Array.isArray(val)&&val.length){
+          var names=val.map(function(id){var o=null;c.opts.forEach(function(x){if(x.v===id)o=x;});return o?(o.name||o.v):id;});
+          sub.textContent=names.join(' + ');
+        }else sub.textContent=has?val:'';
+      }
     });
   }
   function updateCount(){
-    var n=[].slice.call(el.querySelectorAll('.gs-grid input')).filter(function(i){return i.value.trim();}).length;
-    el.querySelector('#gs-count').innerHTML='<b>'+n+'</b>/'+SLOTS.length+' accessoires';
+    if(!el)return;var n=0;CATS.forEach(function(c){var v=SEL[c.k];if(c.mode==='mount3d'){if(Array.isArray(v)&&v.length)n++;}else if(v)n++;});
+    var el2=el.querySelector('#gs-count');if(el2)el2.textContent=n;
   }
   /* ---------- viewer 3D de l'arme (MK18) ---------- */
   var GW={inited:false,raf:0,rot:-0.5,tRot:-0.5,rx:0,drag:false,px:0,py:0,touched:false};
@@ -6276,16 +6438,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var rw=new THREE.DirectionalLight(0xc9a15e,0.8);rw.position.set(2,-1,-1.5);scene.add(rw);
     var grp=new THREE.Group();scene.add(grp);
     GW.scene=scene;GW.cam=cam;GW.r=r;GW.grp=grp;GW.inited=true;
-    if(THREE.GLTFLoader){
-      new (window.bsGLTF||THREE.GLTFLoader)().load('weapon_mk18.glb',function(g){
-        var model=g.scene;var box=new THREE.Box3().setFromObject(model);var size=new THREE.Vector3();box.getSize(size);
-        var s=0.92/(Math.max(size.x,size.y,size.z)||1);model.scale.setScalar(s);
-        box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);model.position.set(-c.x,-c.y,-c.z);
-        model.traverse(function(o){if(o.isMesh)o.frustumCulled=false;});
-        grp.add(model);GW.loaded=true;
-        var wl=el.querySelector('.gs-wlabel');if(wl)wl.style.opacity=0;
-      },undefined,function(){});
-    }
     /* rotation à la souris/doigt */
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
     cv.addEventListener('mousedown',function(e){GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
@@ -6298,6 +6450,45 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   function resizeWeapon(){var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!GW.r)return;
     var w=cv.clientWidth,h=cv.clientHeight;if(w<10||h<10)return;GW.r.setSize(w,h,false);GW.cam.aspect=w/h;GW.cam.updateProjectionMatrix();}
+  function loadWeaponModel(slot){
+    if(!GW.grp||!THREE.GLTFLoader)return;
+    /* purge de l'arme + accessoires montés */
+    Object.keys(mount3D).forEach(function(id){GW.grp.remove(mount3D[id]);delete mount3D[id];});
+    if(GW.weapon){GW.grp.remove(GW.weapon);GW.weapon=null;}
+    var cfg=WEAPONS[slot]||WEAPONS.p;GW.curFit=cfg.fit||0.92;
+    var wl=el&&el.querySelector('.gs-wlabel');if(wl)wl.style.opacity=1;
+    (window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader()).load(cfg.file,function(g){
+      var model=g.scene;var box=new THREE.Box3().setFromObject(model);var size=new THREE.Vector3();box.getSize(size);
+      var s=cfg.fit/(Math.max(size.x,size.y,size.z)||1);model.scale.setScalar(s);
+      box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);model.position.set(-c.x,-c.y,-c.z);
+      model.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
+        if(o.material){var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.emissive)x.emissive.setHex(0x000000);if(x.envMapIntensity!=null)x.envMapIntensity=.3;});}}});
+      GW.grp.add(model);GW.weapon=model;
+      if(wl)wl.style.opacity=0;
+    },undefined,function(){if(wl)wl.textContent='// Mod\u00e8le indisponible';});
+  }
+  function toggleMount(id){
+    var cfg=null;GUN3D.forEach(function(a){if(a.id===id)cfg=a;});if(!cfg||!GW.grp)return;
+    if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];return;}
+    Object.keys(mount3D).forEach(function(mid){var c;GUN3D.forEach(function(a){if(a.id===mid)c=a;});
+      if(c&&c.grp===cfg.grp){GW.grp.remove(mount3D[mid]);delete mount3D[mid];}});
+    function place(obj){
+      obj.position.set(0,0,0);obj.rotation.set(0,0,0);obj.scale.set(1,1,1);
+      var box=new THREE.Box3().setFromObject(obj);var sz=new THREE.Vector3();box.getSize(sz);
+      var sc=cfg.size/(Math.max(sz.x,sz.y,sz.z)||1);obj.scale.setScalar(sc);
+      box.setFromObject(obj);var c=new THREE.Vector3();box.getCenter(c);
+      obj.position.set(cfg.pos[0]-c.x,cfg.pos[1]-c.y,cfg.pos[2]-c.z);obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
+      GW.grp.add(obj);mount3D[id]=obj;
+    }
+    if(mount3Dcache[id]){place(mount3Dcache[id].clone());return;}
+    (window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader()).load(cfg.file,function(g){
+      g.scene.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
+        if(o.material){var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){
+          if(cfg.tan&&x.color)x.color.setHex(0xa88951);
+          if(cfg.dark&&x.color)x.color.setHex(0x3a3529);
+        });}}});
+      mount3Dcache[id]=g.scene;place(g.scene);},undefined,function(){});
+  }
   function weaponLoop(){
     if(!el||!el.classList.contains('show')){GW.raf=0;return;}
     GW.raf=requestAnimationFrame(weaponLoop);
@@ -6312,43 +6503,49 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var m=(curId&&db()[curId])?db()[curId]:{};
     var rep=(slot==='p')?(m.rep1||{}):(m.rep2||{});
     var saved=load(curId,slot)||{};
-    el.querySelector('#gs-class').textContent=(slot==='p')?'Arme principale':'Arme secondaire';
+    var w=WEAPONS[slot]||WEAPONS.p;
+    el.querySelector('#gs-class').textContent='// '+w.cls;
+    el.querySelector('#gs-wname').textContent=saved.name||rep.model||w.name;
     el.querySelector('#gs-name').value=saved.name||rep.model||'';
+    /* restaurer l'état */
+    SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
     var att=saved.att||{};
-    SLOTS.forEach(function(s){
-      var inp=el.querySelector('.gs-grid input[data-k="'+s.k+'"]');
-      inp.value=att[s.k]||'';
-      inp.closest('.gs-slot').classList.toggle('filled',!!inp.value.trim());
-    });
-    updateCount();
+    Object.keys(att).forEach(function(k){SEL[k]=att[k];});
     el.classList.add('show');
     if(!GW.inited)initWeapon();
+    loadWeaponModel(slot);
+    /* remonter les optiques 3D sauvegardées */
+    setTimeout(function(){
+      var oc=catByK('optic');if(oc&&Array.isArray(SEL.optic)){SEL.optic.forEach(function(id){toggleMount(id);});}
+      refreshNodes();updateCount();
+    },300);
+    refreshNodes();updateCount();closePop();
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
   };
-  window.closeGunsmith=function(){if(el)el.classList.remove('show');};
+  window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
-    if(!el)return;
-    el.querySelectorAll('.gs-grid input').forEach(function(i){i.value='';i.closest('.gs-slot').classList.remove('filled');});
-    updateCount();
+    SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
+    refreshNodes();updateCount();closePop();
   };
   window.gunsmithSave=function(){
     if(!el||!curId){if(window.bsToast)bsToast('S\u00e9lectionne un op\u00e9rateur',{type:'err'});return;}
     var name=el.querySelector('#gs-name').value.trim();
     var att={},list=[];
-    SLOTS.forEach(function(s){
-      var v=el.querySelector('.gs-grid input[data-k="'+s.k+'"]').value.trim();
-      if(v){att[s.k]=v;list.push(s.label+': '+v);}
+    CATS.forEach(function(c){var v=SEL[c.k];if(!v)return;
+      if(c.mode==='mount3d'&&Array.isArray(v)&&v.length){att[c.k]=v.slice();
+        var names=v.map(function(id){var o=null;c.opts.forEach(function(x){if(x.v===id)o=x;});return o?(o.name||o.v):id;});
+        list.push(c.label+': '+names.join(' + '));}
+      else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
     try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
-    /* refléter sur la carte d'arme */
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
     if(card){
       if(name)card.querySelector('.es-name').textContent=name;
       var sub=card.querySelector('.es-sub');if(sub)sub.textContent=list.length?list.join('  \u00b7  '):'Configuration standard';
       var n=list.length,dots=card.querySelectorAll('.es-dot');
       dots.forEach(function(d,i){d.classList.toggle('on',i<Math.min(5,n));});
-      var lvl=card.querySelector('.es-level i');if(lvl)lvl.style.width=Math.max(6,Math.min(100,n*10))+'%';
+      var lvl=card.querySelector('.es-level i');if(lvl)lvl.style.width=Math.max(6,Math.min(100,n*13))+'%';
       var lt=card.querySelector('.es-lvltxt');if(lt)lt.textContent='Niveau '+(n||1)+' \u2014 '+(n>=6?'Optimis\u00e9e':n>=3?'\u00c9quip\u00e9e':'Standard');
     }
     if(window.bsToast)bsToast('\u2714 Arme enregistr\u00e9e ('+list.length+' accessoires)');
@@ -6364,7 +6561,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     ['p','s'].forEach(function(slot){
       var saved=load(id,slot);if(!saved)return;
       var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+slot+'"]');if(!card)return;
-      var list=[];SLOTS.forEach(function(s){if(saved.att&&saved.att[s.k])list.push(s.label+': '+saved.att[s.k]);});
+      var list=[];CATS.forEach(function(c){var v=saved.att&&saved.att[c.k];if(!v)return;
+        if(c.mode==='mount3d'&&Array.isArray(v)&&v.length){var names=v.map(function(id){var o=null;c.opts.forEach(function(x){if(x.v===id)o=x;});return o?(o.name||o.v):id;});list.push(c.label+': '+names.join(' + '));}
+        else if(c.mode!=='mount3d')list.push(c.label+': '+v);});
       if(saved.name)card.querySelector('.es-name').textContent=saved.name;
       var sub=card.querySelector('.es-sub');if(sub&&list.length)sub.textContent=list.join('  \u00b7  ');
       var n=list.length,dots=card.querySelectorAll('.es-dot');
