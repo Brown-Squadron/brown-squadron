@@ -5864,7 +5864,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       else if(m.color){m.color.setHex(green?0x556a34:0xffffff);} /* pas de tex camo -> teinte verte AOR2 multipliée sur le sable */
       m.needsUpdate=true;});
     var carC=green?0x3f4a2c:0x7d6a45;
-    if(EQ.armorMats)EQ.armorMats.forEach(function(m){if(m.color)m.color.setHex(carC);m.needsUpdate=true;});
+    if(EQ.armorMats)EQ.armorMats.forEach(function(m){
+      if(tex){m.map=tex;if(m.color)m.color.setHex(0xffffff);}
+      else if(m.color){m.color.setHex(carC);}
+      m.needsUpdate=true;});
     /* AOR2 : casque 100% Olive Drab, aucune texture camo dessus */
     (EQ.helmetMats||[]).forEach(function(m){
       if(green){m.map=null;if(m.color)m.color.setHex(0x454e30);   /* OD green kaki absolu */
@@ -5920,10 +5923,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               /* map \u00e0 dominante bleu/cyan (sangles, seams team-color) -> on retire la texture + teinte OD */
               if(mm.map){var avg=texAvg(mm.map);if(avg){var h2={},col=new THREE.Color(avg.r/255,avg.g/255,avg.b/255);col.getHSL(h2);
                 if(h2.h>0.45&&h2.h<0.82&&h2.s>0.18){mm.map=null;mm.color&&mm.color.setHex(0x454e30);mm.metalness=Math.min(mm.metalness||0,.15);mm.roughness=Math.max(mm.roughness||0,.85);}}}
-              var n=(mm.name||'').toLowerCase();
+              var n=((mm.name||'')+' '+(o.name||'')).toLowerCase();
               if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
-              else if(/armour|armor|carrier|plate|vest|body/.test(n))EQ.armorMats.push(mm);
+              else if(/armour|armor|carrier|plate|vest|body|chest|rig|jpc/.test(n))EQ.armorMats.push(mm);
               else if(/glove|hand|boot|shoe|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
@@ -5950,11 +5953,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 
   function init(){
     var canvas=document.getElementById('equip-canvas');var st=stage();if(!canvas||!st||!window.THREE)return false;
+    EQ.lowfps=!!(window.matchMedia&&window.matchMedia('(max-width:760px)').matches);
     var scene=new THREE.Scene();
     scene.background=bgTex();
     var cam=new THREE.PerspectiveCamera(33,1,0.1,50);cam.position.set(0.15,1.2,4.5);cam.lookAt(0,1.15,0);
     var r=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
-    r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
     if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
     if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;}
 
@@ -5988,13 +5992,20 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* textures camo */
     loadCamo(window.CAMO_AOR2,function(t){EQ.tex2=t;applyAor(EQ.aor,true);});
     loadCamo(window.CAMO_AOR1,function(t){EQ.tex1=t;});
-    loadCamoHi('camo_aor2.jpg',function(t){EQ.camoHi2=t;applyClothing();});
-    loadCamoHi('camo_aor1.avif',function(t){EQ.camoHi1=t;applyClothing();});
+    loadCamoHi('camo_aor2.png',function(t){EQ.camoHi2=t;applyClothing();});
+    loadCamoHi('camo_aor1.png',function(t){EQ.camoHi1=t;applyClothing();});
 
     /* interaction : glisser pour pivoter */
-    function down(e){EQ.drag=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;}
-    function move(e){if(!EQ.drag)return;var p=pt(e);var dx=p.x-EQ.px,dy=p.y-EQ.py;EQ.px=p.x;EQ.py=p.y;
-      EQ.tRotY+=dx*0.008;EQ.vY=dx*0.008;EQ.tRotX=Math.max(-0.5,Math.min(0.5,EQ.tRotX+dy*0.004));e.preventDefault&&e.preventDefault();}
+    function down(e){EQ.drag=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;}
+    function move(e){if(!EQ.drag)return;var p=pt(e);
+      /* mobile : on décide au 1er mouvement — vertical = laisser scroller la page, horizontal = pivoter */
+      if(!EQ.gest){var adx=Math.abs(p.x-EQ.sx),ady=Math.abs(p.y-EQ.sy);
+        if(adx<7&&ady<7)return;
+        if(ady>adx){EQ.drag=false;return;}
+        EQ.gest=1;}
+      var dx=p.x-EQ.px,dy=p.y-EQ.py;EQ.px=p.x;EQ.py=p.y;
+      EQ.tRotY+=dx*0.008;EQ.vY=dx*0.008;EQ.tRotX=Math.max(-0.5,Math.min(0.5,EQ.tRotX+dy*0.004));
+      if(e.cancelable&&e.preventDefault)e.preventDefault();}
     function up(){EQ.drag=false;}
     function pt(e){var t=e.touches&&e.touches[0];return{x:(t?t.clientX:e.clientX),y:(t?t.clientY:e.clientY)};}
     canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
@@ -6038,8 +6049,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 
   function loop(){
     EQ.raf=requestAnimationFrame(loop);
+    if(document.hidden)return;
     var view=document.getElementById('view-equip');
     if(!view||!view.classList.contains('active')||!EQ.r)return;
+    /* mobile : ~30 fps pour économiser la batterie */
+    if(EQ.lowfps){EQ.fc=(EQ.fc||0)+1;if(EQ.fc&1)return;}
     var now=performance.now();var t=(now-EQ.t0)/1000;
     if(!EQ.userTouched&&!reduce){EQ.tRotY=-0.28+Math.sin(t*0.32)*0.4;}
     else if(!EQ.drag){EQ.tRotY+=EQ.vY;EQ.vY*=0.94;}
@@ -6238,7 +6252,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!IV.inited){
       IV.scene=new THREE.Scene();
       IV.cam=new THREE.PerspectiveCamera(34,1,0.01,60);IV.cam.position.set(0,0,2.3);IV.cam.lookAt(0,0,0);
-      IV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});IV.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+      IV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});IV.r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
       if(THREE.sRGBEncoding)IV.r.outputEncoding=THREE.sRGBEncoding;
       if(THREE.ACESFilmicToneMapping){IV.r.toneMapping=THREE.ACESFilmicToneMapping;IV.r.toneMappingExposure=1.1;}
       IV.scene.add(new THREE.AmbientLight(0x4a5040,0.75));
@@ -6759,7 +6773,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var scene=new THREE.Scene();
     var cam=new THREE.PerspectiveCamera(32,1,0.01,50);cam.position.set(0,0.02,1.75);cam.lookAt(0,0,0);GW.zoom=1.75;
     var r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-    r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
     if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
     if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;}
     scene.add(new THREE.AmbientLight(0x42483c,0.7));
@@ -6941,6 +6955,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function weaponLoop(){
     if(!el||!el.classList.contains('show')){GW.raf=0;return;}
     GW.raf=requestAnimationFrame(weaponLoop);
+    if(document.hidden)return;
     if(!GW.touched)GW.tRot+=0.006;
     GW.rot+=(GW.tRot-GW.rot)*0.12;
     if(GW.grp){GW.grp.rotation.y=GW.rot;GW.grp.rotation.x=GW.rx;}
