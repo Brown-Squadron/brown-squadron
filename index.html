@@ -5702,8 +5702,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     border:1px solid var(--line2);border-radius:9px;padding:7px 8px;min-height:46px;transition:.14s;}
   .eq-oprow2.on{border-color:var(--aor2b);background:rgba(77,90,55,.32);}
   .eq-oprow2.loading{opacity:.55;pointer-events:none;}
-  .eq-oprow2 .op-hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;padding:4px 2px;}
-  .eq-oprow2 .op-chk{width:22px;height:22px;flex:none;border-radius:6px;border:1.5px solid var(--aor2b);
+  .eq-oprow2 .op-hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;padding:4px 2px;}
+  .eq-oprow2 .op-chk{width:26px;height:26px;flex:none;border-radius:7px;border:1.5px solid var(--aor2b);cursor:pointer;
     display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:transparent;transition:.15s;}
   .eq-oprow2.on .op-chk{background:var(--aor2b);border-color:var(--aor2b);color:#0b0f08;box-shadow:0 0 8px rgba(127,150,90,.5);}
   .eq-oprow2 .op-label{flex:1;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#dfe3d2;
@@ -6141,7 +6141,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     loadCamoHi('camo_aor1.png',function(t){EQ.camoHi1=t;applyClothing();});
 
     /* interaction : glisser pour pivoter, ou taper sur un équipement pour l'ouvrir en 3D */
-    function down(e){EQ.drag=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;}
+    function down(e){EQ.drag=true;EQ.pointerActive=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;}
     function move(e){if(!EQ.drag)return;var p=pt(e);
       /* mobile : on décide au 1er mouvement — vertical = laisser scroller la page, horizontal = pivoter */
       if(!EQ.gest){var adx=Math.abs(p.x-EQ.sx),ady=Math.abs(p.y-EQ.sy);
@@ -6168,6 +6168,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       return null;
     }
     function up(e){
+      /* ignore tout relâchement de clic qui n'a pas commencé sur ce canvas (case à cocher, panneau admin, etc.) */
+      if(!EQ.pointerActive)return;
+      EQ.pointerActive=false;
       var wasGest=EQ.gest;EQ.drag=false;EQ.gest=0;
       if(wasGest)return;
       var p=endPt(e);var sx=(EQ.sx!=null?EQ.sx:p.x),sy=(EQ.sy!=null?EQ.sy:p.y);
@@ -6324,12 +6327,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     box.innerHTML=ITEMORDER.map(function(id){
       var c=ITEMS[id];var on=!!EQ.mounted[id];if(on)anyOn=true;
       return '<div class="eq-oprow2'+(on?' on':'')+'" data-item="'+id+'">'+
-          '<span class="op-hit" onclick="equipToggleItem(\''+id+'\')">'+
-            '<span class="op-chk">\u2713</span>'+
+          '<span class="op-hit">'+
+            '<span class="op-chk" onclick="equipToggleItem(\''+id+'\')">\u2713</span>'+
             '<span class="op-label">'+c.label+'</span>'+
           '</span>'+
           (on?'<button class="op-view" onclick="event.stopPropagation();equipViewItem(\''+id+'\')" title="Voir en 3D">\u26F6</button>':'')+
-          (on&&isAdm?'<button class="op-edit" onclick="event.stopPropagation();showOpEditor(\''+id+'\')" title="Ajuster la position">\u2699</button>':'')+
+          (on&&isAdm?'<button class="op-edit" onclick="event.stopPropagation();opEditToggle(\''+id+'\')" title="Ajuster la position (admin)">\u2699</button>':'')+
         '</div>';
     }).join('')+'<div class="op-tap-hint">Astuce&nbsp;: touche directement l\u2019\u00e9quipement sur le personnage pour l\u2019ouvrir en 3D</div>';
     var panel=document.getElementById('eq-oppanel');if(panel)panel.classList.toggle('has-on',anyOn);
@@ -6343,6 +6346,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function opMeState(id){var o=EQ.mounted[id];if(!o)return null;
     return {px:o.position.x,py:o.position.y,pz:o.position.z,rx:o.rotation.x,ry:o.rotation.y,rz:o.rotation.z,s:o.scale.x};}
   function opStep(k){return {px:0.01,py:0.01,pz:0.01,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];}
+  var OPITEMCOL={};try{OPITEMCOL=JSON.parse(localStorage.getItem('bs_opitemcol')||'{}');}catch(e){OPITEMCOL={};}
+  function opSaveItemCol(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}}
+  window.opEditToggle=function(id){
+    if(!opIsAdmin())return;
+    var p=document.getElementById('eq-medit');
+    if(p&&p.classList.contains('show')&&EQ.editTarget===id){p.classList.remove('show');return;}
+    EQ.editTarget=id;showOpEditor(id);
+  };
   function showOpEditor(id){
     if(!opIsAdmin())return;
     var p=document.getElementById('eq-medit');
@@ -6357,9 +6368,22 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button onclick="opMeNudge(\''+id+'\',\''+k+'\',1)">+</button></div>';
       }).join('')+
       '<div class="me-act"><button class="me-save" onclick="opMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
-      '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div></div>';
+      '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
+      '<div class="me-collbl">Couleur</div><div class="me-cols">'+
+        [['Noir',0x1a1a1c],['AOR1',0xb2a074],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+          return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="opItemColor(\''+id+'\','+s[1]+')"></i>';
+        }).join('')+
+        '<input type="color" class="me-colfree" oninput="opItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
+      '</div></div>';
     p.classList.add('show');makeDraggable(p);
   }
+  window.opItemColor=function(id,hex){
+    var o=EQ.mounted[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
+      if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
+      var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
+    if(opIsAdmin()){OPITEMCOL[id]=hex;opSaveItemCol();}
+    var box=document.querySelector('#eq-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
+  };
   window.opMeMin=function(e){if(e)e.stopPropagation();var p=document.getElementById('eq-medit');if(p)p.classList.toggle('min');};
   window.opMeNudge=function(id,k,dir){var i=document.getElementById('ome-'+k);if(!i)return;
     i.value=(parseFloat(i.value||0)+dir*opStep(k)).toFixed(3);opMeSet(id);};
@@ -6396,10 +6420,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
       obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
       (EQ.model||EQ.scene).add(obj);EQ.mounted[id]=obj;
-      /* preset admin enregistré (référence partagée) */
+      /* preset admin enregistré (référence partagée) : position + couleur */
       var pr=(OPPRESET||{})[id];
       if(pr){if(pr.s)obj.scale.setScalar(pr.s);if(pr.p)obj.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)obj.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
-      EQ.editTarget=id;if(opIsAdmin())showOpEditor(id);
+      var colHex=OPITEMCOL[id];
+      if(colHex!=null)obj.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
+        if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
+        var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(colHex);x.needsUpdate=true;}});}});
+      EQ.editTarget=id;
       if(chip)chip.classList.remove('loading');renderItemBar();
     }
     if(EQ.itemObj[id]){place(EQ.itemObj[id]);return;}
@@ -6642,11 +6670,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-parts .pp-sw i{width:34px;height:34px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.18);transition:.12s;}
   .gs-parts .pp-sw i:hover,.gs-parts .pp-sw i:active{transform:scale(1.12);border-color:#fff;}
   .gs-parts .pp-free{width:34px;height:34px;padding:0;border:1px solid var(--line2);border-radius:8px;background:none;cursor:pointer;}
-  .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;cursor:move;}
+  .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;cursor:move;position:relative;padding-right:46px;min-height:14px;}
   .gs-medit .me-h b{background:#b0894a;color:#181305;padding:1px 5px;border-radius:5px;font-size:8px;margin-left:4px;}
-  .gs-medit .me-h .me-x{float:right;cursor:pointer;color:var(--muted);font-size:12px;line-height:1;padding:0 2px;}
+  .gs-medit .me-h .me-x{position:absolute;top:-2px;right:0;float:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:2px 4px;}
   .gs-medit .me-h .me-x:hover{color:#fff;}
-  .gs-medit .me-h .me-min{float:right;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:0 6px;font-weight:700;}
+  .gs-medit .me-h .me-min{position:absolute;top:-2px;right:22px;float:none;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:2px 6px;font-weight:700;}
   .gs-medit .me-h .me-min:hover{color:#fff;}
   .gs-medit.min .me-body{display:none;}
   .gs-medit.min .me-h{margin-bottom:0;}
@@ -6681,6 +6709,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-opt .o-fin i[data-fin="tan"].on{background:#b0894a;color:#181305;border-color:#b0894a;}
   .gs-opt .o-fin i[data-fin="black"].on{background:#2a2620;color:#e7e2d4;border-color:#5a5240;}
   .gs-opt .o-fin i:hover{color:#fff;}
+  .gs-opt .o-edit{font-style:normal;width:26px;height:26px;flex:none;border-radius:6px;border:1px solid var(--line2);
+    font-size:12px;color:var(--muted);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:6px;transition:.12s;}
+  .gs-opt .o-edit:hover{border-color:var(--aor1);color:var(--aor1b);}
   .gs-opt:last-child{margin-bottom:0;}
   .gs-opt .o-ic{width:26px;height:26px;flex:none;border-radius:6px;display:flex;align-items:center;justify-content:center;
     background:rgba(154,127,67,.16);color:var(--aor1b);font-size:14px;}
@@ -6741,9 +6772,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {id:'mag',file:'item_eotech_magnifier.glb',grp:'optic2',anchor:'rcvrTop',off:[-0.055,0.024,0],pos:[0,0.072,-0.12],size:0.12,rot:[Math.PI,1.5708,0],dark:true},
     {id:'peq15',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],tan:true},
     {id:'dbal',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],dark:true},
-    {id:'m600',file:'item_surefire_m600.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],tan:true},
+    {id:'m600',file:'item_lampe.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],tan:true},
     {id:'sil_perf',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.12,rot:[0,0,0],autoAxis:true,meshMatch:/ATS4/i,dark:true},
-    {id:'sil_smooth',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.11,rot:[0,0,0],autoAxis:true,meshMatch:/MD3/i,dark:true}
+    {id:'sil_smooth',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.11,rot:[0,0,0],autoAxis:true,meshMatch:/MD3/i,dark:true},
+    {id:'vgrip',file:'item_alfa_vgrip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.05],pos:[-0.05,-0.06,0.05],size:0.09,rot:[0,0,0]},
+    {id:'agrip',file:'item_afg2_grip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.08],pos:[-0.05,-0.06,0.08],size:0.09,rot:[0,0,0]}
   ];
   /* modèle 3D exact par arme (aucun modèle générique) */
   var WEAPONS={
@@ -6778,8 +6811,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       {v:'Standard',sub:'A2'},{v:'Angle',sub:'Ergonomique'},{v:'Textur\u00e9e',sub:'Grip+'},{v:'Speed',sub:'Rapide'}]},
     {k:'mag',label:'Chargeur',x:54,y:77,mode:'text',opts:[
       {v:'20 coups',sub:'Compact'},{v:'30 coups',sub:'Standard'},{v:'40 coups',sub:'\u00c9tendu'},{v:'60 coups',sub:'Tambour'}]},
-    {k:'under',label:'Sous-canon',x:34,y:68,mode:'text',opts:[
-      {v:'Poign\u00e9e AV',sub:'Verticale'},{v:'Bipied',sub:'Stabilit\u00e9'},{v:'Angle grip',sub:'Hybride'},{v:'Aucun',sub:'\u2014'}]}
+    {k:'under',label:'Sous-canon',x:34,y:68,mode:'mount3d',opts:[
+      {v:'vgrip',name:'Poign\u00e9e verticale',sub:'ALFA Mod 4'},{v:'agrip',name:'Poign\u00e9e d\u2019angle',sub:'AFG-2'}]}
   ];
   function catByK(k){for(var i=0;i<CATS.length;i++)if(CATS[i].k===k)return CATS[i];return null;}
   var mount3D={};    /* id -> THREE.Object3D actuellement monté */
@@ -6860,6 +6893,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         return '<button class="gs-opt'+(on?' on':'')+'" data-i="'+oi+'"><span class="o-ic">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+
           '<span class="o-tx"><span class="o-name">'+nm+'</span><span class="o-sub">'+(o.sub||'')+'</span></span>'+
           (c.mode==='mount3d'?'<span class="o-fin"><i data-fin="black" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'black\')">N</i><i data-fin="tan" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'tan\')">A1</i></span>':'')+
+          (c.mode==='mount3d'&&on&&isAdmin()?'<span class="o-edit" onclick="event.stopPropagation();gsEditToggle(\''+o.v+'\')" title="Ajuster la position (admin)">\u2699</span>':'')+
           '<span class="o-chk"></span></button>';
       }).join('');
     /* menu docké en haut à gauche, déplaçable par sa barre de titre */
@@ -7086,7 +7120,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!GW.grp||!GW.weapon)return;
     var ry=GW.grp.rotation.y,rx=GW.grp.rotation.x;GW.grp.rotation.set(0,0,0);GW.grp.updateMatrixWorld(true);
     var A={muzzle:meshCenterLocal(/muzzle|actual-barrel/i),railTop:meshCenterLocal(/^bar-top-rail/i),
-      railSide:meshCenterLocal(/^bar-side-rails/i),rcvrTop:meshCenterLocal(/receiver-top-rail/i)};
+      railSide:meshCenterLocal(/^bar-side-rails/i),rcvrTop:meshCenterLocal(/receiver-top-rail/i),
+      railBottom:meshCenterLocal(/^bar-bottom-rail|bar-bottom|rail-bottom/i)};
     if(A.muzzle&&A.rcvrTop){GW.fwd=A.muzzle.clone().sub(A.rcvrTop).setY(0).normalize();}
     GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
     GW.anchors=(A.muzzle||A.railTop||A.rcvrTop)?A:null;
@@ -7096,6 +7131,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var MEROWS=[['px','X'],['py','Y'],['pz','Z'],['rx','Rot X'],['ry','Rot Y'],['rz','Rot Z'],['s','Taille']];
   function meState(id){var o=mount3D[id];if(!o)return null;
     return {px:o.position.x,py:o.position.y,pz:o.position.z,rx:o.rotation.x,ry:o.rotation.y,rz:o.rotation.z,s:o.scale.x};}
+  window.gsEditToggle=function(id){
+    if(!isAdmin())return;
+    var p=el&&el.querySelector('#gs-medit');
+    if(p&&p.classList.contains('show')&&GW.editTarget===id){p.classList.remove('show');return;}
+    GW.editTarget=id;showMountEditor(id);
+  };
   function showMountEditor(id){
     if(!isAdmin())return;var p=el&&el.querySelector('#gs-medit');if(!p)return;
     var st=meState(id);if(!st){p.classList.remove('show');return;}
@@ -7191,7 +7232,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* override par preset admin enregistré (référence pour tous) */
       var pr=MOUNTPRESETS[presetKey(id)];
       if(pr){if(pr.s)pivot.scale.setScalar(pr.s);if(pr.p)pivot.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)pivot.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
-      GW.editTarget=id;if(isAdmin())showMountEditor(id);
+      GW.editTarget=id;
     }
     if(mount3Dcache[id]){place(mount3Dcache[id].clone(true));return;}
     (window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader()).load(cfg.file,function(g){
