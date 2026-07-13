@@ -6758,7 +6758,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function db(){return window.db||{};}
   function memId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
   function key(id,slot){return 'bs_gun_'+id+'_'+slot;}
-  function load(id,slot){try{return JSON.parse(localStorage.getItem(key(id,slot))||'null');}catch(e){return null;}}
+  function load(id,slot){
+    /* priorité au cloud (fiche opérateur synchronisée), repli sur localStorage */
+    try{var m=db()[id];if(m&&m.guns&&m.guns[slot])return m.guns[slot];}catch(e){}
+    try{return JSON.parse(localStorage.getItem(key(id,slot))||'null');}catch(e){return null;}
+  }
   function build(){
     el=document.createElement('div');el.className='gs-overlay';el.id='gunsmith';
     el.innerHTML=''+
@@ -6927,8 +6931,23 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var GW={inited:false,raf:0,rot:-0.5,tRot:-0.5,rx:0,drag:false,px:0,py:0,touched:false,finish:'black'};
   /* presets de placement d'accessoires : référence admin partagée par tous les comptes */
   var MOUNTPRESETS={};try{MOUNTPRESETS=JSON.parse(localStorage.getItem('bs_mountpreset')||'{}');}catch(e){MOUNTPRESETS={};}
+  var ITEMCOL={};try{ITEMCOL=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');}catch(e){ITEMCOL={};}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
-  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
+  /* pousse les réglages admin (positions/tailles/couleurs) vers le cloud -> référence pour TOUS */
+  function pushGunPresets(){
+    try{if(window.db){window.db.__gunpresets__={type:'gunpresets',mount:MOUNTPRESETS,nodes:NODEPOS,itemcol:ITEMCOL};
+      if(typeof cacheLocal==='function')cacheLocal();
+      if(typeof cloudSave==='function')cloudSave('__gunpresets__');}}catch(e){}
+  }
+  /* récupère les réglages partagés depuis le cloud (chargés au démarrage dans db) */
+  function pullGunPresets(){
+    try{var g=window.db&&window.db.__gunpresets__;if(!g)return;
+      if(g.mount){MOUNTPRESETS=g.mount;localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}
+      if(g.itemcol){ITEMCOL=g.itemcol;localStorage.setItem('bs_itemcol',JSON.stringify(ITEMCOL));}
+      if(g.nodes){NODEPOS=g.nodes;localStorage.setItem('bs_nodepos',JSON.stringify(NODEPOS));}
+    }catch(e){}
+  }
+  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}pushGunPresets();}
   /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
   var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
   function nodeKey(k){return (GW.modelKey||GW.curSlot||'p')+'|'+k;}
@@ -7024,6 +7043,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyWeaponFinish(){
     if(!GW.weapon)return;
     var tan=0xb2a074,black=0x1a1a1c;
+    /* texture AOR1 chargée une fois pour habiller les parties sable */
+    if(!GW.aor1tex&&window.THREE){var tl=new THREE.TextureLoader();GW.aor1tex=tl.load('camo_aor1.png',function(t){
+      if(THREE.sRGBEncoding)t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);
+      if(el&&el.classList.contains('show'))applyWeaponFinish();});}
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
       var nm=(o.name||'').toLowerCase();
@@ -7035,12 +7058,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
       var isGlass=/glass|lens/.test(nm);
       var isRis=/^bar[-.]/.test(nm);       /* RIS/garde-main = groupe 'bar-' */
+      var sand=(GW.finish==='tan')||isRis;  /* parties sable = tout (mode tan) ou le RIS */
       var mm=Array.isArray(o.material)?o.material:[o.material];
       mm.forEach(function(x){
         if(isGlass){if(x.emissive)x.emissive.setHex(0x000000);return;}
-        x.map=null;x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
-        x.metalness=0.55;x.roughness=0.5;if(x.envMapIntensity!=null)x.envMapIntensity=0.35;
-        if(x.color)x.color.setHex(GW.finish==='tan'?tan:(isRis?tan:black));
+        x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
+        x.metalness=0.35;x.roughness=0.62;if(x.envMapIntensity!=null)x.envMapIntensity=0.3;
+        if(sand&&GW.aor1tex){x.map=GW.aor1tex;if(x.color)x.color.setHex(0xffffff);}   /* motif AOR1 */
+        else{x.map=null;if(x.color)x.color.setHex(black);}
         x.needsUpdate=true;
       });
     });
@@ -7092,7 +7117,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}}
+    if(isAdmin()){ITEMCOL[presetKey(id)]=hex;try{localStorage.setItem('bs_itemcol',JSON.stringify(ITEMCOL));}catch(e){}pushGunPresets();}
     var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
@@ -7149,7 +7174,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
       GW.grp.add(pivot);mount3D[id]=pivot;
-      try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
+      try{var _h=ITEMCOL[presetKey(id)];
         if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
       }catch(e){}
       /* override par preset admin enregistré (référence pour tous) */
@@ -7177,6 +7202,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   window.openGunsmith=function(slot){
     if(!el)build();
+    pullGunPresets();
     curSlot=slot;curId=memId();
     var m=(curId&&db()[curId])?db()[curId]:{};
     var rep=(slot==='p')?(m.rep1||{}):(m.rep2||{});
@@ -7193,7 +7219,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     }else{
       GW.modelKey=/417|g28/.test(wn)?'hk417':(/416/.test(wn)?'hk416':(/mk18|m4|416|417/.test(wn)?'mk18':'p226'));
     }
+    /* le modèle et la finition enregistrés priment sur la détection */
+    if(saved.model)GW.modelKey=saved.model;
+    GW.finish=saved.finish||GW.finish||'black';
     if(mdlRow){mdlRow.style.display='';mdlRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mdl')===GW.modelKey);});}
+    var finRow=el.querySelector('#gs-finish');if(finRow)finRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
     /* restaurer l'état */
     SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
     var att=saved.att||{};
@@ -7201,11 +7231,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     el.classList.add('show');
     if(!GW.inited)initWeapon();
     loadWeaponModel(slot);
-    /* remonter les optiques 3D sauvegardées */
+    /* remonter TOUS les accessoires 3D sauvegardés (optique, laser, lampe, silencieux...) */
     setTimeout(function(){
-      var oc=catByK('optic');if(oc&&Array.isArray(SEL.optic)){SEL.optic.forEach(function(id){toggleMount(id);});}
+      CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k])){SEL[c.k].forEach(function(id){if(!mount3D[id])toggleMount(id);});}});
       refreshNodes();updateCount();
-    },300);
+    },350);
     refreshNodes();updateCount();closePop();
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
@@ -7282,7 +7312,17 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         list.push(c.label+': '+names.join(' + '));}
       else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
-    try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
+    var cfg={name:name,att:att,model:GW.modelKey,finish:GW.finish};
+    try{localStorage.setItem(key(curId,curSlot),JSON.stringify(cfg));}catch(e){}
+    /* enregistrer dans la fiche opérateur + synchro cloud (comme le reste de l'app) */
+    try{
+      if(window.db&&window.db[curId]){
+        window.db[curId].guns=window.db[curId].guns||{};
+        window.db[curId].guns[curSlot]=cfg;
+        if(typeof cacheLocal==='function')cacheLocal();
+        if(typeof cloudSave==='function')cloudSave(curId);
+      }
+    }catch(e){if(window.bsToast)bsToast('Sync cloud impossible',{type:'err'});}
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
     if(card){
       if(name)card.querySelector('.es-name').textContent=name;
