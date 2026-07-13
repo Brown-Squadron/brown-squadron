@@ -5683,38 +5683,39 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .eq-nameplate .np-name{font-family:var(--mono);font-size:20px;font-weight:800;letter-spacing:2px;
     background:linear-gradient(180deg,#f0e6cf,#b8a06a);-webkit-background-clip:text;background-clip:text;color:transparent;}
   .eq-nameplate .np-role{font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--amber);text-transform:uppercase;margin-top:2px;}
-  .eq-oppanel{position:absolute;top:54px;right:14px;z-index:7;width:190px;font-family:var(--mono);}
-  .eq-optoggle{width:100%;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-    color:var(--aor1);background:rgba(11,14,10,.82);border:1px solid var(--line2);border-radius:9px;padding:8px 11px;
-    display:flex;align-items:center;gap:7px;backdrop-filter:blur(6px);transition:.15s;}
-  .eq-optoggle:hover{border-color:var(--aor1);color:var(--aor1b);}
-  .eq-optoggle .ot-chk{width:15px;height:15px;flex:none;border-radius:4px;border:1.5px solid var(--aor2b);color:transparent;
-    display:flex;align-items:center;justify-content:center;font-size:10px;line-height:1;transition:.15s;}
+  .eq-oppanel{position:absolute;top:54px;right:14px;z-index:7;width:214px;font-family:var(--mono);}
+  .eq-optoggle{width:100%;cursor:pointer;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--aor1);background:rgba(11,14,10,.85);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;
+    min-height:44px;display:flex;align-items:center;gap:8px;backdrop-filter:blur(6px);transition:.15s;}
+  .eq-optoggle:hover,.eq-optoggle:active{border-color:var(--aor1);color:var(--aor1b);}
+  .eq-optoggle .ot-chk{width:17px;height:17px;flex:none;border-radius:5px;border:1.5px solid var(--aor2b);color:transparent;
+    display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;transition:.15s;}
   .eq-oppanel.has-on .ot-chk{background:var(--aor2b);border-color:var(--aor2b);color:#0b0f08;}
-  .eq-optoggle .ot-car{margin-left:auto;transition:transform .2s;}
+  .eq-optoggle .ot-car{margin-left:auto;transition:transform .2s;font-size:13px;}
   .eq-oppanel.open .ot-car{transform:rotate(180deg);}
-  .eq-oplist{display:none;flex-direction:column;gap:6px;margin-top:6px;
-    background:rgba(9,12,8,.92);border:1px solid var(--line2);border-radius:10px;padding:8px;backdrop-filter:blur(8px);
+  .eq-oplist{display:none;flex-direction:column;gap:7px;margin-top:7px;
+    background:rgba(9,12,8,.94);border:1px solid var(--line2);border-radius:11px;padding:9px;backdrop-filter:blur(8px);
     box-shadow:0 16px 40px rgba(0,0,0,.6);max-height:calc(100% - 60px);overflow-y:auto;scrollbar-width:none;}
   .eq-oppanel.open .eq-oplist{display:flex;}
   .eq-oplist::-webkit-scrollbar{display:none;}
-  .eq-oprow{display:flex;align-items:center;gap:8px;cursor:pointer;background:rgba(20,25,16,.6);
-    border:1px solid var(--line2);border-radius:8px;padding:7px 9px;transition:.14s;}
-  .eq-oprow:hover{border-color:var(--aor1);}
-  .eq-oprow.on{border-color:var(--aor2b);background:rgba(77,90,55,.32);}
-  .eq-oprow.loading{opacity:.55;pointer-events:none;}
-  .eq-oprow .rc{width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid var(--aor2b);
-    display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:transparent;transition:.15s;}
-  .eq-oprow.on .rc{background:var(--aor2b);border-color:var(--aor2b);color:#0b0f08;box-shadow:0 0 8px rgba(127,150,90,.5);}
-  .eq-oprow .rl{flex:1;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#dfe3d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .eq-oprow .rz{width:22px;height:22px;flex:none;border-radius:6px;border:1px solid var(--line2);background:rgba(11,14,10,.6);
-    color:var(--muted);font-size:11px;display:none;align-items:center;justify-content:center;transition:.14s;}
-  .eq-oprow.on .rz{display:flex;}
-  .eq-oprow .rz:hover{border-color:var(--aor1);color:var(--aor1b);}
-  .eq-op3d{width:100%;margin:-2px 0 1px;cursor:pointer;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1.5px;
-    text-transform:uppercase;color:#0b0f08;background:linear-gradient(180deg,#c4ab6f,#9a7f43);border:none;border-radius:7px;
-    padding:6px 8px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.14s;}
-  .eq-op3d:hover{filter:brightness(1.1);}
+  .eq-oprow2{display:flex;align-items:center;gap:7px;background:rgba(20,25,16,.65);
+    border:1px solid var(--line2);border-radius:9px;padding:7px 8px;min-height:46px;transition:.14s;}
+  .eq-oprow2.on{border-color:var(--aor2b);background:rgba(77,90,55,.32);}
+  .eq-oprow2.loading{opacity:.55;pointer-events:none;}
+  .eq-oprow2 .op-hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;cursor:pointer;padding:4px 2px;}
+  .eq-oprow2 .op-chk{width:22px;height:22px;flex:none;border-radius:6px;border:1.5px solid var(--aor2b);
+    display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:transparent;transition:.15s;}
+  .eq-oprow2.on .op-chk{background:var(--aor2b);border-color:var(--aor2b);color:#0b0f08;box-shadow:0 0 8px rgba(127,150,90,.5);}
+  .eq-oprow2 .op-label{flex:1;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#dfe3d2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .eq-oprow2 .op-view{flex:none;width:38px;height:38px;border-radius:9px;border:none;cursor:pointer;
+    background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#0b0f08;font-size:16px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 4px 12px rgba(0,0,0,.35);transition:.14s;}
+  .eq-oprow2 .op-view:active{transform:scale(.92);}
+  .eq-oprow2 .op-edit{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--line2);background:rgba(11,14,10,.6);
+    color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.14s;}
+  .eq-oprow2 .op-edit:hover{border-color:var(--aor1);color:var(--aor1b);}
+  .op-tap-hint{font-size:9px;letter-spacing:1px;color:var(--dim);text-align:center;margin-top:8px;text-transform:uppercase;opacity:.85;line-height:1.4;}
   @media(max-width:760px){.eq-oppanel{position:static;width:100%;margin:10px 0 0;}.eq-oplist{max-height:none;}}
   .eq-iv{position:fixed;inset:0;z-index:99995;display:none;align-items:center;justify-content:center;padding:20px;
     background:rgba(4,6,4,.86);backdrop-filter:blur(7px);}
@@ -6139,7 +6140,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     loadCamoHi('camo_aor2.png',function(t){EQ.camoHi2=t;applyClothing();});
     loadCamoHi('camo_aor1.png',function(t){EQ.camoHi1=t;applyClothing();});
 
-    /* interaction : glisser pour pivoter */
+    /* interaction : glisser pour pivoter, ou taper sur un équipement pour l'ouvrir en 3D */
     function down(e){EQ.drag=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;}
     function move(e){if(!EQ.drag)return;var p=pt(e);
       /* mobile : on décide au 1er mouvement — vertical = laisser scroller la page, horizontal = pivoter */
@@ -6150,8 +6151,31 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var dx=p.x-EQ.px,dy=p.y-EQ.py;EQ.px=p.x;EQ.py=p.y;
       EQ.tRotY+=dx*0.008;EQ.vY=dx*0.008;EQ.tRotX=Math.max(-0.5,Math.min(0.5,EQ.tRotX+dy*0.004));
       if(e.cancelable&&e.preventDefault)e.preventDefault();}
-    function up(){EQ.drag=false;}
     function pt(e){var t=e.touches&&e.touches[0];return{x:(t?t.clientX:e.clientX),y:(t?t.clientY:e.clientY)};}
+    function endPt(e){var t=e&&e.changedTouches&&e.changedTouches[0];
+      if(t)return{x:t.clientX,y:t.clientY};if(e)return{x:e.clientX,y:e.clientY};return{x:EQ.px,y:EQ.py};}
+    function hitTestItem(cx,cy){
+      if(!EQ.mounted||!EQ.cam||!window.THREE)return null;
+      var ids=Object.keys(EQ.mounted);if(!ids.length)return null;
+      var rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return null;
+      var x=((cx-rect.left)/rect.width)*2-1,y=-((cy-rect.top)/rect.height)*2+1;
+      if(!EQ.raycaster)EQ.raycaster=new THREE.Raycaster();
+      EQ.raycaster.setFromCamera({x:x,y:y},EQ.cam);
+      var objs=ids.map(function(id){return EQ.mounted[id];});
+      var hits=EQ.raycaster.intersectObjects(objs,true);if(!hits.length)return null;
+      var hitObj=hits[0].object;
+      for(var i=0;i<ids.length;i++){var found=false;EQ.mounted[ids[i]].traverse(function(o){if(o===hitObj)found=true;});if(found)return ids[i];}
+      return null;
+    }
+    function up(e){
+      var wasGest=EQ.gest;EQ.drag=false;EQ.gest=0;
+      if(wasGest)return;
+      var p=endPt(e);var sx=(EQ.sx!=null?EQ.sx:p.x),sy=(EQ.sy!=null?EQ.sy:p.y);
+      if(Math.abs(p.x-sx)<10&&Math.abs(p.y-sy)<10){
+        var id=hitTestItem(p.x,p.y);
+        if(id&&window.equipViewItem)window.equipViewItem(id);
+      }
+    }
     canvas.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
     canvas.addEventListener('touchstart',down,{passive:true});canvas.addEventListener('touchmove',move,{passive:false});canvas.addEventListener('touchend',up);
 
@@ -6296,15 +6320,18 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function renderItemBar(){
     var box=document.getElementById('eq-oplist');if(!box)return;
     if(!EQ.mounted)EQ.mounted={};
-    var anyOn=false;
+    var anyOn=false;var isAdm=opIsAdmin();
     box.innerHTML=ITEMORDER.map(function(id){
       var c=ITEMS[id];var on=!!EQ.mounted[id];if(on)anyOn=true;
-      return '<div class="eq-oprow'+(on?' on':'')+'" data-item="'+id+'">'+
-          '<span class="rc" onclick="equipToggleItem(\''+id+'\')">\u2713</span>'+
-          '<span class="rl" onclick="equipToggleItem(\''+id+'\')">'+c.label+'</span>'+
-        '</div>'+
-        (on?'<button class="eq-op3d" onclick="equipViewItem(\''+id+'\')">\u26F6 Voir en 3D</button>':'');
-    }).join('');
+      return '<div class="eq-oprow2'+(on?' on':'')+'" data-item="'+id+'">'+
+          '<span class="op-hit" onclick="equipToggleItem(\''+id+'\')">'+
+            '<span class="op-chk">\u2713</span>'+
+            '<span class="op-label">'+c.label+'</span>'+
+          '</span>'+
+          (on?'<button class="op-view" onclick="event.stopPropagation();equipViewItem(\''+id+'\')" title="Voir en 3D">\u26F6</button>':'')+
+          (on&&isAdm?'<button class="op-edit" onclick="event.stopPropagation();showOpEditor(\''+id+'\')" title="Ajuster la position">\u2699</button>':'')+
+        '</div>';
+    }).join('')+'<div class="op-tap-hint">Astuce&nbsp;: touche directement l\u2019\u00e9quipement sur le personnage pour l\u2019ouvrir en 3D</div>';
     var panel=document.getElementById('eq-oppanel');if(panel)panel.classList.toggle('has-on',anyOn);
   }
   window.equipToggleOpPanel=function(){var p=document.getElementById('eq-oppanel');if(p)p.classList.toggle('open');};
@@ -6352,7 +6379,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;if(!parent)return;
     if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();return;}
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];}});
-    var chip=document.querySelector('.eq-oprow[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
+    var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
     function place(obj){
       obj.scale.set(1,1,1);obj.position.set(0,0,0);obj.rotation.set(0,0,0);
       var box=new THREE.Box3().setFromObject(obj);var sz=new THREE.Vector3();box.getSize(sz);
@@ -6758,11 +6785,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function db(){return window.db||{};}
   function memId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
   function key(id,slot){return 'bs_gun_'+id+'_'+slot;}
-  function load(id,slot){
-    /* priorité au cloud (fiche opérateur synchronisée), repli sur localStorage */
-    try{var m=db()[id];if(m&&m.guns&&m.guns[slot])return m.guns[slot];}catch(e){}
-    try{return JSON.parse(localStorage.getItem(key(id,slot))||'null');}catch(e){return null;}
-  }
+  function load(id,slot){try{return JSON.parse(localStorage.getItem(key(id,slot))||'null');}catch(e){return null;}}
   function build(){
     el=document.createElement('div');el.className='gs-overlay';el.id='gunsmith';
     el.innerHTML=''+
@@ -6931,23 +6954,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var GW={inited:false,raf:0,rot:-0.5,tRot:-0.5,rx:0,drag:false,px:0,py:0,touched:false,finish:'black'};
   /* presets de placement d'accessoires : référence admin partagée par tous les comptes */
   var MOUNTPRESETS={};try{MOUNTPRESETS=JSON.parse(localStorage.getItem('bs_mountpreset')||'{}');}catch(e){MOUNTPRESETS={};}
-  var ITEMCOL={};try{ITEMCOL=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');}catch(e){ITEMCOL={};}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
-  /* pousse les réglages admin (positions/tailles/couleurs) vers le cloud -> référence pour TOUS */
-  function pushGunPresets(){
-    try{if(window.db){window.db.__gunpresets__={type:'gunpresets',mount:MOUNTPRESETS,nodes:NODEPOS,itemcol:ITEMCOL};
-      if(typeof cacheLocal==='function')cacheLocal();
-      if(typeof cloudSave==='function')cloudSave('__gunpresets__');}}catch(e){}
-  }
-  /* récupère les réglages partagés depuis le cloud (chargés au démarrage dans db) */
-  function pullGunPresets(){
-    try{var g=window.db&&window.db.__gunpresets__;if(!g)return;
-      if(g.mount){MOUNTPRESETS=g.mount;localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}
-      if(g.itemcol){ITEMCOL=g.itemcol;localStorage.setItem('bs_itemcol',JSON.stringify(ITEMCOL));}
-      if(g.nodes){NODEPOS=g.nodes;localStorage.setItem('bs_nodepos',JSON.stringify(NODEPOS));}
-    }catch(e){}
-  }
-  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}pushGunPresets();}
+  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
   /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
   var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
   function nodeKey(k){return (GW.modelKey||GW.curSlot||'p')+'|'+k;}
@@ -7043,10 +7051,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyWeaponFinish(){
     if(!GW.weapon)return;
     var tan=0xb2a074,black=0x1a1a1c;
-    /* texture AOR1 chargée une fois pour habiller les parties sable */
-    if(!GW.aor1tex&&window.THREE){var tl=new THREE.TextureLoader();GW.aor1tex=tl.load('camo_aor1.png',function(t){
-      if(THREE.sRGBEncoding)t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);
-      if(el&&el.classList.contains('show'))applyWeaponFinish();});}
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
       var nm=(o.name||'').toLowerCase();
@@ -7058,14 +7062,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
       var isGlass=/glass|lens/.test(nm);
       var isRis=/^bar[-.]/.test(nm);       /* RIS/garde-main = groupe 'bar-' */
-      var sand=(GW.finish==='tan')||isRis;  /* parties sable = tout (mode tan) ou le RIS */
       var mm=Array.isArray(o.material)?o.material:[o.material];
       mm.forEach(function(x){
         if(isGlass){if(x.emissive)x.emissive.setHex(0x000000);return;}
-        x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
-        x.metalness=0.35;x.roughness=0.62;if(x.envMapIntensity!=null)x.envMapIntensity=0.3;
-        if(sand&&GW.aor1tex){x.map=GW.aor1tex;if(x.color)x.color.setHex(0xffffff);}   /* motif AOR1 */
-        else{x.map=null;if(x.color)x.color.setHex(black);}
+        /* RIS/garde-main : on garde le bronze natif du modèle 3D importé, jamais repeint */
+        if(isRis){if(x.emissive)x.emissive.setHex(0x000000);return;}
+        x.map=null;x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
+        x.metalness=0.55;x.roughness=0.5;if(x.envMapIntensity!=null)x.envMapIntensity=0.35;
+        if(x.color)x.color.setHex(GW.finish==='tan'?tan:black);
         x.needsUpdate=true;
       });
     });
@@ -7117,7 +7121,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(isAdmin()){ITEMCOL[presetKey(id)]=hex;try{localStorage.setItem('bs_itemcol',JSON.stringify(ITEMCOL));}catch(e){}pushGunPresets();}
+    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}}
     var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
@@ -7174,7 +7178,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
       GW.grp.add(pivot);mount3D[id]=pivot;
-      try{var _h=ITEMCOL[presetKey(id)];
+      try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
         if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
       }catch(e){}
       /* override par preset admin enregistré (référence pour tous) */
@@ -7202,7 +7206,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   window.openGunsmith=function(slot){
     if(!el)build();
-    pullGunPresets();
     curSlot=slot;curId=memId();
     var m=(curId&&db()[curId])?db()[curId]:{};
     var rep=(slot==='p')?(m.rep1||{}):(m.rep2||{});
@@ -7219,11 +7222,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     }else{
       GW.modelKey=/417|g28/.test(wn)?'hk417':(/416/.test(wn)?'hk416':(/mk18|m4|416|417/.test(wn)?'mk18':'p226'));
     }
-    /* le modèle et la finition enregistrés priment sur la détection */
-    if(saved.model)GW.modelKey=saved.model;
-    GW.finish=saved.finish||GW.finish||'black';
     if(mdlRow){mdlRow.style.display='';mdlRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mdl')===GW.modelKey);});}
-    var finRow=el.querySelector('#gs-finish');if(finRow)finRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
     /* restaurer l'état */
     SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
     var att=saved.att||{};
@@ -7231,11 +7230,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     el.classList.add('show');
     if(!GW.inited)initWeapon();
     loadWeaponModel(slot);
-    /* remonter TOUS les accessoires 3D sauvegardés (optique, laser, lampe, silencieux...) */
+    /* remonter les optiques 3D sauvegardées */
     setTimeout(function(){
-      CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k])){SEL[c.k].forEach(function(id){if(!mount3D[id])toggleMount(id);});}});
+      var oc=catByK('optic');if(oc&&Array.isArray(SEL.optic)){SEL.optic.forEach(function(id){toggleMount(id);});}
       refreshNodes();updateCount();
-    },350);
+    },300);
     refreshNodes();updateCount();closePop();
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
@@ -7312,17 +7311,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         list.push(c.label+': '+names.join(' + '));}
       else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
-    var cfg={name:name,att:att,model:GW.modelKey,finish:GW.finish};
-    try{localStorage.setItem(key(curId,curSlot),JSON.stringify(cfg));}catch(e){}
-    /* enregistrer dans la fiche opérateur + synchro cloud (comme le reste de l'app) */
-    try{
-      if(window.db&&window.db[curId]){
-        window.db[curId].guns=window.db[curId].guns||{};
-        window.db[curId].guns[curSlot]=cfg;
-        if(typeof cacheLocal==='function')cacheLocal();
-        if(typeof cloudSave==='function')cloudSave(curId);
-      }
-    }catch(e){if(window.bsToast)bsToast('Sync cloud impossible',{type:'err'});}
+    try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
     if(card){
       if(name)card.querySelector('.es-name').textContent=name;
