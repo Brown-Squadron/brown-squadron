@@ -1491,7 +1491,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
   <div class="view" id="view-equip">
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
       <div><h2 class="text-tan tracking-widest">Loadout</h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
-      <select id="equip-member" onchange="equipSelect(this.value)" style="min-width:150px"></select>
+      <select id="equip-member" class="eq-member-sel" onchange="equipSelect(this.value)"></select>
     </div>
     <div class="equip-stage" id="equip-stage">
       <canvas id="equip-canvas"></canvas>
@@ -2311,6 +2311,7 @@ function startApp(){
   restoreTabOrder();
   wireTabDrag();
   db=loadCache();renderAll();applyBranding();cloudRefresh();
+  if(sb){pullPam();subscribePam();}
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
     var last=sessionStorage.getItem('bs_lastview');
@@ -2634,7 +2635,41 @@ function membresOf(){
 function pamToday(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function pamDateFR(){try{return new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(e){return pamToday();}}
 function pamStore(){try{return JSON.parse(localStorage.getItem('bs_pam')||'{}');}catch(e){return {};}}
-function pamSave(o){try{localStorage.setItem('bs_pam',JSON.stringify(o));}catch(e){}}
+function pamSave(o){
+  try{localStorage.setItem('bs_pam',JSON.stringify(o));}catch(e){}
+  /* synchro temps réel : tous les participants voient le rapport à la seconde */
+  if(sb){sb.from('entries').upsert({id:'__pam__',type:'pam',data:o,updated_at:new Date().toISOString()}).then(function(){},function(){});}
+}
+var pamChannel=null;
+function pullPam(){
+  if(!sb)return;
+  sb.from('entries').select('data').eq('id','__pam__').maybeSingle().then(function(r){
+    if(r&&r.data&&r.data.data){try{localStorage.setItem('bs_pam',JSON.stringify(r.data.data));}catch(e){}refreshPamUI();}
+  },function(){});
+}
+function subscribePam(){
+  if(!sb||pamChannel)return;
+  try{
+    pamChannel=sb.channel('pam-live')
+      .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.__pam__'},function(payload){
+        var row=payload.new||{};var d=row.data;
+        if(d){try{localStorage.setItem('bs_pam',JSON.stringify(d));}catch(e){}refreshPamUI();}
+      })
+      .subscribe();
+  }catch(e){}
+}
+/* met à jour tout ce qui affiche le rapport PAM à l'écran, sans attendre un re-chargement de page */
+function renderFichePam(id){
+  var fp=document.getElementById('fiche-pam');if(!fp)return;var p=pamGet(id);
+  fp.innerHTML='<span class="fp-lbl">PAM</span>'+[0,1,2].map(function(i){
+    return '<span class="pd '+PAM_CLS[p[i]||0]+'" title="'+PAM_LBL[i]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><b>'+PAM_LTR[i]+'</b></span>';
+  }).join('');
+}
+function refreshPamUI(){
+  try{if(document.getElementById('membres-list')&&typeof renderMembres==='function')renderMembres();}catch(e){}
+  try{var ov=document.getElementById('opday-ov');if(ov&&ov.classList.contains('show')&&typeof renderOpDay==='function')renderOpDay();}catch(e){}
+  try{var vf=document.getElementById('view-fiche');if(currentId&&vf&&vf.classList.contains('active'))renderFichePam(currentId);}catch(e){}
+}
 function pamGet(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return e.pam||[0,0,0];}
 function pamEngaged(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return !!e.eng;}
 var PAM_CLS=['','g','y','r'];var PAM_LBL=['Personnel','Armement','Mat\u00e9riel'];var PAM_LTR=['P','A','M'];
@@ -2725,11 +2760,7 @@ function newMembre(){
 function openMembre(id){
   currentId=id;var m=db[id]||{};
   /* rapport PAM vertical en haut de fiche */
-  var fp=document.getElementById('fiche-pam');
-  if(fp){var p=pamGet(id);
-    fp.innerHTML='<span class="fp-lbl">PAM</span>'+[0,1,2].map(function(i){
-      return '<span class="pd '+PAM_CLS[p[i]||0]+'" title="'+PAM_LBL[i]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><b>'+PAM_LTR[i]+'</b></span>';
-    }).join('');}
+  renderFichePam(id);
   /* état kit par membre : map "section::name" -> {qty,has} */
   kitState={};
   (m.kit||[]).forEach(function(k){
@@ -5695,11 +5726,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .eq-oppanel.open .ot-car{transform:rotate(180deg);}
   .eq-oplist{display:none;flex-direction:column;gap:7px;margin-top:7px;
     background:rgba(9,12,8,.94);border:1px solid var(--line2);border-radius:11px;padding:9px;backdrop-filter:blur(8px);
-    box-shadow:0 16px 40px rgba(0,0,0,.6);max-height:calc(100% - 60px);overflow-y:auto;scrollbar-width:none;}
+    box-shadow:0 16px 40px rgba(0,0,0,.6);max-height:min(48vh,440px);overflow-y:auto;scrollbar-width:none;}
   .eq-oppanel.open .eq-oplist{display:flex;}
   .eq-oplist::-webkit-scrollbar{display:none;}
   .eq-oprow2{display:flex;align-items:center;gap:7px;background:rgba(20,25,16,.65);
-    border:1px solid var(--line2);border-radius:9px;padding:7px 8px;min-height:46px;transition:.14s;}
+    border:1px solid var(--line2);border-radius:9px;padding:7px 8px;min-height:46px;transition:background-color .08s,border-color .08s;}
   .eq-oprow2.on{border-color:var(--aor2b);background:rgba(77,90,55,.32);}
   .eq-oprow2.loading{opacity:.55;pointer-events:none;}
   .eq-oprow2 .op-hit{display:flex;align-items:center;gap:9px;flex:1;min-width:0;padding:4px 2px;}
@@ -6140,8 +6171,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     loadCamoHi('camo_aor2.png',function(t){EQ.camoHi2=t;applyClothing();});
     loadCamoHi('camo_aor1.png',function(t){EQ.camoHi1=t;applyClothing();});
 
-    /* interaction : glisser pour pivoter, ou taper sur un équipement pour l'ouvrir en 3D */
-    function down(e){EQ.drag=true;EQ.pointerActive=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;}
+    /* interaction : glisser pour pivoter (uniquement dans la zone tête -> mains), ou taper sur un équipement pour l'ouvrir en 3D */
+    function inZone(e){var r=canvas.getBoundingClientRect();var p=pt(e);var x=(p.x-r.left)/r.width,y=(p.y-r.top)/r.height;
+      return x>0.22&&x<0.78&&y>0.08&&y<0.62;}
+    function down(e){EQ.pointerActive=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;
+      EQ.drag=inZone(e);}
     function move(e){if(!EQ.drag)return;var p=pt(e);
       /* mobile : on décide au 1er mouvement — vertical = laisser scroller la page, horizontal = pivoter */
       if(!EQ.gest){var adx=Math.abs(p.x-EQ.sx),ady=Math.abs(p.y-EQ.sy);
@@ -6654,22 +6688,31 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     box-shadow:0 30px 80px rgba(0,0,0,.78),0 0 0 1px rgba(196,171,111,.12) inset;padding:15px 15px 13px;display:none;animation:gsPopIn .2s var(--ease-out-strong);
     backdrop-filter:blur(10px);}
   .gs-pop.show{display:block;}
+  .eq-member-sel{min-width:190px;appearance:none;-webkit-appearance:none;font-family:var(--mono);font-size:11px;font-weight:700;
+    letter-spacing:1px;text-transform:uppercase;color:#f2e8cf;background:linear-gradient(180deg,rgba(30,35,22,.95),rgba(14,17,11,.95));
+    border:1px solid var(--line2);border-radius:10px;padding:10px 34px 10px 14px;cursor:pointer;transition:.12s;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23c9a15e'><path d='M5 7l5 6 5-6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;background-size:14px;}
+  .eq-member-sel:hover,.eq-member-sel:focus{border-color:var(--aor1);outline:none;}
+  .eq-member-sel option{background:#14170f;color:#e7dcc2;}
   .gs-medit{position:absolute;right:22px;top:120px;z-index:13;width:210px;display:none;
     background:linear-gradient(180deg,rgba(22,20,12,.98),rgba(10,9,5,.98));border:1px solid #6a5a2e;border-radius:12px;
     box-shadow:0 20px 50px rgba(0,0,0,.7);padding:12px;}
   .gs-medit.show{display:block;}
   #eq-medit{left:22px;right:auto;top:150px;}
-  .gs-parts{position:absolute;left:24px;top:238px;z-index:12;width:216px;display:none;
+  .gs-parts{position:absolute;left:24px;top:110px;z-index:12;width:246px;max-height:calc(100% - 130px);overflow-y:auto;scrollbar-width:none;display:none;
     background:linear-gradient(180deg,rgba(20,24,16,.98),rgba(10,13,9,.98));border:1px solid var(--line2);border-radius:12px;
     box-shadow:0 20px 50px rgba(0,0,0,.7);padding:11px;}
+  .gs-parts::-webkit-scrollbar{display:none;}
   .gs-parts.show{display:block;}
-  .gs-parts .pp-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;}
-  .gs-parts .pp-row{display:flex;align-items:center;gap:7px;margin-bottom:7px;}
-  .gs-parts .pp-l{font-family:var(--mono);font-size:9.5px;color:#dfe3d2;width:74px;flex:none;}
-  .gs-parts .pp-sw{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .gs-parts .pp-sw i{width:34px;height:34px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.18);transition:.12s;}
-  .gs-parts .pp-sw i:hover,.gs-parts .pp-sw i:active{transform:scale(1.12);border-color:#fff;}
-  .gs-parts .pp-free{width:34px;height:34px;padding:0;border:1px solid var(--line2);border-radius:8px;background:none;cursor:pointer;}
+  .gs-parts .pp-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;cursor:move;}
+  .gs-parts .pp-row{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:12px;}
+  .gs-parts .pp-l{font-family:var(--mono);font-size:9.5px;color:#dfe3d2;display:flex;align-items:center;gap:7px;}
+  .gs-parts .pp-cur{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.3);flex:none;}
+  .gs-parts .pp-sw{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;width:100%;}
+  .gs-parts .pp-sw i{width:28px;height:28px;flex:1 1 0;min-width:0;border-radius:7px;cursor:pointer;border:1px solid rgba(255,255,255,.18);transition:.1s;}
+  .gs-parts .pp-sw i:active{transform:scale(.9);border-color:#fff;}
+  .gs-parts .pp-free{width:28px;height:28px;flex:none;padding:0;border:1px solid var(--line2);border-radius:7px;background:none;cursor:pointer;}
   .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;cursor:move;position:relative;padding-right:46px;min-height:14px;}
   .gs-medit .me-h b{background:#b0894a;color:#181305;padding:1px 5px;border-radius:5px;font-size:8px;margin-left:4px;}
   .gs-medit .me-h .me-x{position:absolute;top:-2px;right:0;float:none;cursor:pointer;color:var(--muted);font-size:14px;line-height:1;padding:2px 4px;}
@@ -6839,7 +6882,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
           '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS AOR1</i></button>'+
           '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">AOR1</button>'+
-          '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Pi\u00e8ces</button></div>'+
+          '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Colorisation</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
         '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Chargement 3D\u2026</span><span class="gs-wtag">glisse pour tourner</span></div>'+
@@ -7125,6 +7168,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(A.muzzle&&A.rcvrTop){GW.fwd=A.muzzle.clone().sub(A.rcvrTop).setY(0).normalize();}
     GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
     GW.anchors=(A.muzzle||A.railTop||A.rcvrTop)?A:null;
+    GW.anchorsSeq=GW.loadSeq;
     GW.grp.rotation.set(rx,ry,0);GW.grp.updateMatrixWorld(true);
   }
   /* ---------- éditeur de placement (ADMIN) ---------- */
@@ -7189,13 +7233,15 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');return;}
     Object.keys(mount3D).forEach(function(mid){var c;GUN3D.forEach(function(a){if(a.id===mid)c=a;});
       if(c&&c.grp===cfg.grp){GW.grp.remove(mount3D[mid]);delete mount3D[mid];GW.mountTok[mid]=(GW.mountTok[mid]||0)+1;}});
-    var tok=(GW.mountTok[id]=(GW.mountTok[id]||0)+1),seq=GW.loadSeq;
+    var tok=(GW.mountTok[id]=(GW.mountTok[id]||0)+1),seq=GW.loadSeq,tries=0;
     function visBox(o){var b=new THREE.Box3(),t=new THREE.Box3(),has=false;
       o.traverse(function(m){if(m.isMesh&&m.visible){t.setFromObject(m);b.union(t);has=true;}});
       if(!has)b.setFromObject(o);return b;}
     function place(obj){
       /* chargement périmé (arme changée / accessoire re-basculé entre-temps) -> on ignore silencieusement */
       if(GW.mountTok[id]!==tok||GW.loadSeq!==seq||!GW.grp)return;
+      /* les points d'ancrage (axe du canon, etc.) ne sont pas encore prêts pour cette arme -> on patiente un peu au lieu de mal orienter */
+      if(cfg.autoAxis&&GW.anchorsSeq!==GW.loadSeq&&tries<40){tries++;setTimeout(function(){place(obj);},50);return;}
       /* isoler un seul modèle du pack (silencieux) par nom */
       if(cfg.meshMatch){var any=false;obj.traverse(function(o){if(o.isMesh){var mt=cfg.meshMatch.test(o.name||'');o.visible=mt;if(mt)any=true;}});
         if(!any)obj.traverse(function(o){if(o.isMesh)o.visible=true;});}
@@ -7316,12 +7362,13 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
     if(p.classList.contains('show')){p.classList.remove('show');return;}
     var sw=[['black','Noir',0x1a1a1c],['tan','AOR1',0xb0894a],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
-    p.innerHTML='<div class="pp-h">Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
-      return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l">'+pt.label+'</span>'+
+    p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
+      var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
+      return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l"><span class="pp-cur" style="background:'+(cur!=null?'#'+('000000'+cur.toString(16)).slice(-6):'transparent')+'"></span>'+pt.label+'</span>'+
         '<span class="pp-sw">'+sw.map(function(s){return '<i title="'+s[1]+'" style="background:#'+('000000'+s[2].toString(16)).slice(-6)+'" onclick="gsPartColor(\''+pt.k+'\','+s[2]+')"></i>';}).join('')+
         (isAdmin()?'<input type="color" class="pp-free" oninput="gsPartColor(\''+pt.k+'\',parseInt(this.value.slice(1),16))">':'')+'</span></div>';
     }).join('');
-    p.classList.add('show');
+    p.classList.add('show');makeDraggable(p);
   };
   window.gunsmithModel=function(m){
     GW.modelKey=m;
