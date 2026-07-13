@@ -411,6 +411,56 @@
   .mcard .trash{position:absolute;top:11px;right:11px;background:rgba(0,0,0,.25);border:1px solid var(--line);
     border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
   .mcard .trash:hover{color:#fff;background:var(--op);border-color:var(--op);}
+  /* bouton "Membres en opération" */
+  .op-day-btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:800;
+    letter-spacing:1.5px;text-transform:uppercase;color:#2a1f05;border:none;border-radius:12px;padding:13px 22px;
+    background:linear-gradient(135deg,#f0d98a,#c4a24a);box-shadow:0 6px 20px rgba(196,162,74,.42),inset 0 1px 0 rgba(255,255,255,.4);transition:.16s;}
+  .op-day-btn:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 10px 26px rgba(196,162,74,.55);}
+  .op-day-btn:active{transform:scale(.98);}
+  .op-day-btn .odb-i{font-size:15px;}
+  .op-day-btn .odb-date{font-size:11px;opacity:.75;letter-spacing:1px;padding-left:2px;}
+  /* pastilles PAM (Personnel / Armement / Matériel) sur les cartes */
+  .pam-dots{position:absolute;top:12px;right:46px;display:flex;flex-direction:column;gap:5px;z-index:3;}
+  .pam-dots .pd{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);cursor:pointer;
+    background:#3a3f33;transition:.14s;position:relative;}
+  .pam-dots .pd:hover{transform:scale(1.18);}
+  .pam-dots .pd.g{background:radial-gradient(circle at 35% 30%,#9be870,#4caf3f);border-color:#7bd85a;box-shadow:0 0 7px rgba(90,200,70,.6);}
+  .pam-dots .pd.y{background:radial-gradient(circle at 35% 30%,#ffe98a,#e6b800);border-color:#f0d040;box-shadow:0 0 7px rgba(230,200,0,.6);}
+  .pam-dots .pd.r{background:radial-gradient(circle at 35% 30%,#ff8a7a,#d63020);border-color:#f05545;box-shadow:0 0 7px rgba(214,48,32,.6);}
+  .pam-dots .pd .pd-l{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:8px;
+    color:var(--dim);opacity:0;transition:.14s;pointer-events:none;white-space:nowrap;}
+  .pam-dots .pd:hover .pd-l{opacity:1;}
+  /* modal Membres en opération */
+  .opday-ov{position:fixed;inset:0;z-index:99990;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;
+    background:rgba(4,6,4,.82);backdrop-filter:blur(7px);overflow-y:auto;}
+  .opday-ov.show{display:flex;}
+  .opday{width:min(720px,96vw);background:linear-gradient(180deg,#161a10,#0b0e08);border:1px solid var(--line2);border-radius:18px;
+    box-shadow:0 30px 90px rgba(0,0,0,.8);overflow:hidden;}
+  .opday-h{display:flex;align-items:center;gap:14px;padding:20px 22px;border-bottom:1px solid var(--line2);
+    background:linear-gradient(135deg,rgba(95,125,56,.22),transparent);}
+  .opday-h .oh-t{font-family:var(--mono);font-size:16px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#dfe7cf;}
+  .opday-h .oh-d{font-family:var(--mono);font-size:12px;color:var(--aor2b);letter-spacing:1px;margin-top:3px;}
+  .opday-h .oh-x{margin-left:auto;width:38px;height:38px;border-radius:10px;border:1px solid var(--line2);background:rgba(8,10,7,.6);
+    color:var(--muted);font-size:20px;cursor:pointer;transition:.14s;}
+  .opday-h .oh-x:hover{color:#fff;border-color:var(--aor1);}
+  .opday-body{padding:14px 18px 20px;max-height:64vh;overflow-y:auto;}
+  .opday-sec{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin:6px 0 10px;}
+  .opday-row{display:flex;align-items:center;gap:12px;padding:11px 13px;border:1px solid var(--line2);border-radius:11px;margin-bottom:8px;
+    background:rgba(20,25,16,.5);transition:.14s;}
+  .opday-row.eng{border-color:var(--aor2b);background:rgba(77,90,55,.28);}
+  .opday-row .od-chk{width:22px;height:22px;flex:none;border-radius:6px;border:1.5px solid var(--aor2b);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:transparent;font-size:14px;transition:.14s;}
+  .opday-row.eng .od-chk{background:var(--aor2b);color:#0b0f08;}
+  .opday-row .od-name{flex:1;cursor:pointer;}
+  .opday-row .od-name b{font-family:var(--mono);font-size:14px;color:#e7dcc2;letter-spacing:.5px;}
+  .opday-row .od-name span{font-size:11px;color:var(--muted);margin-left:8px;}
+  .opday-row .od-pam{display:flex;gap:6px;}
+  .opday-row .od-pam .pd{width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);cursor:pointer;background:#3a3f33;transition:.14s;}
+  .opday-row .od-pam .pd:hover{transform:scale(1.15);}
+  .opday-row .od-pam .pd.g{background:radial-gradient(circle at 35% 30%,#9be870,#4caf3f);border-color:#7bd85a;}
+  .opday-row .od-pam .pd.y{background:radial-gradient(circle at 35% 30%,#ffe98a,#e6b800);border-color:#f0d040;}
+  .opday-row .od-pam .pd.r{background:radial-gradient(circle at 35% 30%,#ff8a7a,#d63020);border-color:#f05545;}
+  .opday-empty{text-align:center;color:var(--dim);font-family:var(--mono);font-size:12px;padding:24px;}
 
 
   /* ===== FORM ===== */
@@ -1188,7 +1238,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
-<script>window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader){var dl=new THREE.DRACOLoader();dl.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');gl.setDRACOLoader(dl);}return gl;}catch(e){return new THREE.GLTFLoader();}};</script>
+<script>
+/* ===== Base des assets 3D : HTML sur GitHub Pages, modèles .glb/.png sur Supabase Storage =====
+   Renseigne l'URL PUBLIQUE de ton bucket (finir par un /). Laisse '' pour charger en local. */
+window.BS_ASSET_BASE = window.BS_ASSET_BASE || "https://VOTRE-PROJET.supabase.co/storage/v1/object/public/app/";
+(function(){
+  function res(u){try{if(typeof u==='string'&&window.BS_ASSET_BASE&&/^(operator|weapon_|item_|camo_)[\w.-]*\.(glb|png)$/i.test(u))return window.BS_ASSET_BASE+u;}catch(e){}return u;}
+  function patchLoader(){if(window.THREE&&THREE.GLTFLoader&&!THREE.GLTFLoader.prototype.__bsp){var L=THREE.GLTFLoader.prototype.load;THREE.GLTFLoader.prototype.load=function(u,a,b,c){return L.call(this,res(u),a,b,c);};THREE.GLTFLoader.prototype.__bsp=1;}}
+  patchLoader();document.addEventListener('DOMContentLoaded',patchLoader);
+  try{var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,'src');if(d&&d.set){Object.defineProperty(HTMLImageElement.prototype,'src',{get:d.get,set:function(v){d.set.call(this,res(v));},configurable:true});}}catch(e){}
+})();
+window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader){var dl=new THREE.DRACOLoader();dl.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');gl.setDRACOLoader(dl);}return gl;}catch(e){return new THREE.GLTFLoader();}};</script>
 <script>
 /* ===== SCÈNE 3D LOGIN (Three.js) — badge Brown Squadron + champ de particules =====
    Motion design : badge flottant en métal brossé, sweep lumineux bleu, particules
@@ -1409,7 +1469,10 @@
   <div class="view" id="view-membres">
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
       <div><h2 class="text-tan tracking-widest">Membres</h2><p class="view-sub">// Effectif de l'escouade</p></div>
-      <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newMembre()"><span class="plus">+</span> Fiche</button>
+      <div style="display:flex;gap:10px;align-items:center;margin-left:auto;flex-wrap:wrap;">
+        <button class="op-day-btn" onclick="openOpDay()"><span class="odb-i">&#9678;</span> Membres en op&eacute;ration <span class="odb-date" id="odb-date"></span></button>
+        <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newMembre()"><span class="plus">+</span> Fiche</button>
+      </div>
     </div>
     <div id="membres-list"></div>
   </div>
@@ -2556,8 +2619,69 @@ function membresOf(){
     .map(function(k){var o=db[k];o._id=k;return o;})
     .sort(function(a,b){return (a.pseudo||'').localeCompare(b.pseudo||'');});
 }
+/* ============ PAM (rapport en direct) + Membres en opération ============ */
+function pamToday(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function pamDateFR(){try{return new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}catch(e){return pamToday();}}
+function pamStore(){try{return JSON.parse(localStorage.getItem('bs_pam')||'{}');}catch(e){return {};}}
+function pamSave(o){try{localStorage.setItem('bs_pam',JSON.stringify(o));}catch(e){}}
+function pamGet(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return e.pam||[0,0,0];}
+function pamEngaged(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return !!e.eng;}
+var PAM_CLS=['','g','y','r'];var PAM_LBL=['Personnel','Armement','Mat\u00e9riel'];
+function pamDotsHTML(id){var p=pamGet(id);
+  return '<div class="pam-dots" onclick="event.stopPropagation();">'+[0,1,2].map(function(i){
+    return '<span class="pd '+PAM_CLS[p[i]||0]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><span class="pd-l">'+PAM_LBL[i]+'</span></span>';
+  }).join('')+'</div>';}
+function pamCycle(id,idx,elm){
+  var s=pamStore(),dt=pamToday();s[dt]=s[dt]||{};s[dt][id]=s[dt][id]||{pam:[0,0,0],eng:false};
+  var p=s[dt][id].pam||[0,0,0];p[idx]=((p[idx]||0)+1)%4;s[dt][id].pam=p;pamSave(s);
+  if(elm){elm.className='pd '+PAM_CLS[p[idx]]+'';elm.innerHTML='<span class="pd-l">'+PAM_LBL[idx]+'</span>';}
+}
+function pamToggleEng(id){
+  var s=pamStore(),dt=pamToday();s[dt]=s[dt]||{};s[dt][id]=s[dt][id]||{pam:[0,0,0],eng:false};
+  s[dt][id].eng=!s[dt][id].eng;pamSave(s);renderOpDay();
+}
+function openOpDay(){var ov=document.getElementById('opday-ov');if(!ov)buildOpDay();renderOpDay();
+  document.getElementById('opday-ov').classList.add('show');}
+function closeOpDay(){var ov=document.getElementById('opday-ov');if(ov)ov.classList.remove('show');renderMembres();}
+function buildOpDay(){
+  var ov=document.createElement('div');ov.id='opday-ov';ov.className='opday-ov';
+  ov.innerHTML='<div class="opday"><div class="opday-h"><div><div class="oh-t">Membres en op\u00e9ration</div><div class="oh-d" id="opday-date"></div></div><button class="oh-x" onclick="closeOpDay()">&times;</button></div><div class="opday-body" id="opday-body"></div></div>';
+  document.body.appendChild(ov);ov.addEventListener('click',function(e){if(e.target===ov)closeOpDay();});
+}
+function opsOfToday(){
+  var t=pamToday(),ids={},names=[];
+  Object.keys(db||{}).forEach(function(k){var o=db[k];
+    if(o&&o.type==='operation'&&o.date){
+      var dstart=o.date,dend=o.date_fin||o.date;
+      if(t>=dstart&&t<=dend){names.push(o.name||'Op\u00e9ration');(o.presents||[]).forEach(function(id){ids[id]=1;});}
+    }});
+  return {ids:ids,ops:names};
+}
+function renderOpDay(){
+  var dEl=document.getElementById('opday-date');if(dEl)dEl.textContent=pamDateFR();
+  var body=document.getElementById('opday-body');if(!body)return;
+  var list=membresOf();
+  var today=opsOfToday();
+  /* engagé = affecté à une opération du jour (auto) OU coché manuellement */
+  function isEng(m){return !!today.ids[m._id]||pamEngaged(m._id);}
+  var eng=list.filter(isEng);
+  var rest=list.filter(function(m){return !isEng(m);});
+  function row(m){var p=pamGet(m._id);var auto=!!today.ids[m._id];
+    return '<div class="opday-row'+(isEng(m)?' eng':'')+'">'+
+      '<span class="od-chk" onclick="pamToggleEng(\''+m._id+'\')" title="'+(auto?'Affect\u00e9 via Op\u00e9rations':'Basculer')+'">\u2713</span>'+
+      '<span class="od-name" onclick="closeOpDay();openMembre(\''+m._id+'\')"><b>'+(esc(m.pseudo)||'SANS INDICATIF')+'</b><span>'+esc([m.prenom,m.nom].filter(Boolean).join(' '))+(auto?' \u00b7 op. du jour':'')+'</span></span>'+
+      '<span class="od-pam">'+[0,1,2].map(function(i){return '<span class="pd '+PAM_CLS[p[i]||0]+'" title="'+PAM_LBL[i]+'" onclick="pamCycle(\''+m._id+'\','+i+',this)"></span>';}).join('')+'</span>'+
+    '</div>';}
+  var opsLbl=today.ops.length?(' \u2014 '+today.ops.join(', ')):'';
+  body.innerHTML=
+    '<div class="opday-sec">Engag\u00e9s aujourd\'hui \u2014 '+eng.length+opsLbl+'</div>'+
+    (eng.length?eng.map(row).join(''):'<div class="opday-empty">Aucune op\u00e9ration programm\u00e9e aujourd\'hui \u2014 coche un membre ou renseigne une op. dans l\'onglet Op\u00e9rations.</div>')+
+    '<div class="opday-sec" style="margin-top:16px;">Effectif disponible</div>'+
+    (rest.length?rest.map(row).join(''):'<div class="opday-empty">Tout l\'effectif est engag\u00e9.</div>');
+}
 function renderMembres(){
   var list=membresOf();var box=document.getElementById('membres-list');
+  var dEl=document.getElementById('odb-date');if(dEl)dEl.textContent=pamDateFR();
   if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128100;</div>AUCUNE FICHE.<br>Tape <b>+ Fiche</b> pour créer la tienne.</div>';return;}
   box.innerHTML='<div class="cards">'+list.map(function(m){
     var kit=m.kit||[];var has=kit.filter(function(k){return k.has;}).length;
@@ -2568,6 +2692,7 @@ function renderMembres(){
     var dpct=Math.round(dscore/9*100);
     return '<div class="mcard" onclick="openMembre(\''+m._id+'\')">'+
       '<button class="trash" onclick="event.stopPropagation();delMembre(\''+m._id+'\')">&#128465;</button>'+
+      pamDotsHTML(m._id)+
       '<div class="pseudo">'+(esc(m.pseudo)||'SANS INDICATIF')+'</div>'+
       '<div class="realname">'+esc([m.prenom,m.nom].filter(Boolean).join(' '))+'</div>'+
       (m.role?'<div class="role">'+esc(m.role)+'</div>':'')+
@@ -5863,9 +5988,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(tex){m.map=tex;if(m.color)m.color.setHex(0xffffff);}
       else if(m.color){m.color.setHex(green?0x556a34:0xffffff);} /* pas de tex camo -> teinte verte AOR2 multipliée sur le sable */
       m.needsUpdate=true;});
-    var carC=green?0x3f4a2c:0x7d6a45;
+    /* le gilet reste TOUJOURS en AOR2 (vert forêt), quel que soit le camo des vêtements */
+    var carC=0x3f4a2c;
     if(EQ.armorMats)EQ.armorMats.forEach(function(m){
-      if(tex){m.map=tex;if(m.color)m.color.setHex(0xffffff);}
+      if(EQ.camoHi2){m.map=EQ.camoHi2;if(m.color)m.color.setHex(0xffffff);}
       else if(m.color){m.color.setHex(carC);}
       m.needsUpdate=true;});
     /* AOR2 : casque 100% Olive Drab, aucune texture camo dessus */
@@ -6177,7 +6303,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var p=document.getElementById('eq-medit');
     if(!p){var host=document.querySelector('.equip-stage')||document.body;p=document.createElement('div');p.id='eq-medit';p.className='gs-medit';host.appendChild(p);}
     var st=opMeState(id);if(!st){p.classList.remove('show');return;}
-    p.innerHTML='<div class="me-h">Placement \u00b7 '+(ITEMS[id]?ITEMS[id].label:id)+' <b>ADMIN</b></div>'+
+    p.innerHTML='<div class="me-h" data-drag>Placement \u00b7 '+(ITEMS[id]?ITEMS[id].label:id)+' <b>ADMIN</b><span class="me-min" onclick="opMeMin(event)" title="R\u00e9duire">\u2013</span><span class="me-x" onclick="opMeClose()">\u2715</span></div>'+
+      '<div class="me-body">'+
       OPMEROWS.map(function(r){var k=r[0];
         return '<div class="me-row"><span>'+r[1]+'</span>'+
           '<button onclick="opMeNudge(\''+id+'\',\''+k+'\',-1)">\u2212</button>'+
@@ -6185,17 +6312,20 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button onclick="opMeNudge(\''+id+'\',\''+k+'\',1)">+</button></div>';
       }).join('')+
       '<div class="me-act"><button class="me-save" onclick="opMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
-      '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div>';
-    p.classList.add('show');
+      '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div></div>';
+    p.classList.add('show');makeDraggable(p);
   }
+  window.opMeMin=function(e){if(e)e.stopPropagation();var p=document.getElementById('eq-medit');if(p)p.classList.toggle('min');};
   window.opMeNudge=function(id,k,dir){var i=document.getElementById('ome-'+k);if(!i)return;
     i.value=(parseFloat(i.value||0)+dir*opStep(k)).toFixed(3);opMeSet(id);};
   window.opMeSet=function(id){var o=EQ.mounted[id];if(!o)return;
     function g(k){var e2=document.getElementById('ome-'+k);return e2?parseFloat(e2.value||0):null;}
-    o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);};
+    o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);
+    if(opIsAdmin()){var st=opMeState(id);if(st){OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresets();}}};
   window.opMeSave=function(id){var st=opMeState(id);if(!st)return;
     OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresets();
     var b=document.querySelector('#eq-medit .me-save');if(b){b.textContent='\u2713 Enregistr\u00e9';setTimeout(function(){b.textContent='Enregistrer (r\u00e9f.)';},1400);}};
+  window.opMeClose=function(){var p=document.getElementById('eq-medit');if(p)p.classList.remove('show');};
   window.opMeReset=function(id){delete OPPRESET[id];opSavePresets();
     if(EQ.mounted[id]){(EQ.model||EQ.scene).remove(EQ.mounted[id]);delete EQ.mounted[id];}
     equipToggleItem(id);};
@@ -6443,9 +6573,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-node .nd-dot .pulse{position:absolute;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(216,192,137,.5);animation:ndPulse 2.4s ease-out infinite;}
   @keyframes ndPulse{0%{transform:scale(1);opacity:.7;}70%{transform:scale(1.9);opacity:0;}100%{opacity:0;}}
   /* popover de catégorie */
-  .gs-pop{position:absolute;z-index:12;width:250px;max-width:78vw;
-    background:linear-gradient(180deg,rgba(20,24,16,.97),rgba(10,13,9,.97));border:1px solid var(--line2);border-radius:13px;
-    box-shadow:0 24px 60px rgba(0,0,0,.7);padding:13px;display:none;animation:gsPopIn .2s var(--ease-out-strong);}
+  .gs-pop{position:absolute;z-index:14;width:290px;max-width:82vw;
+    background:linear-gradient(180deg,rgba(26,30,20,.99),rgba(12,15,10,.99));border:1px solid #5a5230;border-radius:15px;
+    box-shadow:0 30px 80px rgba(0,0,0,.78),0 0 0 1px rgba(196,171,111,.12) inset;padding:15px 15px 13px;display:none;animation:gsPopIn .2s var(--ease-out-strong);
+    backdrop-filter:blur(10px);}
   .gs-pop.show{display:block;}
   .gs-medit{position:absolute;right:22px;top:120px;z-index:13;width:210px;display:none;
     background:linear-gradient(180deg,rgba(22,20,12,.98),rgba(10,9,5,.98));border:1px solid #6a5a2e;border-radius:12px;
@@ -6465,6 +6596,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-parts .pp-free{width:20px;height:20px;padding:0;border:1px solid var(--line2);border-radius:5px;background:none;cursor:pointer;}
   .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;}
   .gs-medit .me-h b{background:#b0894a;color:#181305;padding:1px 5px;border-radius:5px;font-size:8px;margin-left:4px;}
+  .gs-medit .me-h .me-x{float:right;cursor:pointer;color:var(--muted);font-size:12px;line-height:1;padding:0 2px;}
+  .gs-medit .me-h .me-x:hover{color:#fff;}
+  .gs-medit .me-h .me-min{float:right;cursor:pointer;color:var(--muted);font-size:15px;line-height:1;padding:0 6px;font-weight:700;}
+  .gs-medit .me-h .me-min:hover{color:#fff;}
+  .gs-medit.min .me-body{display:none;}
+  .gs-medit.min .me-h{margin-bottom:0;}
   .gs-medit .me-row{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
   .gs-medit .me-row span{font-family:var(--mono);font-size:9px;color:var(--muted);width:38px;flex:none;}
   .gs-medit .me-row button{width:22px;height:24px;flex:none;border:1px solid var(--line2);background:rgba(11,14,10,.7);
@@ -6478,7 +6615,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-medit .me-reset{background:rgba(11,14,10,.7);border:1px solid var(--line2);color:var(--muted);border-radius:7px;
     padding:7px 9px;font-family:var(--mono);font-size:9px;text-transform:uppercase;cursor:pointer;}
   @keyframes gsPopIn{from{opacity:0;transform:translateY(8px) scale(.97);}to{opacity:1;transform:none;}}
-  .gs-pop .pop-h{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+  .gs-pop .pop-h{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--amber);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(196,171,111,.18);display:flex;align-items:center;gap:8px;}
+  .gs-pop .pop-h .ph-i{width:22px;height:22px;border-radius:6px;background:rgba(196,171,111,.16);display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .gs-pop .pop-h .ph-x{margin-left:auto;cursor:pointer;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);background:rgba(8,10,7,.6);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;transition:.14s;}
+  .gs-pop .pop-h .ph-x:hover{color:#fff;border-color:var(--aor1);}
   .gs-opt{display:flex;align-items:center;gap:10px;width:100%;text-align:left;cursor:pointer;
     background:rgba(11,14,10,.6);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;margin-bottom:7px;transition:.14s;}
   .gs-opt .o-fin{display:flex;gap:3px;margin-right:4px;}
@@ -6547,7 +6687,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {id:'mag',file:'item_eotech_magnifier.glb',grp:'optic2',anchor:'rcvrTop',off:[-0.055,0.024,0],pos:[0,0.072,-0.12],size:0.12,rot:[Math.PI,1.5708,0],dark:true},
     {id:'peq15',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],tan:true},
     {id:'dbal',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],dark:true},
-    {id:'m600',file:'item_surefire_m600.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],dark:true},
+    {id:'m600',file:'item_surefire_m600.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],tan:true},
     {id:'sil_perf',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.12,rot:[0,0,0],autoAxis:true,meshMatch:/ATS4/i,dark:true},
     {id:'sil_smooth',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.11,rot:[0,0,0],autoAxis:true,meshMatch:/MD3/i,dark:true}
   ];
@@ -6575,7 +6715,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {k:'barrel',label:'Canon',x:27,y:33,mode:'text',opts:[
       {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
     {k:'laser',label:'RIS avant',x:43,y:20,mode:'mount3d',opts:[
-      {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 tan'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
+      {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
     {k:'optic',label:'Optique',x:60,y:23,mode:'mount3d',opts:[
       {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'}]},
     {k:'stock',label:'Crosse',x:87,y:33,right:true,mode:'text',opts:[
@@ -6610,8 +6750,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button class="fin-b" data-mdl="hk416" onclick="gunsmithModel(\'hk416\')">HK416</button>'+
           '<button class="fin-b" data-mdl="hk417" onclick="gunsmithModel(\'hk417\')">HK417</button></div>'+
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
-          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS tan</i></button>'+
-          '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">Tan</button>'+
+          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS AOR1</i></button>'+
+          '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">AOR1</button>'+
           '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Pi\u00e8ces</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
@@ -6649,6 +6789,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     });
   }
   var popCat=null;
+  window.gsPopClose=function(){closePop();};
   function closePop(){var p=el&&el.querySelector('#gs-pop');if(p)p.classList.remove('show');
     if(el)el.querySelectorAll('.gs-node').forEach(function(n){n.classList.remove('active');});popCat=null;}
   function openCat(k,btn){
@@ -6657,24 +6798,22 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     el.querySelectorAll('.gs-node').forEach(function(n){n.classList.toggle('active',n.getAttribute('data-k')===k);});
     popCat=k;
     var cur=SEL[k];
-    p.innerHTML='<div class="pop-h">'+c.label+(c.mode==='mount3d'?' \u2014 3D':'')+'</div>'+
+    p.innerHTML='<div class="pop-h"><span class="ph-i">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+c.label+'<span class="ph-x" onclick="gsPopClose()">\u2715</span></div>'+
       c.opts.map(function(o,oi){
         var on=(c.mode==='mount3d')?(Array.isArray(cur)&&cur.indexOf(o.v)>=0):(cur===o.v&&o.v!=='Aucun');
         var nm=o.name||o.v;
         return '<button class="gs-opt'+(on?' on':'')+'" data-i="'+oi+'"><span class="o-ic">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+
           '<span class="o-tx"><span class="o-name">'+nm+'</span><span class="o-sub">'+(o.sub||'')+'</span></span>'+
-          (c.mode==='mount3d'?'<span class="o-fin"><i data-fin="black" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'black\')">N</i><i data-fin="tan" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'tan\')">T</i></span>':'')+
+          (c.mode==='mount3d'?'<span class="o-fin"><i data-fin="black" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'black\')">N</i><i data-fin="tan" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'tan\')">A1</i></span>':'')+
           '<span class="o-chk"></span></button>';
       }).join('');
     /* positionnement du popover près du node, dans le cadre (mesure réelle) */
     p.classList.add('show');
-    var pr=el.getBoundingClientRect(),nr=btn.getBoundingClientRect();
-    var pw=p.offsetWidth||250,ph=p.offsetHeight||260;
-    var left=(nr.left-pr.left+nr.width/2)-pw/2;
-    var top=(nr.top-pr.top+nr.height)+8;
-    left=Math.max(14,Math.min(pr.width-pw-14,left));
-    top=Math.max(70,Math.min(pr.height-ph-14,top));
-    p.style.left=left+'px';p.style.top=top+'px';
+    /* dock fixe et toujours visible : centré, léger décalage du côté opposé au node */
+    var pr=el.getBoundingClientRect();var pw=p.offsetWidth||260,ph=p.offsetHeight||280;
+    var left=c.right?Math.max(14,pr.width*0.30-pw/2):Math.min(pr.width-pw-14,pr.width*0.70-pw/2);
+    var top=Math.max(70,Math.min(pr.height-ph-16,(pr.height-ph)/2+10));
+    p.style.left=Math.max(14,left)+'px';p.style.top=top+'px';
     p.querySelectorAll('.gs-opt').forEach(function(btn2){
       btn2.addEventListener('click',function(){var oi=+btn2.getAttribute('data-i');var o=c.opts[oi];if(o)chooseOpt(k,o.v);});
     });
@@ -6768,6 +6907,19 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
   function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
   function isAdmin(){return document.body.classList.contains('role-admin');}
+  /* rend un panneau déplaçable via son handle [data-drag] (souris + tactile) */
+  function makeDraggable(panel){
+    if(!panel||panel.__drg)return;var h=panel.querySelector('[data-drag]');if(!h)return;panel.__drg=1;
+    h.style.cursor='move';var sx,sy,ox,oy,on=false;
+    function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
+    function dn(e){if(e.target.closest('.me-x,.me-min'))return;on=true;var p=pt(e);sx=p.x;sy=p.y;
+      var r=panel.getBoundingClientRect();ox=r.left;oy=r.top;panel.style.right='auto';panel.style.left=ox+'px';panel.style.top=oy+'px';
+      if(e.cancelable)e.preventDefault();}
+    function mv(e){if(!on)return;var p=pt(e);panel.style.left=(ox+p.x-sx)+'px';panel.style.top=(oy+p.y-sy)+'px';}
+    function up(){on=false;}
+    h.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+    h.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
+  }
   function initWeapon(){
     var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!window.THREE)return;
     var scene=new THREE.Scene();
@@ -6833,7 +6985,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* teinte MK18 : RIS bronze/tan, reste noir (ou tout tan au choix). Retire toute texture blanc/bleu. */
   function applyWeaponFinish(){
     if(!GW.weapon)return;
-    var tan=0xb0894a,black=0x1a1a1c;
+    var tan=0xb2a074,black=0x1a1a1c;
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
       var nm=(o.name||'').toLowerCase();
@@ -6879,7 +7031,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var st=meState(id);if(!st){p.classList.remove('show');return;}
     var lbl=(function(){var c=null;GUN3D.forEach(function(a){if(a.id===id)c=a;});return id;})();
     var step={px:0.005,py:0.005,pz:0.005,rx:0.05,ry:0.05,rz:0.05,s:0.005};
-    p.innerHTML='<div class="me-h">Placement \u00b7 '+lbl+' <b>ADMIN</b></div>'+
+    p.innerHTML='<div class="me-h" data-drag>Placement \u00b7 '+lbl+' <b>ADMIN</b><span class="me-min" onclick="gsMeMin(event)" title="R\u00e9duire">\u2013</span><span class="me-x" onclick="gsMeClose()">\u2715</span></div>'+
+      '<div class="me-body">'+
       MEROWS.map(function(r){var k=r[0];var v=st[k];
         return '<div class="me-row"><span>'+r[1]+'</span>'+
           '<button onclick="gsMeNudge(\''+id+'\',\''+k+'\',-1)">\u2212</button>'+
@@ -6887,18 +7040,21 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button onclick="gsMeNudge(\''+id+'\',\''+k+'\',1)">+</button></div>';
       }).join('')+
       '<div class="me-act"><button class="me-save" onclick="gsMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
-      '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div>';
-    p.classList.add('show');
+      '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div></div>';
+    p.classList.add('show');makeDraggable(p);
   }
+  window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
   window.gsMeNudge=function(id,k,dir){var i=el.querySelector('#me-'+k);if(!i)return;
     var step={px:0.005,py:0.005,pz:0.005,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];
     i.value=(parseFloat(i.value||0)+dir*step).toFixed(3);gsMeSet(id);};
   window.gsMeSet=function(id){var o=mount3D[id];if(!o)return;
     function g(k){var e2=el.querySelector('#me-'+k);return e2?parseFloat(e2.value||0):null;}
-    o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);};
+    o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);
+    if(isAdmin()){var st=meState(id);if(st){MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresets();}}};
   window.gsMeSave=function(id){var st=meState(id);if(!st)return;
     MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresets();
     var p=el.querySelector('#gs-medit .me-save');if(p){p.textContent='\u2713 Enregistr\u00e9';setTimeout(function(){p.textContent='Enregistrer (r\u00e9f.)';},1400);}};
+  window.gsMeClose=function(){var p=el&&el.querySelector('#gs-medit');if(p)p.classList.remove('show');};
   window.gsMeReset=function(id){delete MOUNTPRESETS[presetKey(id)];savePresets();
     if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];}
     toggleMount(id);};
@@ -6933,7 +7089,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
       /* teinte par item : noir ou tan (choix indépendant) */
       var fin=(GW.itemFin&&GW.itemFin[id])||(cfg.tan?'tan':'black');
-      var col=fin==='tan'?0xa88951:0x2a2620;
+      var col=fin==='tan'?0xb2a074:0x2a2620;
       obj.traverse(function(o){if(o.isMesh&&o.visible&&o.material){
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
@@ -6996,30 +7152,31 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
   };
-  /* ---------- colorisation par pièce (maillages nommés) ---------- */
+  /* ---------- colorisation par pièce (maillages nommés, fallback Corps) ---------- */
   var PARTS=[
-    {k:'grip',label:'Poign\u00e9e',re:/pistol-grip/i},
-    {k:'stock',label:'Crosse',re:/buttstock|stock-cyl/i},
-    {k:'fore',label:'Poign\u00e9e AV',re:/foregrip/i},
-    {k:'mag',label:'Chargeur',re:/^mag-/i},
-    {k:'ris',label:'Garde-main',re:/^bar-/i},
-    {k:'body',label:'Corps',re:/receiver|rcvr|dust|handle|trigger|bolt|barrel|muzzle/i}
+    {k:'grip',label:'Poign\u00e9e',re:/pistol-grip|grip(?!.*fore)/i},
+    {k:'stock',label:'Crosse',re:/buttstock|stock/i},
+    {k:'fore',label:'Poign\u00e9e AV',re:/foregrip|vert.?grip|angled/i},
+    {k:'mag',label:'Chargeur',re:/^mag-|magazine|chargeur/i},
+    {k:'ris',label:'Garde-main',re:/^bar-|rail|ris|handguard|hand.?guard/i},
+    {k:'body',label:'Corps',re:null}   /* catch-all : tout mesh non classé ailleurs */
   ];
-  var PARTCOL={black:0x1a1a1c,tan:0xb0894a,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
+  var PARTCOL={black:0x1a1a1c,tan:0xb2a074,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
+  function partOf(name){var n=name||'';for(var i=0;i<PARTS.length;i++){if(PARTS[i].re&&PARTS[i].re.test(n))return PARTS[i].k;}return 'body';}
   function applyPartColors(){
     if(!GW.weapon||!GW.partCol)return;
-    PARTS.forEach(function(pt){var hex=GW.partCol[pt.k];if(hex==null)return;
-      GW.weapon.traverse(function(o){if(o.isMesh&&pt.re.test(o.name||'')){
-        if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
-        var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});
-      }});
+    GW.weapon.traverse(function(o){
+      if(!o.isMesh)return;
+      var pk=partOf(o.name);var hex=GW.partCol[pk];if(hex==null)return;
+      if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
+      var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});
     });
   }
   window.gsPartColor=function(k,hex){if(!GW.partCol)GW.partCol={};GW.partCol[k]=hex;applyPartColors();
     var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);};
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
     if(p.classList.contains('show')){p.classList.remove('show');return;}
-    var sw=[['black','Noir',0x1a1a1c],['tan','Tan',0xb0894a],['fde','FDE',0x8a6d43],['green','OD',0x45502f],['grey','Gris',0x6b6e73]];
+    var sw=[['black','Noir',0x1a1a1c],['tan','AOR1',0xb0894a],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
     p.innerHTML='<div class="pp-h">Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
       return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l">'+pt.label+'</span>'+
         '<span class="pp-sw">'+sw.map(function(s){return '<i title="'+s[1]+'" style="background:#'+('000000'+s[2].toString(16)).slice(-6)+'" onclick="gsPartColor(\''+pt.k+'\','+s[2]+')"></i>';}).join('')+
@@ -7036,7 +7193,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   window.gunsmithItemFin=function(v,fin){
     if(!GW.itemFin)GW.itemFin={};GW.itemFin[v]=fin;
-    var o=mount3D[v];if(o){var col=fin==='tan'?0xa88951:0x2a2620;
+    var o=mount3D[v];if(o){var col=fin==='tan'?0xb2a074:0x2a2620;
       o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);});}});}
     syncItemFinUI();
   };
