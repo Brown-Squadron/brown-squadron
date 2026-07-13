@@ -427,9 +427,10 @@
   .pam-dots .pd.g{background:radial-gradient(circle at 35% 30%,#9be870,#4caf3f);border-color:#7bd85a;box-shadow:0 0 7px rgba(90,200,70,.6);}
   .pam-dots .pd.y{background:radial-gradient(circle at 35% 30%,#ffe98a,#e6b800);border-color:#f0d040;box-shadow:0 0 7px rgba(230,200,0,.6);}
   .pam-dots .pd.r{background:radial-gradient(circle at 35% 30%,#ff8a7a,#d63020);border-color:#f05545;box-shadow:0 0 7px rgba(214,48,32,.6);}
-  .pam-dots .pd .pd-l{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:8px;
-    color:var(--dim);opacity:0;transition:.14s;pointer-events:none;white-space:nowrap;}
-  .pam-dots .pd:hover .pd-l{opacity:1;}
+  .pam-dots .pd .pd-l{display:none;}
+  .pam-dots .pd{display:flex;align-items:center;justify-content:center;}
+  .pam-dots .pd b,.opday-row .od-pam .pd b{font-family:var(--mono);font-size:9px;font-weight:800;color:#0a0a0a;line-height:1;}
+  .opday-row .od-pam .pd{display:flex;align-items:center;justify-content:center;}
   /* modal Membres en opération */
   .opday-ov{position:fixed;inset:0;z-index:99990;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;
     background:rgba(4,6,4,.82);backdrop-filter:blur(7px);overflow-y:auto;}
@@ -472,6 +473,15 @@
   .backbtn .ba{font-size:20px;line-height:1;}
   .fiche-topbar{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
   .fiche-topbar .backbtn{margin-bottom:0;}
+  .fiche-pam{display:flex;flex-direction:column;align-items:center;gap:5px;margin-left:14px;}
+  .fiche-pam .fp-lbl{font-family:var(--mono);font-size:8px;letter-spacing:2px;color:var(--dim);text-transform:uppercase;}
+  .fiche-pam .pd{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);cursor:pointer;background:#3a3f33;
+    display:flex;align-items:center;justify-content:center;transition:.14s;}
+  .fiche-pam .pd:hover{transform:scale(1.12);}
+  .fiche-pam .pd b{font-family:var(--mono);font-size:11px;font-weight:800;color:#0a0a0a;}
+  .fiche-pam .pd.g{background:radial-gradient(circle at 35% 30%,#9be870,#4caf3f);border-color:#7bd85a;}
+  .fiche-pam .pd.y{background:radial-gradient(circle at 35% 30%,#ffe98a,#e6b800);border-color:#f0d040;}
+  .fiche-pam .pd.r{background:radial-gradient(circle at 35% 30%,#ff8a7a,#d63020);border-color:#f05545;}
   .savebtn{margin-left:auto;background:var(--aor2);border:1px solid var(--aor2b);color:#fff;font-size:14px;font-weight:800;cursor:pointer;
     padding:13px 22px;font-family:var(--mono);letter-spacing:1.5px;text-transform:uppercase;border-radius:var(--r);
     box-shadow:0 2px 8px rgba(0,0,0,.3);}
@@ -1516,6 +1526,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
     <button class="pdf-fab" onclick="genMembrePDF()">&#128196; PDF</button>
     <div class="fiche-topbar">
       <button class="backbtn" onclick="goMembres()"><span class="ba">&#8592;</span> Retour effectif</button>
+      <div class="fiche-pam" id="fiche-pam"></div>
       <button class="savebtn" onclick="saveMembre()">&#9658; Enregistrer</button>
     </div>
 
@@ -2626,15 +2637,15 @@ function pamStore(){try{return JSON.parse(localStorage.getItem('bs_pam')||'{}');
 function pamSave(o){try{localStorage.setItem('bs_pam',JSON.stringify(o));}catch(e){}}
 function pamGet(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return e.pam||[0,0,0];}
 function pamEngaged(id){var s=pamStore(),d=s[pamToday()]||{},e=d[id]||{};return !!e.eng;}
-var PAM_CLS=['','g','y','r'];var PAM_LBL=['Personnel','Armement','Mat\u00e9riel'];
+var PAM_CLS=['','g','y','r'];var PAM_LBL=['Personnel','Armement','Mat\u00e9riel'];var PAM_LTR=['P','A','M'];
 function pamDotsHTML(id){var p=pamGet(id);
   return '<div class="pam-dots" onclick="event.stopPropagation();">'+[0,1,2].map(function(i){
-    return '<span class="pd '+PAM_CLS[p[i]||0]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><span class="pd-l">'+PAM_LBL[i]+'</span></span>';
+    return '<span class="pd '+PAM_CLS[p[i]||0]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><b>'+PAM_LTR[i]+'</b></span>';
   }).join('')+'</div>';}
 function pamCycle(id,idx,elm){
   var s=pamStore(),dt=pamToday();s[dt]=s[dt]||{};s[dt][id]=s[dt][id]||{pam:[0,0,0],eng:false};
   var p=s[dt][id].pam||[0,0,0];p[idx]=((p[idx]||0)+1)%4;s[dt][id].pam=p;pamSave(s);
-  if(elm){elm.className='pd '+PAM_CLS[p[idx]]+'';elm.innerHTML='<span class="pd-l">'+PAM_LBL[idx]+'</span>';}
+  if(elm){elm.className='pd '+PAM_CLS[p[idx]]+'';elm.innerHTML='<b>'+PAM_LTR[idx]+'</b>';}
 }
 function pamToggleEng(id){
   var s=pamStore(),dt=pamToday();s[dt]=s[dt]||{};s[dt][id]=s[dt][id]||{pam:[0,0,0],eng:false};
@@ -2670,7 +2681,7 @@ function renderOpDay(){
     return '<div class="opday-row'+(isEng(m)?' eng':'')+'">'+
       '<span class="od-chk" onclick="pamToggleEng(\''+m._id+'\')" title="'+(auto?'Affect\u00e9 via Op\u00e9rations':'Basculer')+'">\u2713</span>'+
       '<span class="od-name" onclick="closeOpDay();openMembre(\''+m._id+'\')"><b>'+(esc(m.pseudo)||'SANS INDICATIF')+'</b><span>'+esc([m.prenom,m.nom].filter(Boolean).join(' '))+(auto?' \u00b7 op. du jour':'')+'</span></span>'+
-      '<span class="od-pam">'+[0,1,2].map(function(i){return '<span class="pd '+PAM_CLS[p[i]||0]+'" title="'+PAM_LBL[i]+'" onclick="pamCycle(\''+m._id+'\','+i+',this)"></span>';}).join('')+'</span>'+
+      '<span class="od-pam">'+[0,1,2].map(function(i){return '<span class="pd '+PAM_CLS[p[i]||0]+'" onclick="pamCycle(\''+m._id+'\','+i+',this)"><b>'+PAM_LTR[i]+'</b></span>';}).join('')+'</span>'+
     '</div>';}
   var opsLbl=today.ops.length?(' \u2014 '+today.ops.join(', ')):'';
   body.innerHTML=
@@ -2713,6 +2724,12 @@ function newMembre(){
 }
 function openMembre(id){
   currentId=id;var m=db[id]||{};
+  /* rapport PAM vertical en haut de fiche */
+  var fp=document.getElementById('fiche-pam');
+  if(fp){var p=pamGet(id);
+    fp.innerHTML='<span class="fp-lbl">PAM</span>'+[0,1,2].map(function(i){
+      return '<span class="pd '+PAM_CLS[p[i]||0]+'" title="'+PAM_LBL[i]+'" onclick="pamCycle(\''+id+'\','+i+',this)"><b>'+PAM_LTR[i]+'</b></span>';
+    }).join('');}
   /* état kit par membre : map "section::name" -> {qty,has} */
   kitState={};
   (m.kit||[]).forEach(function(k){
@@ -5838,7 +5855,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var gear=new THREE.MeshStandardMaterial({color:0x14180f,roughness:.7,metalness:.18});
     var gearL=new THREE.MeshStandardMaterial({color:0x1e2416,roughness:.75,metalness:.14});
     var glove=new THREE.MeshStandardMaterial({color:0x0c0e09,roughness:.85,metalness:.06});
-    var boot=new THREE.MeshStandardMaterial({color:0x6b5a38,roughness:.72,metalness:.08});
+    var boot=new THREE.MeshStandardMaterial({color:0xb08d57,roughness:.72,metalness:.08});
     var skin=new THREE.MeshStandardMaterial({color:0xc39a70,roughness:.82,metalness:0});
     var metal=new THREE.MeshStandardMaterial({color:0x232520,roughness:.42,metalness:.7});
     var tanMetal=new THREE.MeshStandardMaterial({color:0x9a7f43,roughness:.5,metalness:.5});
@@ -6053,7 +6070,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
               else if(/armour|armor|carrier|plate|vest|body|chest|rig|jpc/.test(n))EQ.armorMats.push(mm);
-              else if(/glove|hand|boot|shoe|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
+              else if(/boot|shoe|chaussure/.test(n)){if(mm.color)mm.color.setHex(0xb08d57);}
+              else if(/glove|hand|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
         applyClothing();
@@ -6602,6 +6620,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-medit .me-h .me-min:hover{color:#fff;}
   .gs-medit.min .me-body{display:none;}
   .gs-medit.min .me-h{margin-bottom:0;}
+  .gs-medit .me-collbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin:10px 0 6px;}
+  .gs-medit .me-cols{display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+  .gs-medit .me-cols i{width:20px;height:20px;border-radius:6px;cursor:pointer;border:1px solid rgba(255,255,255,.2);transition:.12s;}
+  .gs-medit .me-cols i:hover{transform:scale(1.15);}
+  .gs-medit .me-cols i.on{outline:2px solid var(--amber);outline-offset:1px;}
+  .gs-medit .me-cols .me-colfree{width:22px;height:22px;padding:0;border:1px solid var(--line2);border-radius:6px;background:none;cursor:pointer;}
   .gs-medit .me-row{display:flex;align-items:center;gap:5px;margin-bottom:5px;}
   .gs-medit .me-row span{font-family:var(--mono);font-size:9px;color:var(--muted);width:38px;flex:none;}
   .gs-medit .me-row button{width:22px;height:24px;flex:none;border:1px solid var(--line2);background:rgba(11,14,10,.7);
@@ -6615,7 +6639,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-medit .me-reset{background:rgba(11,14,10,.7);border:1px solid var(--line2);color:var(--muted);border-radius:7px;
     padding:7px 9px;font-family:var(--mono);font-size:9px;text-transform:uppercase;cursor:pointer;}
   @keyframes gsPopIn{from{opacity:0;transform:translateY(8px) scale(.97);}to{opacity:1;transform:none;}}
-  .gs-pop .pop-h{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--amber);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(196,171,111,.18);display:flex;align-items:center;gap:8px;}
+  .gs-pop .pop-h{font-family:var(--mono);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--amber);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(196,171,111,.18);display:flex;align-items:center;gap:8px;cursor:move;}
   .gs-pop .pop-h .ph-i{width:22px;height:22px;border-radius:6px;background:rgba(196,171,111,.16);display:flex;align-items:center;justify-content:center;font-size:12px;}
   .gs-pop .pop-h .ph-x{margin-left:auto;cursor:pointer;width:24px;height:24px;border-radius:7px;border:1px solid var(--line2);background:rgba(8,10,7,.6);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;transition:.14s;}
   .gs-pop .pop-h .ph-x:hover{color:#fff;border-color:var(--aor1);}
@@ -6799,7 +6823,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     el.querySelectorAll('.gs-node').forEach(function(n){n.classList.toggle('active',n.getAttribute('data-k')===k);});
     popCat=k;
     var cur=SEL[k];
-    p.innerHTML='<div class="pop-h"><span class="ph-i">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+c.label+'<span class="ph-x" onclick="gsPopClose()">\u2715</span></div>'+
+    p.innerHTML='<div class="pop-h" data-drag><span class="ph-i">'+(c.mode==='mount3d'?'\u25C9':'\u25B8')+'</span>'+c.label+'<span class="ph-x" onclick="gsPopClose()">\u2715</span></div>'+
       c.opts.map(function(o,oi){
         var on=(c.mode==='mount3d')?(Array.isArray(cur)&&cur.indexOf(o.v)>=0):(cur===o.v&&o.v!=='Aucun');
         var nm=o.name||o.v;
@@ -6808,13 +6832,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           (c.mode==='mount3d'?'<span class="o-fin"><i data-fin="black" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'black\')">N</i><i data-fin="tan" onclick="event.stopPropagation();gunsmithItemFin(\''+o.v+'\',\'tan\')">A1</i></span>':'')+
           '<span class="o-chk"></span></button>';
       }).join('');
-    /* positionnement du popover près du node, dans le cadre (mesure réelle) */
+    /* menu docké en haut à gauche, déplaçable par sa barre de titre */
     p.classList.add('show');
-    /* dock fixe et toujours visible : centré, léger décalage du côté opposé au node */
-    var pr=el.getBoundingClientRect();var pw=p.offsetWidth||260,ph=p.offsetHeight||280;
-    var left=c.right?Math.max(14,pr.width*0.30-pw/2):Math.min(pr.width-pw-14,pr.width*0.70-pw/2);
-    var top=Math.max(70,Math.min(pr.height-ph-16,(pr.height-ph)/2+10));
-    p.style.left=Math.max(14,left)+'px';p.style.top=top+'px';
+    p.style.left='18px';p.style.top='150px';p.style.right='auto';
+    makeDraggable(p);
     p.querySelectorAll('.gs-opt').forEach(function(btn2){
       btn2.addEventListener('click',function(){var oi=+btn2.getAttribute('data-i');var o=c.opts[oi];if(o)chooseOpt(k,o.v);});
     });
@@ -6914,30 +6935,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyNodePos(){
     if(!el)return;
     el.querySelectorAll('.gs-node').forEach(function(n){
-      var k=n.getAttribute('data-k');var p=NODEPOS[nodeKey(k)];
-      if(p){n.style.left=p.x+'%';n.style.top=p.y+'%';}
-      else{var c=catByK(k);if(c){n.style.left=c.x+'%';n.style.top=c.y+'%';}}
+      var c=catByK(n.getAttribute('data-k'));if(c){n.style.left=c.x+'%';n.style.top=c.y+'%';}
     });
   }
-  function enableNodeDrag(box){
-    var cur=null,moved=false,sx,sy;
-    function stageRect(){return box.getBoundingClientRect();}
-    function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
-    function dn(e){if(!isAdmin())return;var b=e.target.closest('.gs-node');if(!b)return;
-      cur=b;moved=false;var p=pt(e);sx=p.x;sy=p.y;}
-    function mv(e){if(!cur)return;var p=pt(e);if(Math.abs(p.x-sx)>4||Math.abs(p.y-sy)>4)moved=true;
-      if(!moved)return;var r=stageRect();
-      var x=Math.max(2,Math.min(98,(p.x-r.left)/r.width*100));
-      var y=Math.max(2,Math.min(98,(p.y-r.top)/r.height*100));
-      cur.style.left=x+'%';cur.style.top=y+'%';cur.__x=x;cur.__y=y;
-      if(e.cancelable)e.preventDefault();}
-    function up(){if(cur&&moved){cur.__dragged=true;
-      NODEPOS[nodeKey(cur.getAttribute('data-k'))]={x:cur.__x,y:cur.__y};
-      try{localStorage.setItem('bs_nodepos',JSON.stringify(NODEPOS));}catch(e){}}
-      cur=null;}
-    box.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
-    box.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
-  }
+  function enableNodeDrag(box){/* désactivé : on ne déplace plus les pastilles + */}
   function isAdmin(){return document.body.classList.contains('role-admin');}
   /* rend un panneau déplaçable via son handle [data-drag] (souris + tactile) — survit aux re-render */
   function makeDraggable(panel){
@@ -6967,12 +6968,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var rw=new THREE.DirectionalLight(0xc9a15e,0.8);rw.position.set(2,-1,-1.5);scene.add(rw);
     var grp=new THREE.Group();scene.add(grp);
     GW.scene=scene;GW.cam=cam;GW.r=r;GW.grp=grp;GW.inited=true;
-    /* rotation à la souris/doigt */
+    /* rotation à la souris/doigt — seulement dans la bande centrale (autour de l'arme) */
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
-    cv.addEventListener('mousedown',function(e){GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
+    function inZone(e){var r=cv.getBoundingClientRect();var p=pt(e);var x=(p.x-r.left)/r.width,y=(p.y-r.top)/r.height;
+      return x>0.16&&x<0.84&&y>0.34&&y<0.78;}
+    cv.addEventListener('mousedown',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
     window.addEventListener('mousemove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.rx=Math.max(-0.6,Math.min(0.6,GW.rx+(p.y-GW.py)*0.006));GW.px=p.x;GW.py=p.y;});
     window.addEventListener('mouseup',function(){GW.drag=false;});
-    cv.addEventListener('touchstart',function(e){GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;},{passive:true});
+    cv.addEventListener('touchstart',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;},{passive:true});
     cv.addEventListener('touchmove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.px=p.x;GW.py=p.y;e.preventDefault();},{passive:false});
     cv.addEventListener('touchend',function(){GW.drag=false;});
     cv.addEventListener('wheel',function(e){e.preventDefault();GW.zoom=Math.max(0.7,Math.min(4,(GW.zoom||1.75)+(e.deltaY>0?0.12:-0.12)));GW.cam.position.z=GW.zoom;},{passive:false});
@@ -6987,6 +6990,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function loadWeaponModel(slot){
     if(!GW.grp||!THREE.GLTFLoader)return;
     /* purge de l'arme + accessoires montés */
+    var myseq=(GW.loadSeq=(GW.loadSeq||0)+1);
     Object.keys(mount3D).forEach(function(id){GW.grp.remove(mount3D[id]);delete mount3D[id];});
     if(GW.weapon){GW.grp.remove(GW.weapon);GW.weapon=null;}
     var mm2=(curId&&db()[curId])?db()[curId]:{};var rep2=(slot==='p')?(mm2.rep1||{}):(mm2.rep2||{});
@@ -7004,6 +7008,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     GW.curFit=cfg.fit||0.92;GW.curSlot=slot;GW.recolor=!!cfg.recolor;
     var wl=el&&el.querySelector('.gs-wlabel');if(wl)wl.style.opacity=1;
     (window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader()).load(cfg.file,function(g){
+      if(myseq!==GW.loadSeq)return;   /* un chargement plus récent a pris la main -> on ignore */
       var model=g.scene;var box=new THREE.Box3().setFromObject(model);var size=new THREE.Vector3();box.getSize(size);
       var s=cfg.fit/(Math.max(size.x,size.y,size.z)||1);model.scale.setScalar(s);
       box.setFromObject(model);var c=new THREE.Vector3();box.getCenter(c);model.position.set(-c.x,-c.y,-c.z);
@@ -7073,9 +7078,23 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button onclick="gsMeNudge(\''+id+'\',\''+k+'\',1)">+</button></div>';
       }).join('')+
       '<div class="me-act"><button class="me-save" onclick="gsMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
-      '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div></div>';
+      '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
+      '<div class="me-collbl">Couleur</div><div class="me-cols">'+
+        [['Noir',0x1a1a1c],['AOR1',0xb2a074],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+          return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="gsItemColor(\''+id+'\','+s[1]+')"></i>';
+        }).join('')+
+        '<input type="color" class="me-colfree" oninput="gsItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
+      '</div></div>';
     p.classList.add('show');makeDraggable(p);
   }
+  window.gsItemColor=function(id,hex){
+    if(!GW.itemCol)GW.itemCol={};GW.itemCol[id]=hex;
+    var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
+      if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
+      var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
+    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}}
+    var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
+  };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
   window.gsMeNudge=function(id,k,dir){var i=el.querySelector('#me-'+k);if(!i)return;
     var step={px:0.005,py:0.005,pz:0.005,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];
@@ -7103,6 +7122,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* isoler un seul modèle du pack (silencieux) par nom */
       if(cfg.meshMatch){var any=false;obj.traverse(function(o){if(o.isMesh){var mt=cfg.meshMatch.test(o.name||'');o.visible=mt;if(mt)any=true;}});
         if(!any)obj.traverse(function(o){if(o.isMesh)o.visible=true;});}
+      obj.traverse(function(o){if(o.isMesh)o.frustumCulled=false;});   /* ne pas disparaître quand on l'agrandit */
       obj.position.set(0,0,0);obj.rotation.set(0,0,0);obj.quaternion.identity();obj.scale.set(1,1,1);obj.updateMatrixWorld(true);
       var box=visBox(obj);var sz=new THREE.Vector3();box.getSize(sz);
       var maxd=Math.max(sz.x,sz.y,sz.z)||1;var sc=cfg.size/maxd;obj.scale.setScalar(sc);
@@ -7115,21 +7135,26 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       box=visBox(obj);var c=new THREE.Vector3();box.getCenter(c);
       var base;var A=(GW.anchors&&cfg.anchor)?GW.anchors[cfg.anchor]:null;
       if(A){var off=cfg.off||[0,0,0];base=A.clone();
-        if(cfg.autoAxis){/* embout au bout du canon, dépasse vers l'avant (rallonge l'arme) */
-          base.addScaledVector(GW.fwd,(maxd*sc)*0.5+0.015+(off[0]||0));base.addScaledVector(GW.up,off[1]||0);base.addScaledVector(GW.side,off[2]||0);}
+        if(cfg.autoAxis){/* embout entièrement HORS du canon, dépasse vers l'avant */
+          base.addScaledVector(GW.fwd,(maxd*sc)*0.75+0.05+(off[0]||0));base.addScaledVector(GW.up,off[1]||0);base.addScaledVector(GW.side,off[2]||0);}
         else{base.addScaledVector(GW.fwd,off[0]);base.addScaledVector(GW.up,off[1]);base.addScaledVector(GW.side,off[2]);}
       }else{base=new THREE.Vector3(cfg.pos?cfg.pos[0]:0,cfg.pos?cfg.pos[1]:0,cfg.pos?cfg.pos[2]:0);}
-      obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
+      /* centrer la géométrie dans un pivot -> l'agrandissement se fait SUR PLACE */
+      obj.position.set(-c.x,-c.y,-c.z);
+      var pivot=new THREE.Group();pivot.add(obj);pivot.position.set(base.x,base.y,base.z);
       /* teinte par item : noir ou tan (choix indépendant) */
       var fin=(GW.itemFin&&GW.itemFin[id])||(cfg.tan?'tan':'black');
       var col=fin==='tan'?0xb2a074:0x2a2620;
       obj.traverse(function(o){if(o.isMesh&&o.visible&&o.material){
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
-      GW.grp.add(obj);mount3D[id]=obj;
+      GW.grp.add(pivot);mount3D[id]=pivot;
+      try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
+        if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
+      }catch(e){}
       /* override par preset admin enregistré (référence pour tous) */
       var pr=MOUNTPRESETS[presetKey(id)];
-      if(pr){if(pr.s)obj.scale.setScalar(pr.s);if(pr.p)obj.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)obj.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
+      if(pr){if(pr.s)pivot.scale.setScalar(pr.s);if(pr.p)pivot.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)pivot.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
       GW.editTarget=id;if(isAdmin())showMountEditor(id);
     }
     if(mount3Dcache[id]){place(mount3Dcache[id].clone(true));return;}
