@@ -6594,7 +6594,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-parts .pp-sw i{width:17px;height:17px;border-radius:5px;cursor:pointer;border:1px solid rgba(255,255,255,.18);transition:.12s;}
   .gs-parts .pp-sw i:hover{transform:scale(1.15);border-color:#fff;}
   .gs-parts .pp-free{width:20px;height:20px;padding:0;border:1px solid var(--line2);border-radius:5px;background:none;cursor:pointer;}
-  .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;}
+  .gs-medit .me-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:9px;cursor:move;}
   .gs-medit .me-h b{background:#b0894a;color:#181305;padding:1px 5px;border-radius:5px;font-size:8px;margin-left:4px;}
   .gs-medit .me-h .me-x{float:right;cursor:pointer;color:var(--muted);font-size:12px;line-height:1;padding:0 2px;}
   .gs-medit .me-h .me-x:hover{color:#fff;}
@@ -6779,7 +6779,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         '<span class="nd-lab">'+c.label+'<span class="nd-sub" data-sub></span></span>'+
       '</button>';
     }).join('');
-    nodesBox.addEventListener('click',function(e){var b=e.target.closest('.gs-node');if(b)openCat(b.getAttribute('data-k'),b);});
+    nodesBox.addEventListener('click',function(e){var b=e.target.closest('.gs-node');if(b){if(b.__dragged){b.__dragged=false;return;}openCat(b.getAttribute('data-k'),b);}});
+    enableNodeDrag(nodesBox);
     /* barres de stats : base haute + % upgrade + deltas des accessoires */
     recomputeStats();
     document.addEventListener('click',function(e){
@@ -6843,6 +6844,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function mountedIds(){return Object.keys(mount3D);}
   function refreshNodes(){
     if(!el)return;
+    applyNodePos();
     CATS.forEach(function(c){
       var node=el.querySelector('.gs-node[data-k="'+c.k+'"]');if(!node)return;
       var val=SEL[c.k];var has=(c.mode==='mount3d')?(Array.isArray(val)&&val.length):(!!val);
@@ -6906,19 +6908,50 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var MOUNTPRESETS={};try{MOUNTPRESETS=JSON.parse(localStorage.getItem('bs_mountpreset')||'{}');}catch(e){MOUNTPRESETS={};}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
   function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
-  function isAdmin(){return document.body.classList.contains('role-admin');}
-  /* rend un panneau déplaçable via son handle [data-drag] (souris + tactile) */
-  function makeDraggable(panel){
-    if(!panel||panel.__drg)return;var h=panel.querySelector('[data-drag]');if(!h)return;panel.__drg=1;
-    h.style.cursor='move';var sx,sy,ox,oy,on=false;
+  /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
+  var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
+  function nodeKey(k){return (GW.modelKey||GW.curSlot||'p')+'|'+k;}
+  function applyNodePos(){
+    if(!el)return;
+    el.querySelectorAll('.gs-node').forEach(function(n){
+      var k=n.getAttribute('data-k');var p=NODEPOS[nodeKey(k)];
+      if(p){n.style.left=p.x+'%';n.style.top=p.y+'%';}
+      else{var c=catByK(k);if(c){n.style.left=c.x+'%';n.style.top=c.y+'%';}}
+    });
+  }
+  function enableNodeDrag(box){
+    var cur=null,moved=false,sx,sy;
+    function stageRect(){return box.getBoundingClientRect();}
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
-    function dn(e){if(e.target.closest('.me-x,.me-min'))return;on=true;var p=pt(e);sx=p.x;sy=p.y;
+    function dn(e){if(!isAdmin())return;var b=e.target.closest('.gs-node');if(!b)return;
+      cur=b;moved=false;var p=pt(e);sx=p.x;sy=p.y;}
+    function mv(e){if(!cur)return;var p=pt(e);if(Math.abs(p.x-sx)>4||Math.abs(p.y-sy)>4)moved=true;
+      if(!moved)return;var r=stageRect();
+      var x=Math.max(2,Math.min(98,(p.x-r.left)/r.width*100));
+      var y=Math.max(2,Math.min(98,(p.y-r.top)/r.height*100));
+      cur.style.left=x+'%';cur.style.top=y+'%';cur.__x=x;cur.__y=y;
+      if(e.cancelable)e.preventDefault();}
+    function up(){if(cur&&moved){cur.__dragged=true;
+      NODEPOS[nodeKey(cur.getAttribute('data-k'))]={x:cur.__x,y:cur.__y};
+      try{localStorage.setItem('bs_nodepos',JSON.stringify(NODEPOS));}catch(e){}}
+      cur=null;}
+    box.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+    box.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
+  }
+  function isAdmin(){return document.body.classList.contains('role-admin');}
+  /* rend un panneau déplaçable via son handle [data-drag] (souris + tactile) — survit aux re-render */
+  function makeDraggable(panel){
+    if(!panel||panel.__drg)return;panel.__drg=1;
+    var sx,sy,ox,oy,on=false;
+    function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
+    function dn(e){var h=e.target.closest&&e.target.closest('[data-drag]');if(!h||!panel.contains(h))return;
+      if(e.target.closest('.me-x,.me-min'))return;on=true;var p=pt(e);sx=p.x;sy=p.y;
       var r=panel.getBoundingClientRect();ox=r.left;oy=r.top;panel.style.right='auto';panel.style.left=ox+'px';panel.style.top=oy+'px';
       if(e.cancelable)e.preventDefault();}
     function mv(e){if(!on)return;var p=pt(e);panel.style.left=(ox+p.x-sx)+'px';panel.style.top=(oy+p.y-sy)+'px';}
     function up(){on=false;}
-    h.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
-    h.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
+    panel.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
+    panel.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
   }
   function initWeapon(){
     var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!window.THREE)return;
