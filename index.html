@@ -1241,7 +1241,7 @@
 <script>
 /* ===== Base des assets 3D : HTML sur GitHub Pages, modèles .glb/.png sur Supabase Storage =====
    Renseigne l'URL PUBLIQUE de ton bucket (finir par un /). Laisse '' pour charger en local. */
-window.BS_ASSET_BASE = window.BS_ASSET_BASE || "https://VOTRE-PROJET.supabase.co/storage/v1/object/public/app/";
+window.BS_ASSET_BASE = window.BS_ASSET_BASE || "";
 (function(){
   function res(u){try{if(typeof u==='string'&&window.BS_ASSET_BASE&&/^(operator|weapon_|item_|camo_)[\w.-]*\.(glb|png)$/i.test(u))return window.BS_ASSET_BASE+u;}catch(e){}return u;}
   function patchLoader(){if(window.THREE&&THREE.GLTFLoader&&!THREE.GLTFLoader.prototype.__bsp){var L=THREE.GLTFLoader.prototype.load;THREE.GLTFLoader.prototype.load=function(u,a,b,c){return L.call(this,res(u),a,b,c);};THREE.GLTFLoader.prototype.__bsp=1;}}
