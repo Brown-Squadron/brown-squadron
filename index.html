@@ -2311,7 +2311,7 @@ function startApp(){
   restoreTabOrder();
   wireTabDrag();
   db=loadCache();renderAll();applyBranding();cloudRefresh();
-  if(sb){pullPam();subscribePam();}
+  if(sb){pullPam();subscribePam();try{if(window.gwInitCloudPresets)window.gwInitCloudPresets();}catch(e){}try{if(window.eqInitCloudPresets)window.eqInitCloudPresets();}catch(e){}}
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
     var last=sessionStorage.getItem('bs_lastview');
@@ -6374,14 +6374,39 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.equipToggleOpPanel=function(){var p=document.getElementById('eq-oppanel');if(p)p.classList.toggle('open');};
   /* ---------- éditeur de placement items opérateur (ADMIN) ---------- */
   var OPPRESET={};try{OPPRESET=JSON.parse(localStorage.getItem('bs_opmount')||'{}');}catch(e){OPPRESET={};}
-  function opSavePresets(){try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}}
+  function opSavePresets(){try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}pushOpPresetsSoon();}
   function opIsAdmin(){return document.body.classList.contains('role-admin');}
   var OPMEROWS=[['px','X'],['py','Y'],['pz','Z'],['rx','Rot X'],['ry','Rot Y'],['rz','Rot Z'],['s','Taille']];
   function opMeState(id){var o=EQ.mounted[id];if(!o)return null;
     return {px:o.position.x,py:o.position.y,pz:o.position.z,rx:o.rotation.x,ry:o.rotation.y,rz:o.rotation.z,s:o.scale.x};}
   function opStep(k){return {px:0.01,py:0.01,pz:0.01,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];}
   var OPITEMCOL={};try{OPITEMCOL=JSON.parse(localStorage.getItem('bs_opitemcol')||'{}');}catch(e){OPITEMCOL={};}
-  function opSaveItemCol(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}}
+  function opSaveItemCol(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}pushOpPresetsSoon();}
+  /* ---------- synchro cloud des références admin (position + couleur des items du personnage), pour TOUS les comptes ---------- */
+  var opPresetChannel=null,opPresetPushT=null;
+  function pushOpPresetsSoon(){
+    if(!sb)return;clearTimeout(opPresetPushT);
+    opPresetPushT=setTimeout(function(){
+      sb.from('entries').upsert({id:'__oppresets__',type:'oppresets',data:{op:OPPRESET,col:OPITEMCOL},updated_at:new Date().toISOString()}).then(function(){},function(){});
+    },350);
+  }
+  function applyRemoteOpPresets(d){
+    if(!d)return;
+    OPPRESET=d.op||{};try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}
+    OPITEMCOL=d.col||{};try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}
+  }
+  window.eqInitCloudPresets=function(){
+    if(!sb)return;
+    sb.from('entries').select('data').eq('id','__oppresets__').maybeSingle().then(function(r){
+      if(r&&r.data&&r.data.data)applyRemoteOpPresets(r.data.data);
+    },function(){});
+    if(!opPresetChannel){try{
+      opPresetChannel=sb.channel('oppresets-live')
+        .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.__oppresets__'},function(payload){
+          applyRemoteOpPresets((payload.new||{}).data);
+        }).subscribe();
+    }catch(e){}}
+  };
   window.opEditToggle=function(id){
     if(!opIsAdmin())return;
     var p=document.getElementById('eq-medit');
@@ -6951,23 +6976,24 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function chooseOpt(k,v){
     var c=catByK(k);if(!c)return;
     if(c.mode==='mount3d'){
-      /* SEL optimiste : on ne dépend pas du chargement async du GLB */
-      var arr=Array.isArray(SEL[k])?SEL[k].slice():[];
-      var idx=arr.indexOf(v);
-      if(idx>=0)arr.splice(idx,1); else{
-        /* exclusivité par groupe 3D */
-        var g=null;GUN3D.forEach(function(a){if(a.id===v)g=a;});
-        if(g){arr=arr.filter(function(id){var x=null;GUN3D.forEach(function(a){if(a.id===id)x=a;});return !(x&&x.grp===g.grp);});}
-        arr.push(v);
-      }
-      SEL[k]=arr.length?arr:null;
-      toggleMount(v);
-      var p=el.querySelector('#gs-pop');
-      if(p)p.querySelectorAll('.gs-opt').forEach(function(b){var oi=+b.getAttribute('data-i');var o=c.opts[oi];b.classList.toggle('on',!!o&&arr.indexOf(o.v)>=0);});
+      toggleMount(v);   /* mount3D (dans toggleMount) est l'unique source de vérité ; SEL/UI en sont dérivés */
     }else{
-      SEL[k]=(v==='Aucun')?null:v;closePop();
+      SEL[k]=(v==='Aucun')?null:v;closePop();refreshNodes();updateCount();
     }
+  }
+  /* recalcule SEL (mount3d) + coche à jour dans le popup ouvert, toujours à partir de mount3D réel */
+  function syncAllMountSel(){
+    CATS.forEach(function(c){
+      if(c.mode!=='mount3d')return;
+      var arr=c.opts.map(function(o){return o.v;}).filter(function(id){return !!mount3D[id];});
+      SEL[c.k]=arr.length?arr:null;
+    });
     refreshNodes();updateCount();
+    var p=el&&el.querySelector('#gs-pop');
+    if(p&&popCat){var c2=catByK(popCat);if(c2&&c2.mode==='mount3d'){
+      p.querySelectorAll('.gs-opt').forEach(function(b){var oi=+b.getAttribute('data-i');var o=c2.opts[oi];
+        b.classList.toggle('on',!!o&&!!mount3D[o.v]);});
+    }}
   }
   function mountedIds(){return Object.keys(mount3D);}
   function refreshNodes(){
@@ -7035,7 +7061,33 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* presets de placement d'accessoires : référence admin partagée par tous les comptes */
   var MOUNTPRESETS={};try{MOUNTPRESETS=JSON.parse(localStorage.getItem('bs_mountpreset')||'{}');}catch(e){MOUNTPRESETS={};}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
-  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
+  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}pushGunPresetsSoon();}
+  /* ---------- synchro cloud des références admin (position + couleur), pour TOUS les comptes ---------- */
+  var gunPresetChannel=null,gunPresetPushT=null;
+  function pushGunPresetsSoon(){
+    if(!sb)return;clearTimeout(gunPresetPushT);
+    gunPresetPushT=setTimeout(function(){
+      var itemCol={};try{itemCol=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');}catch(e){}
+      sb.from('entries').upsert({id:'__gunpresets__',type:'gunpresets',data:{mount:MOUNTPRESETS,col:itemCol},updated_at:new Date().toISOString()}).then(function(){},function(){});
+    },350);
+  }
+  function applyRemoteGunPresets(d){
+    if(!d)return;
+    MOUNTPRESETS=d.mount||{};try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}
+    try{localStorage.setItem('bs_itemcol',JSON.stringify(d.col||{}));}catch(e){}
+  }
+  window.gwInitCloudPresets=function(){
+    if(!sb)return;
+    sb.from('entries').select('data').eq('id','__gunpresets__').maybeSingle().then(function(r){
+      if(r&&r.data&&r.data.data)applyRemoteGunPresets(r.data.data);
+    },function(){});
+    if(!gunPresetChannel){try{
+      gunPresetChannel=sb.channel('gunpresets-live')
+        .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.__gunpresets__'},function(payload){
+          applyRemoteGunPresets((payload.new||{}).data);
+        }).subscribe();
+    }catch(e){}}
+  };
   /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
   var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
   function nodeKey(k){return (GW.modelKey||GW.curSlot||'p')+'|'+k;}
@@ -7209,7 +7261,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}}
+    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}pushGunPresetsSoon();}
     var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
@@ -7230,9 +7282,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function toggleMount(id){
     var cfg=null;GUN3D.forEach(function(a){if(a.id===id)cfg=a;});if(!cfg||!GW.grp)return;
     if(!GW.mountTok)GW.mountTok={};
-    if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');return;}
+    if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');syncAllMountSel();return;}
     Object.keys(mount3D).forEach(function(mid){var c;GUN3D.forEach(function(a){if(a.id===mid)c=a;});
       if(c&&c.grp===cfg.grp){GW.grp.remove(mount3D[mid]);delete mount3D[mid];GW.mountTok[mid]=(GW.mountTok[mid]||0)+1;}});
+    syncAllMountSel();
     var tok=(GW.mountTok[id]=(GW.mountTok[id]||0)+1),seq=GW.loadSeq,tries=0;
     function visBox(o){var b=new THREE.Box3(),t=new THREE.Box3(),has=false;
       o.traverse(function(m){if(m.isMesh&&m.visible){t.setFromObject(m);b.union(t);has=true;}});
@@ -7279,6 +7332,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var pr=MOUNTPRESETS[presetKey(id)];
       if(pr){if(pr.s)pivot.scale.setScalar(pr.s);if(pr.p)pivot.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)pivot.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
       GW.editTarget=id;
+      syncAllMountSel();
     }
     if(mount3Dcache[id]){place(mount3Dcache[id].clone(true));return;}
     (window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader()).load(cfg.file,function(g){
