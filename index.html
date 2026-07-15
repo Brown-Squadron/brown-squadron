@@ -1490,7 +1490,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
   <!-- ===== ÉQUIPEMENT / LOADOUT 3D (style Call of Duty) ===== -->
   <div class="view" id="view-equip">
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
-      <div><h2 class="text-tan tracking-widest">Loadout</h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
+      <div><h2 class="text-tan tracking-widest">Loadout <span id="eq-cloud-badge" class="eq-cloud-badge">Synchronisation…</span></h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
       <select id="equip-member" class="eq-member-sel" onchange="equipSelect(this.value)"></select>
     </div>
     <div class="equip-stage" id="equip-stage">
@@ -2311,7 +2311,7 @@ function startApp(){
   restoreTabOrder();
   wireTabDrag();
   db=loadCache();renderAll();applyBranding();cloudRefresh();
-  if(sb){pullPam();subscribePam();try{if(window.gwInitCloudPresets)window.gwInitCloudPresets();}catch(e){console.error('[gwInitCloudPresets]',e);}try{if(window.eqInitCloudPresets)window.eqInitCloudPresets();}catch(e){console.error('[eqInitCloudPresets]',e);}}
+  if(sb){pullPam();subscribePam();}
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
     var last=sessionStorage.getItem('bs_lastview');
@@ -6376,14 +6376,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.equipToggleOpPanel=function(){var p=document.getElementById('eq-oppanel');if(p)p.classList.toggle('open');};
   /* ---------- éditeur de placement items opérateur (ADMIN) ---------- */
   var OPPRESET={};try{OPPRESET=JSON.parse(localStorage.getItem('bs_opmount')||'{}');}catch(e){OPPRESET={};}
-  function opSavePresets(){try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}pushOpPresetsSoon();}
+  function opSavePresetsLocal(){try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}}
+  function opSavePresets(){opSavePresetsLocal();pushOpPresetsSoon();}
   function opIsAdmin(){return document.body.classList.contains('role-admin');}
   var OPMEROWS=[['px','X'],['py','Y'],['pz','Z'],['rx','Rot X'],['ry','Rot Y'],['rz','Rot Z'],['s','Taille']];
   function opMeState(id){var o=EQ.mounted[id];if(!o)return null;
     return {px:o.position.x,py:o.position.y,pz:o.position.z,rx:o.rotation.x,ry:o.rotation.y,rz:o.rotation.z,s:o.scale.x};}
   function opStep(k){return {px:0.01,py:0.01,pz:0.01,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];}
   var OPITEMCOL={};try{OPITEMCOL=JSON.parse(localStorage.getItem('bs_opitemcol')||'{}');}catch(e){OPITEMCOL={};}
-  function opSaveItemCol(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}pushOpPresetsSoon();}
+  function opSaveItemColLocal(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}}
+  function opSaveItemCol(){opSaveItemColLocal();pushOpPresetsSoon();}
   /* ---------- synchro cloud des références admin (position + couleur des items du personnage), pour TOUS les comptes ---------- */
   var opPresetChannel=null,opPresetPushT=null;
   function pushOpPresetsSoon(){
@@ -6442,7 +6444,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=EQ.mounted[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(opIsAdmin()){OPITEMCOL[id]=hex;opSaveItemCol();}
+    if(opIsAdmin()){OPITEMCOL[id]=hex;opSaveItemColLocal();}
     var box=document.querySelector('#eq-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.opMeMin=function(e){if(e)e.stopPropagation();var p=document.getElementById('eq-medit');if(p)p.classList.toggle('min');};
@@ -6451,9 +6453,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.opMeSet=function(id){var o=EQ.mounted[id];if(!o)return;
     function g(k){var e2=document.getElementById('ome-'+k);return e2?parseFloat(e2.value||0):null;}
     o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);
-    if(opIsAdmin()){var st=opMeState(id);if(st){OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresets();}}};
+    if(opIsAdmin()){var st=opMeState(id);if(st){OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresetsLocal();}}};
   window.opMeSave=function(id){var st=opMeState(id);if(!st)return;
-    OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresets();
+    OPPRESET[id]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};opSavePresetsLocal();
+    opSaveItemColLocal();pushOpPresetsSoon();
     var b=document.querySelector('#eq-medit .me-save');if(b){b.textContent='\u2713 Enregistr\u00e9';setTimeout(function(){b.textContent='Enregistrer (r\u00e9f.)';},1400);}};
   window.opMeClose=function(){var p=document.getElementById('eq-medit');if(p)p.classList.remove('show');};
   window.opMeReset=function(id){delete OPPRESET[id];opSavePresets();
@@ -6717,6 +6720,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     box-shadow:0 30px 80px rgba(0,0,0,.78),0 0 0 1px rgba(196,171,111,.12) inset;padding:15px 15px 13px;display:none;animation:gsPopIn .2s var(--ease-out-strong);
     backdrop-filter:blur(10px);}
   .gs-pop.show{display:block;}
+  .eq-cloud-badge{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);
+    margin-left:10px;opacity:0;transition:opacity .2s;}
+  .eq-cloud-badge.show{opacity:1;animation:eqCloudPulse 1s ease-in-out infinite;}
+  @keyframes eqCloudPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
   .eq-member-sel{min-width:190px;appearance:none;-webkit-appearance:none;font-family:var(--mono);font-size:11px;font-weight:700;
     letter-spacing:1px;text-transform:uppercase;color:#f2e8cf;background:linear-gradient(180deg,rgba(30,35,22,.95),rgba(14,17,11,.95));
     border:1px solid var(--line2);border-radius:10px;padding:10px 34px 10px 14px;cursor:pointer;transition:.12s;
@@ -7066,7 +7073,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* presets de placement d'accessoires : référence admin partagée par tous les comptes */
   var MOUNTPRESETS={};try{MOUNTPRESETS=JSON.parse(localStorage.getItem('bs_mountpreset')||'{}');}catch(e){MOUNTPRESETS={};}
   function presetKey(id){return (GW.modelKey||GW.curSlot||'p')+'|'+id;}
-  function savePresets(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}pushGunPresetsSoon();}
+  function savePresetsLocal(){try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}}
+  function savePresets(){savePresetsLocal();pushGunPresetsSoon();}
+  function saveItemColLocal(id,hex){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}}
   /* ---------- synchro cloud des références admin (position + couleur), pour TOUS les comptes ---------- */
   var gunPresetChannel=null,gunPresetPushT=null;
   function pushGunPresetsSoon(){
@@ -7151,7 +7160,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   function resizeWeapon(){var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!GW.r)return;
     var w=cv.clientWidth,h=cv.clientHeight;if(w<10||h<10)return;GW.r.setSize(w,h,false);GW.cam.aspect=w/h;GW.cam.updateProjectionMatrix();}
-  function loadWeaponModel(slot){
+  function loadWeaponModel(slot,onReady){
     if(!GW.grp||!THREE.GLTFLoader)return;
     /* purge de l'arme + accessoires montés */
     var myseq=(GW.loadSeq=(GW.loadSeq||0)+1);
@@ -7182,7 +7191,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       applyWeaponFinish();
       computeAnchors();
       if(wl)wl.style.opacity=0;
-    },undefined,function(){if(wl)wl.textContent='// Mod\u00e8le indisponible';});
+      if(onReady)onReady();
+    },undefined,function(){if(wl)wl.textContent='// Mod\u00e8le indisponible';if(onReady)onReady();});
   }
   /* teinte MK18 : RIS bronze/tan, reste noir (ou tout tan au choix). Retire toute texture blanc/bleu. */
   function applyWeaponFinish(){
@@ -7268,7 +7278,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(isAdmin()){try{var s=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');s[presetKey(id)]=hex;localStorage.setItem('bs_itemcol',JSON.stringify(s));}catch(e){}pushGunPresetsSoon();}
+    if(isAdmin()){saveItemColLocal(id,hex);}
     var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
@@ -7278,9 +7288,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.gsMeSet=function(id){var o=mount3D[id];if(!o)return;
     function g(k){var e2=el.querySelector('#me-'+k);return e2?parseFloat(e2.value||0):null;}
     o.position.set(g('px'),g('py'),g('pz'));o.rotation.set(g('rx'),g('ry'),g('rz'));var s=g('s');if(s>0)o.scale.setScalar(s);
-    if(isAdmin()){var st=meState(id);if(st){MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresets();}}};
+    if(isAdmin()){var st=meState(id);if(st){MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresetsLocal();}}};
   window.gsMeSave=function(id){var st=meState(id);if(!st)return;
-    MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresets();
+    MOUNTPRESETS[presetKey(id)]={p:[st.px,st.py,st.pz],r:[st.rx,st.ry,st.rz],s:st.s};savePresetsLocal();
+    pushGunPresetsSoon();
     var p=el.querySelector('#gs-medit .me-save');if(p){p.textContent='\u2713 Enregistr\u00e9';setTimeout(function(){p.textContent='Enregistrer (r\u00e9f.)';},1400);}};
   window.gsMeClose=function(){var p=el&&el.querySelector('#gs-medit');if(p)p.classList.remove('show');};
   window.gsMeReset=function(id){delete MOUNTPRESETS[presetKey(id)];savePresets();
@@ -7362,8 +7373,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(GW.grp){GW.grp.rotation.y=GW.rot;GW.grp.rotation.x=GW.rx;}
     if(GW.r)GW.r.render(GW.scene,GW.cam);
   }
-  /* ---------- synchro cloud de la config d'arme par opérateur (accessoires + finition + couleurs) ---------- */
-  var gunBuildChannel=null;
+  /* ---------- synchro cloud de la config d'arme : UNE composition par OPÉRATEUR + emplacement (principale/secondaire) ---------- */
+  var gunBuildChannel=null,gunBuildChannelKey=null;
   function buildCloudKey(id,slot){return 'gunbuild_'+id+'_'+slot;}
   function applyGunBuildState(saved){
     saved=saved||{};
@@ -7393,8 +7404,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   function subscribeGunBuild(id,slot){
     if(!sb)return;
-    if(gunBuildChannel){try{sb.removeChannel(gunBuildChannel);}catch(e){}gunBuildChannel=null;}
     var k=buildCloudKey(id,slot);
+    if(gunBuildChannelKey===k)return;   /* déjà abonné à cette fiche+emplacement */
+    if(gunBuildChannel){try{sb.removeChannel(gunBuildChannel);}catch(e){}gunBuildChannel=null;}
+    gunBuildChannelKey=k;
     try{
       gunBuildChannel=sb.channel('gunbuild-'+k+'-'+Date.now())
         .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.'+k},function(payload){
@@ -7423,37 +7436,30 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       GW.modelKey=/417|g28/.test(wn)?'hk417':(/416/.test(wn)?'hk416':(/mk18|m4|416|417/.test(wn)?'mk18':'p226'));
     }
     if(mdlRow){mdlRow.style.display='';mdlRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mdl')===GW.modelKey);});}
-    /* restaurer l'état local tout de suite (affichage instantané), puis vérifier le cloud (source de vérité partagée) */
-    SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
-    var att=saved.att||{};
-    Object.keys(att).forEach(function(k){SEL[k]=att[k];});
-    GW.finish=saved.finish||'black';
-    GW.partCol=saved.partCol?JSON.parse(JSON.stringify(saved.partCol)):{};
-    GW.itemFin=saved.itemFin?JSON.parse(JSON.stringify(saved.itemFin)):{};
-    if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
     el.classList.add('show');
     if(!GW.inited)initWeapon();
-    loadWeaponModel(slot);
-    /* remonter tous les accessoires 3D sauvegardés (optique, laser/lampe, bouche) */
-    setTimeout(function(){
-      CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k])){SEL[c.k].forEach(function(id){toggleMount(id);});}});
-      refreshNodes();updateCount();
-    },300);
-    refreshNodes();updateCount();closePop();
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
-    /* la config cloud (partagée par tous les comptes) est la référence : si elle diffère du cache local, on l'applique */
-    if(sb){
-      sb.from('entries').select('data').eq('id',buildCloudKey(curId,slot)).maybeSingle().then(function(r){
-        if(curId!==memId()||curSlot!==slot)return;   /* l'utilisateur a changé de fiche/arme entre-temps */
-        if(Date.now()-(GW.lastSavedAt||0)<4000)return;   /* on vient d'enregistrer localement : on ne se fait pas écraser par une lecture en retard */
-        if(r&&r.data&&r.data.data){
-          try{localStorage.setItem(key(curId,slot),JSON.stringify(r.data.data));}catch(e){}
-          applyGunBuildState(r.data.data);
-        }
-      },function(){});
-      subscribeGunBuild(curId,slot);
+    closePop();
+    /* une seule restauration, propre à CET opérateur + cet emplacement d'arme, une fois que l'arme ET le cloud sont prêts */
+    var mySeq=(GW.openSeq=(GW.openSeq||0)+1);
+    var myId=curId,mySlot=slot;
+    var weaponReady=false,cloudChecked=false,cloudData=null;
+    function tryApply(){
+      if(mySeq!==GW.openSeq||curId!==myId||curSlot!==mySlot||!weaponReady||!cloudChecked)return;
+      var recent=Date.now()-(GW.lastSavedAt||0)<4000;   /* on vient d'enregistrer : on garde la main sur le cloud en retard */
+      var finalData=(!recent&&cloudData)?cloudData:saved;
+      if(myId){try{localStorage.setItem(key(myId,mySlot),JSON.stringify(finalData));}catch(e){}}
+      applyGunBuildState(finalData);
     }
+    loadWeaponModel(slot,function(){weaponReady=true;tryApply();});
+    if(sb){
+      sb.from('entries').select('data').eq('id',buildCloudKey(myId,mySlot)).maybeSingle().then(function(r){
+        if(curId!==myId||curSlot!==mySlot)return;
+        cloudData=(r&&r.data&&r.data.data)||null;cloudChecked=true;tryApply();
+      },function(){cloudChecked=true;tryApply();});
+      subscribeGunBuild(myId,mySlot);
+    }else{cloudChecked=true;tryApply();}
   };
   /* ---------- colorisation par pièce (maillages nommés, fallback Corps) ---------- */
   var PARTS=[
@@ -7549,7 +7555,22 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var origSel=window.equipSelect;
   window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);},30);return r;};
   var origEnter=window.enterEquip;
-  window.enterEquip=function(){var r=origEnter?origEnter.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(memId());},60);return r;};
+  window.enterEquip=function(){
+    var r=origEnter?origEnter.apply(this,arguments):undefined;
+    setTimeout(function(){applySavedToCards(memId());},60);
+    /* le loadout est lourd (3D, presets partagés) : on ne l'active qu'à l'ouverture de cet onglet, jamais au démarrage */
+    if(!window._loadoutCloudInit){
+      window._loadoutCloudInit=true;
+      var badge=document.getElementById('eq-cloud-badge');
+      if(sb){
+        if(badge)badge.classList.add('show');
+        try{if(window.gwInitCloudPresets)window.gwInitCloudPresets();}catch(e){console.error('[gwInitCloudPresets]',e);}
+        try{if(window.eqInitCloudPresets)window.eqInitCloudPresets();}catch(e){console.error('[eqInitCloudPresets]',e);}
+        setTimeout(function(){if(badge)badge.classList.remove('show');},700);
+      }
+    }
+    return r;
+  };
   function applySavedToCards(id){
     if(!id)return;
     ['p','s'].forEach(function(slot){
