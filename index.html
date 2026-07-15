@@ -2311,7 +2311,7 @@ function startApp(){
   restoreTabOrder();
   wireTabDrag();
   db=loadCache();renderAll();applyBranding();cloudRefresh();
-  if(sb){pullPam();subscribePam();try{if(window.gwInitCloudPresets)window.gwInitCloudPresets();}catch(e){}try{if(window.eqInitCloudPresets)window.eqInitCloudPresets();}catch(e){}}
+  if(sb){pullPam();subscribePam();try{if(window.gwInitCloudPresets)window.gwInitCloudPresets();}catch(e){console.error('[gwInitCloudPresets]',e);}try{if(window.eqInitCloudPresets)window.eqInitCloudPresets();}catch(e){console.error('[eqInitCloudPresets]',e);}}
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
     var last=sessionStorage.getItem('bs_lastview');
@@ -2655,8 +2655,8 @@ function subscribePam(){
         var row=payload.new||{};var d=row.data;
         if(d){try{localStorage.setItem('bs_pam',JSON.stringify(d));}catch(e){}refreshPamUI();}
       })
-      .subscribe();
-  }catch(e){}
+      .subscribe(function(status,err){console.log('[pam-live] status:',status,err||'');});
+  }catch(e){console.error('[subscribePam]',e);}
 }
 /* met à jour tout ce qui affiche le rapport PAM à l'écran, sans attendre un re-chargement de page */
 function renderFichePam(id){
@@ -6406,8 +6406,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       opPresetChannel=sb.channel('oppresets-live')
         .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.__oppresets__'},function(payload){
           applyRemoteOpPresets((payload.new||{}).data);
-        }).subscribe();
-    }catch(e){}}
+        }).subscribe(function(status,err){console.log('[oppresets-live] status:',status,err||'');});
+    }catch(e){console.error('[eqInitCloudPresets]',e);}}
   };
   window.opEditToggle=function(id){
     if(!opIsAdmin())return;
@@ -7090,8 +7090,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       gunPresetChannel=sb.channel('gunpresets-live')
         .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.__gunpresets__'},function(payload){
           applyRemoteGunPresets((payload.new||{}).data);
-        }).subscribe();
-    }catch(e){}}
+        }).subscribe(function(status,err){console.log('[gunpresets-live] status:',status,err||'');});
+    }catch(e){console.error('[gwInitCloudPresets]',e);}}
   };
   /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
   var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
@@ -7156,7 +7156,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* purge de l'arme + accessoires montés */
     var myseq=(GW.loadSeq=(GW.loadSeq||0)+1);
     Object.keys(mount3D).forEach(function(id){GW.grp.remove(mount3D[id]);delete mount3D[id];});
-    GW.hideNativeVGrip=false;
     if(GW.weapon){GW.grp.remove(GW.weapon);GW.weapon=null;}
     var mm2=(curId&&db()[curId])?db()[curId]:{};var rep2=(slot==='p')?(mm2.rep1||{}):(mm2.rep2||{});
     var sv2=load(curId,slot)||{};var wname=sv2.name||rep2.model||'';
@@ -7194,8 +7193,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var nm=(o.name||'').toLowerCase();
       /* retirer le viseur natif (MRO red-dot) + guidons/hausses repliables */
       if(/^mro[-.]|^fs[-.]|^rs[-.]|bullseye/.test(nm)){o.visible=false;return;}
-      /* poignée verticale native du modèle (MK18 etc.) : masquée quand l'accessoire "Poignée verticale" est sélectionné */
-      if(GW.hideNativeVGrip&&/vert.*grip|grip.*vert|vertical.?grip/i.test(nm)){o.visible=false;return;}
+      /* poignée avant noire native du modèle de base (MK18 etc.) : retirée définitivement, remplacée par l'accessoire 3D optionnel */
+      if(/vert.*grip|grip.*vert|vertical.?grip|foregrip.?native/i.test(nm)){o.visible=false;return;}
       o.visible=true;
       if(!GW.recolor)return;
       /* cloner le matériau partagé pour pouvoir teinter RIS ≠ reste */
@@ -7291,7 +7290,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var cfg=null;GUN3D.forEach(function(a){if(a.id===id)cfg=a;});if(!cfg||!GW.grp)return;
     if(!GW.mountTok)GW.mountTok={};
     if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');
-      if(id==='vgrip'){GW.hideNativeVGrip=false;applyWeaponFinish();}
       syncAllMountSel();return;}
     Object.keys(mount3D).forEach(function(mid){var c;GUN3D.forEach(function(a){if(a.id===mid)c=a;});
       if(c&&c.grp===cfg.grp){GW.grp.remove(mount3D[mid]);delete mount3D[mid];GW.mountTok[mid]=(GW.mountTok[mid]||0)+1;}});
@@ -7342,7 +7340,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var pr=MOUNTPRESETS[presetKey(id)];
       if(pr){if(pr.s)pivot.scale.setScalar(pr.s);if(pr.p)pivot.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)pivot.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
       GW.editTarget=id;
-      if(id==='vgrip'){GW.hideNativeVGrip=true;applyWeaponFinish();}
       syncAllMountSel();
     }
     if(mount3Dcache[id]){place(mount3Dcache[id].clone(true));return;}
@@ -7366,7 +7363,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(GW.r)GW.r.render(GW.scene,GW.cam);
   }
   /* ---------- synchro cloud de la config d'arme par opérateur (accessoires + finition + couleurs) ---------- */
-  var gunBuildChannel=null,gunBuildPushT=null;
+  var gunBuildChannel=null;
   function buildCloudKey(id,slot){return 'gunbuild_'+id+'_'+slot;}
   function applyGunBuildState(saved){
     saved=saved||{};
@@ -7386,12 +7383,13 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     };
     if(GW.weapon)doMount();else setTimeout(doMount,300);
   }
-  function pushGunBuildSoon(){
-    if(!sb||!curId)return;clearTimeout(gunBuildPushT);
-    gunBuildPushT=setTimeout(function(){
-      var saved=load(curId,curSlot);if(!saved)return;
-      sb.from('entries').upsert({id:buildCloudKey(curId,curSlot),type:'gunbuild',data:saved,updated_at:new Date().toISOString()}).then(function(){},function(){});
-    },150);
+  function pushGunBuildNow(){
+    if(!sb||!curId)return;
+    var saved=load(curId,curSlot);if(!saved)return;
+    GW.lastSavedAt=Date.now();
+    sb.from('entries').upsert({id:buildCloudKey(curId,curSlot),type:'gunbuild',data:saved,updated_at:new Date().toISOString()})
+      .then(function(r){if(r&&r.error&&window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+r.error.message,{type:'err'});},
+            function(err){if(window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+(err&&err.message||err),{type:'err'});});
   }
   function subscribeGunBuild(id,slot){
     if(!sb)return;
@@ -7403,8 +7401,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           var d=(payload.new||{}).data;if(!d||curId!==id||curSlot!==slot)return;
           try{localStorage.setItem(key(id,slot),JSON.stringify(d));}catch(e){}
           applyGunBuildState(d);
-        }).subscribe();
-    }catch(e){}
+        }).subscribe(function(status,err){console.log('[gunbuild-live]',k,'status:',status,err||'');});
+    }catch(e){console.error('[subscribeGunBuild]',e);}
   }
   window.openGunsmith=function(slot){
     if(!el)build();
@@ -7448,6 +7446,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(sb){
       sb.from('entries').select('data').eq('id',buildCloudKey(curId,slot)).maybeSingle().then(function(r){
         if(curId!==memId()||curSlot!==slot)return;   /* l'utilisateur a changé de fiche/arme entre-temps */
+        if(Date.now()-(GW.lastSavedAt||0)<4000)return;   /* on vient d'enregistrer localement : on ne se fait pas écraser par une lecture en retard */
         if(r&&r.data&&r.data.data){
           try{localStorage.setItem(key(curId,slot),JSON.stringify(r.data.data));}catch(e){}
           applyGunBuildState(r.data.data);
@@ -7533,7 +7532,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
     try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att,finish:GW.finish||'black',partCol:GW.partCol||{},itemFin:GW.itemFin||{}}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
-    pushGunBuildSoon();
+    pushGunBuildNow();
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
     if(card){
       if(name)card.querySelector('.es-name').textContent=name;
