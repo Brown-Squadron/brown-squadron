@@ -7397,13 +7397,24 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* rotation à la souris/doigt — seulement dans la bande centrale (autour de l'arme) */
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
     function inZone(e){var r=cv.getBoundingClientRect();var p=pt(e);var x=(p.x-r.left)/r.width,y=(p.y-r.top)/r.height;
-      return x>0.16&&x<0.84&&y>0.34&&y<0.78;}
+      return x>0.05&&x<0.95&&y>0.18&&y<0.9;}
     cv.addEventListener('mousedown',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
     window.addEventListener('mousemove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.rx=Math.max(-0.6,Math.min(0.6,GW.rx+(p.y-GW.py)*0.006));GW.px=p.x;GW.py=p.y;});
     window.addEventListener('mouseup',function(){GW.drag=false;});
-    cv.addEventListener('touchstart',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;},{passive:true});
-    cv.addEventListener('touchmove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.px=p.x;GW.py=p.y;e.preventDefault();},{passive:false});
-    cv.addEventListener('touchend',function(){GW.drag=false;});
+    cv.addEventListener('touchstart',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;GW.gest=0;var p=pt(e);GW.px=p.x;GW.py=p.y;GW.sx=p.x;GW.sy=p.y;},{passive:true});
+    cv.addEventListener('touchmove',function(e){
+      if(!GW.drag)return;var p=pt(e);
+      /* au 1er mouvement on tranche : vertical = on laisse la page défiler, horizontal = on tourne l'arme */
+      if(!GW.gest){
+        var adx=Math.abs(p.x-GW.sx),ady=Math.abs(p.y-GW.sy);
+        if(adx<7&&ady<7)return;              /* trop court : on attend de savoir */
+        if(ady>adx){GW.drag=false;return;}   /* geste vertical -> défilement normal de la page */
+        GW.gest=1;
+      }
+      GW.tRot+=(p.x-GW.px)*0.01;GW.px=p.x;GW.py=p.y;
+      if(e.cancelable)e.preventDefault();
+    },{passive:false});
+    cv.addEventListener('touchend',function(){GW.drag=false;GW.gest=0;});
     cv.addEventListener('wheel',function(e){e.preventDefault();GW.zoom=Math.max(0.7,Math.min(4,(GW.zoom||1.75)+(e.deltaY>0?0.12:-0.12)));GW.cam.position.z=GW.zoom;},{passive:false});
     /* pincer pour zoomer (tactile) */
     var pinchD=0;
