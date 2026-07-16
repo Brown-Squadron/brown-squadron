@@ -411,6 +411,9 @@
   .mcard .trash{position:absolute;top:11px;right:11px;background:rgba(0,0,0,.25);border:1px solid var(--line);
     border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
   .mcard .trash:hover{color:#fff;background:var(--op);border-color:var(--op);}
+  .mcard .m3d{position:absolute;top:11px;right:46px;background:rgba(0,0,0,.25);border:1px solid var(--line);
+    border-radius:8px;color:var(--amber);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
+  .mcard .m3d:hover{color:#181305;background:var(--aor1b);border-color:var(--aor1b);}
   /* bouton "Membres en opération" */
   .op-day-btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:800;
     letter-spacing:1.5px;text-transform:uppercase;color:#2a1f05;border:none;border-radius:12px;padding:13px 22px;
@@ -2373,6 +2376,18 @@ function goMembres(){
   document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')==='view-membres');});
   showView('view-membres');renderMembres();
 }
+/* ouvre directement l'opérateur 3D d'un membre depuis sa carte (liste des membres) */
+function openMembre3D(id){
+  document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')==='view-equip');});
+  showView('view-equip');
+  try{sessionStorage.setItem('bs_lastview','view-equip');}catch(e){}
+  if(window.enterEquip)window.enterEquip();
+  /* on sélectionne le bon opérateur une fois la vue prête */
+  setTimeout(function(){
+    var sel=document.getElementById('equip-member');
+    if(sel&&id){sel.value=id;if(window.equipSelect)window.equipSelect(id);}
+  },80);
+}
 function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();
   try{var ev=document.getElementById('view-equip');if(ev&&ev.classList.contains('active')&&window.enterEquip)window.enterEquip();}catch(e){}}
 
@@ -2738,6 +2753,7 @@ function renderMembres(){
     var dpct=Math.round(dscore/9*100);
     return '<div class="mcard" onclick="openMembre(\''+m._id+'\')">'+
       '<button class="trash" onclick="event.stopPropagation();delMembre(\''+m._id+'\')">&#128465;</button>'+
+      '<button class="m3d" onclick="event.stopPropagation();openMembre3D(\''+m._id+'\')" title="Voir l\'op\u00e9rateur 3D">&#9881;</button>'+
       pamDotsHTML(m._id)+
       '<div class="pseudo">'+(esc(m.pseudo)||'SANS INDICATIF')+'</div>'+
       '<div class="realname">'+esc([m.prenom,m.nom].filter(Boolean).join(' '))+'</div>'+
@@ -6070,7 +6086,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   /* ---------- chargement du modèle 3D réaliste (GLB) ---------- */
   function loadModel(scene){
-    if(!THREE.GLTFLoader)return;
+    if(!THREE.GLTFLoader){if(EQ.op)EQ.op.visible=true;return;}
     try{
       var loader=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
       loader.load('operator.glb',function(gltf){
@@ -6114,10 +6130,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         computeOpAnchors(model);
         if(EQ.op)EQ.op.visible=false;
         var l=document.getElementById('eq-loading');if(l)l.classList.add('hide');
-      },undefined,function(){/* échec -> on garde l'opérateur procédural */});
-    }catch(e){}
+      },undefined,function(){
+        /* échec du vrai modèle -> on rend visible l'opérateur procédural de secours */
+        if(EQ.op)EQ.op.visible=true;
+        EQ.rotTarget=EQ.op||EQ.rotTarget;
+        var l=document.getElementById('eq-loading');if(l)l.classList.add('hide');
+      });
+    }catch(e){if(EQ.op)EQ.op.visible=true;}
   }
-  /* ancres corps (centres de meshes nommés) pour poser les items proprement */
   function opMeshBox(model,re){var out=null;model.traverse(function(o){if(!o.isMesh)return;if(re.test(o.name||'')){var b=new THREE.Box3().setFromObject(o);if(!out)out=b;else out.union(b);}});return out;}
   function computeOpAnchors(model){
     EQ.anchors=null;try{
@@ -6162,6 +6182,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     shad.rotation.x=-Math.PI/2;shad.position.y=0.003;scene.add(shad);
 
     var op=buildOperator(scene);
+    /* opérateur cubique de secours : masqué par défaut, il ne sert que si le vrai modèle 3D échoue */
+    op.visible=false;
     EQ.rotTarget=op;
     loadModel(scene);
 
@@ -6500,20 +6522,29 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   function loadAndSyncOpEquip(id){
     if(!id)return;
-    var local=opEquipLoadLocal(id)||[];
-    applyOpEquipState(id,local);
-    if(sb){
-      sb.from('entries').select('data').eq('id',opEquipCloudKey(id)).maybeSingle().then(function(r){
-        if(memId()!==id)return;
-        var cloudIds=(r&&r.data&&r.data.data&&r.data.data.items)||null;
-        if(cloudIds){opEquipSaveLocal(id,cloudIds);applyOpEquipState(id,cloudIds);}
-      },function(){});
-      subscribeOpEquip(id);
-    }
+    /* le modèle 3D du personnage peut encore charger (surtout sur mobile) :
+       sans lui, equipToggleItem() abandonne en silence -> opérateur nu. On attend qu'il soit prêt. */
+    var waits=0;
+    (function waitBody(){
+      if(!(EQ.model||EQ.scene)){if(waits++<80){setTimeout(waitBody,60);return;}}
+      if(memId()!==id)return;   /* l'utilisateur a changé d'opérateur entre-temps */
+      var local=opEquipLoadLocal(id)||[];
+      applyOpEquipState(id,local);
+      if(sb){
+        sb.from('entries').select('data').eq('id',opEquipCloudKey(id)).maybeSingle().then(function(r){
+          if(memId()!==id)return;
+          var cloudIds=(r&&r.data&&r.data.data&&r.data.data.items)||null;
+          if(cloudIds){opEquipSaveLocal(id,cloudIds);applyOpEquipState(id,cloudIds);}
+        },function(){});
+        subscribeOpEquip(id);
+      }
+    })();
   }
-  window.equipToggleItem=function(id){
+  window.equipToggleItem=function(id,_retry){
     if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};
-    var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;if(!parent)return;
+    var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;
+    /* corps 3D pas encore chargé -> on réessaie au lieu d'abandonner (sinon l'item est perdu) */
+    if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1);},60);return;}
     if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(memId());return;}
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
@@ -6533,6 +6564,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
       obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
       (EQ.model||EQ.scene).add(obj);EQ.mounted[id]=obj;
+      /* filet de sécurité : un objet déjà en cache peut encore être translucide -> on re-force l'opaque */
+      obj.traverse(function(o){if(o.isMesh&&o.material){
+        var mm=Array.isArray(o.material)?o.material:[o.material];
+        var nm=((o.name||'')+' '+(o.material.name||'')).toLowerCase();
+        if(!/glass|lens|lentille|verre|screen/.test(nm))mm.forEach(function(x){
+          if(x.transparent||(x.opacity!=null&&x.opacity<1)){x.transparent=false;x.opacity=1;x.depthWrite=true;x.needsUpdate=true;}
+        });
+      }});
       /* preset admin enregistré (référence partagée) : position + couleur */
       var pr=(OPPRESET||{})[id];
       if(pr){if(pr.s)obj.scale.setScalar(pr.s);if(pr.p)obj.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)obj.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
@@ -6548,7 +6587,27 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var ld=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
     ld.load(cfg.file,function(g){
       g.scene.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
-        if(cfg.tint&&o.material){var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(cfg.tint);});}
+        if(o.material){
+          var mm=Array.isArray(o.material)?o.material:[o.material];
+          var nm=((o.name||'')+' '+(o.material.name||'')).toLowerCase();
+          var isGlass=/glass|lens|lentille|verre|screen/.test(nm);
+          mm.forEach(function(x){
+            /* certains .glb arrivent en transparent/alpha -> effet "hologramme" translucide : on force l'opaque
+               (sauf vraies lentilles/vitres, qu'on laisse légèrement translucides) */
+            if(!isGlass){
+              x.transparent=false;x.opacity=1;x.alphaMap=null;x.alphaTest=0;
+              x.depthWrite=true;x.side=THREE.FrontSide;
+              if(x.format!=null&&THREE.RGBFormat!=null)x.format=THREE.RGBFormat;
+              /* reflets excessifs -> aspect "miroir/hologramme" : on ramène à une finition mate d'équipement */
+              if(x.metalness!=null)x.metalness=Math.min(x.metalness,0.25);
+              if(x.roughness!=null)x.roughness=Math.max(x.roughness,0.6);
+              if(x.envMapIntensity!=null)x.envMapIntensity=Math.min(x.envMapIntensity,0.3);
+              if(x.emissive)x.emissive.setHex(0x000000);
+            }else{x.transparent=true;x.opacity=Math.max(x.opacity!=null?x.opacity:1,0.65);x.depthWrite=true;}
+            if(cfg.tint&&x.color)x.color.setHex(cfg.tint);
+            x.needsUpdate=true;
+          });
+        }
       }});
       EQ.itemObj[id]=g.scene;place(g.scene);
     },undefined,function(){if(chip)chip.classList.remove('loading');
