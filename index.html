@@ -6953,21 +6953,21 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   /* points de montage MW : position en % du stage + options de la catégorie */
   var CATS=[
-    {k:'muzzle',label:'Bouche',x:16,y:60,mx:20,my:72,mode:'mount3d',opts:[
+    {k:'muzzle',label:'Bouche',x:16,y:60,mx:16,my:72,mode:'mount3d',opts:[
       {v:'sil_perf',name:'Silencieux perfor\u00e9',sub:'Vent\u00e9 / ajour\u00e9'},{v:'sil_smooth',name:'Silencieux lisse',sub:'Tube plein'}]},
-    {k:'barrel',label:'Canon',x:27,y:33,mx:22,my:41,mode:'text',opts:[
+    {k:'barrel',label:'Canon',x:27,y:33,mx:9,my:44,mode:'text',opts:[
       {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
-    {k:'laser',label:'RIS avant',x:43,y:20,mx:26,my:33,mode:'mount3d',opts:[
+    {k:'laser',label:'RIS avant',x:43,y:20,mx:34,my:46,mode:'mount3d',opts:[
       {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
-    {k:'optic',label:'Optique',x:60,y:23,mx:72,my:33,right:true,mode:'mount3d',opts:[
+    {k:'optic',label:'Optique',x:60,y:23,mx:64,my:46,right:true,mode:'mount3d',opts:[
       {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'}]},
-    {k:'stock',label:'Crosse',x:87,y:33,mx:78,my:41,right:true,mode:'text',opts:[
+    {k:'stock',label:'Crosse',x:87,y:33,mx:89,my:44,right:true,mode:'text',opts:[
       {v:'Fixe',sub:'Rigide'},{v:'R\u00e9tractable',sub:'Ajustable'},{v:'CTR',sub:'Magpul'},{v:'PDW',sub:'Compacte'}]},
-    {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:76,my:72,right:true,mode:'text',opts:[
+    {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:80,my:72,right:true,mode:'text',opts:[
       {v:'Standard',sub:'A2'},{v:'Angle',sub:'Ergonomique'},{v:'Textur\u00e9e',sub:'Grip+'},{v:'Speed',sub:'Rapide'}]},
-    {k:'mag',label:'Chargeur',x:54,y:77,mx:70,my:82,right:true,mode:'text',opts:[
+    {k:'mag',label:'Chargeur',x:54,y:77,mx:74,my:83,right:true,mode:'text',opts:[
       {v:'20 coups',sub:'Compact'},{v:'30 coups',sub:'Standard'},{v:'40 coups',sub:'\u00c9tendu'},{v:'60 coups',sub:'Tambour'}]},
-    {k:'under',label:'Sous-canon',x:34,y:68,mx:24,my:82,mode:'mount3d',opts:[
+    {k:'under',label:'Sous-canon',x:34,y:68,mx:22,my:83,mode:'mount3d',opts:[
       {v:'vgrip',name:'Poign\u00e9e verticale',sub:'ALFA Mod 4'},{v:'agrip',name:'Poign\u00e9e d\u2019angle',sub:'AFG-2'}]}
   ];
   function catByK(k){for(var i=0;i<CATS.length;i++)if(CATS[i].k===k)return CATS[i];return null;}
@@ -7083,6 +7083,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   /* recalcule SEL (mount3d) + coche à jour dans le popup ouvert, toujours à partir de mount3D réel */
   function syncAllMountSel(){
+    /* pendant une restauration, des accessoires sont encore en cours de chargement :
+       on ne recalcule pas SEL depuis mount3D, sinon on effacerait ceux pas encore arrivés */
+    if(GW.restoring){refreshNodes();updateCount();return;}
     CATS.forEach(function(c){
       if(c.mode!=='mount3d')return;
       var arr=c.opts.map(function(o){return o.v;}).filter(function(id){return !!mount3D[id];});
@@ -7478,8 +7481,15 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
     /* remonter tous les accessoires 3D sauvegardés (optique, laser/lampe, bouche, sous-canon) */
     var doMount=function(){
-      CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k])){SEL[c.k].forEach(function(id){toggleMount(id);});}});
+      GW.restoring=true;
+      /* on fige la liste AVANT de monter : toggleMount() réécrit SEL via syncAllMountSel(),
+         ce qui coupait la boucle en cours et ne laissait qu'un seul accessoire monté */
+      var todo=[];
+      CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k]))SEL[c.k].forEach(function(id){todo.push(id);});});
+      todo.forEach(function(id){if(!mount3D[id])toggleMount(id);});
       applyWeaponFinish();refreshNodes();updateCount();
+      /* on relâche le verrou une fois les chargements asynchrones terminés */
+      setTimeout(function(){GW.restoring=false;refreshNodes();updateCount();},2500);
     };
     /* on attend que l'arme ET ses ancres soient réellement prêtes avant de monter les accessoires */
     var waits=0;
