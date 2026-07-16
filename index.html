@@ -408,11 +408,11 @@
     box-shadow:0 0 8px rgba(61,122,181,.5);transition:width .5s ease;}
   .mcard .drilltxt{font-size:10.5px;color:var(--muted);margin-top:5px;font-family:var(--mono);letter-spacing:.5px;}
   .mcard .drilltxt b{color:#6fa8d8;}
-  .mcard .trash{position:absolute;top:11px;right:11px;background:rgba(0,0,0,.25);border:1px solid var(--line);
-    border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
+  .mcard .trash{position:absolute;top:11px;right:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);
+    border-radius:8px;color:var(--dim);font-size:13px;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;padding:0;transition:.16s;z-index:3;}
   .mcard .trash:hover{color:#fff;background:var(--op);border-color:var(--op);}
-  .mcard .m3d{position:absolute;top:11px;right:46px;background:rgba(0,0,0,.25);border:1px solid var(--line);
-    border-radius:8px;color:var(--amber);font-size:13px;cursor:pointer;padding:5px 7px;transition:.16s;z-index:2;}
+  .mcard .m3d{position:absolute;top:11px;right:47px;background:rgba(0,0,0,.35);border:1px solid var(--aor1);
+    border-radius:8px;color:var(--amber);font-size:13px;cursor:pointer;width:30px;height:30px;display:flex;align-items:center;justify-content:center;padding:0;transition:.16s;z-index:3;}
   .mcard .m3d:hover{color:#181305;background:var(--aor1b);border-color:var(--aor1b);}
   /* bouton "Membres en opération" */
   .op-day-btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-family:var(--mono);font-size:13px;font-weight:800;
@@ -423,7 +423,7 @@
   .op-day-btn .odb-i{font-size:15px;}
   .op-day-btn .odb-date{font-size:11px;opacity:.75;letter-spacing:1px;padding-left:2px;}
   /* pastilles PAM (Personnel / Armement / Matériel) sur les cartes */
-  .pam-dots{position:absolute;top:12px;right:46px;display:flex;flex-direction:column;gap:5px;z-index:3;}
+  .pam-dots{position:absolute;top:12px;right:83px;display:flex;flex-direction:column;gap:5px;z-index:3;}
   .pam-dots .pd{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);cursor:pointer;
     background:#3a3f33;transition:.14s;position:relative;}
   .pam-dots .pd:hover{transform:scale(1.18);}
@@ -1494,7 +1494,13 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
   <div class="view" id="view-equip">
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
       <div><h2 class="text-tan tracking-widest">Loadout <span id="eq-cloud-badge" class="eq-cloud-badge">Synchronisation…</span></h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
-      <select id="equip-member" class="eq-member-sel" onchange="equipSelect(this.value)"></select>
+      <div class="eq-msel" id="eq-msel">
+        <button class="eq-msel-btn" id="eq-msel-btn" onclick="eqMselToggle(event)">
+          <span id="eq-msel-cur">\u2014</span><span class="eq-msel-car">\u25BE</span>
+        </button>
+        <div class="eq-msel-list" id="eq-msel-list"></div>
+      </div>
+      <select id="equip-member" class="eq-member-sel" onchange="equipSelect(this.value)" style="display:none"></select>
     </div>
     <div class="equip-stage" id="equip-stage">
       <canvas id="equip-canvas"></canvas>
@@ -2384,8 +2390,9 @@ function openMembre3D(id){
   if(window.enterEquip)window.enterEquip();
   /* on sélectionne le bon opérateur une fois la vue prête */
   setTimeout(function(){
-    var sel=document.getElementById('equip-member');
-    if(sel&&id){sel.value=id;if(window.equipSelect)window.equipSelect(id);}
+    if(id&&window.eqMselPick)window.eqMselPick(id);
+    else{var sel=document.getElementById('equip-member');
+      if(sel&&id){sel.value=id;if(window.equipSelect)window.equipSelect(id);}}
   },80);
 }
 function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();
@@ -6357,10 +6364,41 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var list=(typeof membresOf==='function')?membresOf():[];
     var prev=sel.value;
     sel.innerHTML=list.map(function(m){return '<option value="'+m._id+'">'+esc(m.pseudo||'Op\u00e9rateur')+'</option>';}).join('');
-    if(!list.length){sel.innerHTML='<option value="">Aucune fiche</option>';return null;}
+    if(!list.length){sel.innerHTML='<option value="">Aucune fiche</option>';renderMsel([],'');return null;}
     if(prev&&list.some(function(m){return m._id===prev;}))sel.value=prev;
+    renderMsel(list,sel.value);
     return list[[].slice.call(sel.options).findIndex(function(o){return o.value===sel.value;})]||list[0];
   }
+  /* ---------- menu déroulant opérateur personnalisé ---------- */
+  function renderMsel(list,curVal){
+    var box=document.getElementById('eq-msel-list'),cur=document.getElementById('eq-msel-cur');
+    if(!box)return;
+    if(!list.length){box.innerHTML='';if(cur)cur.textContent='Aucune fiche';return;}
+    box.innerHTML=list.map(function(m){
+      var full=esc(m.pseudo||'Op\u00e9rateur');
+      var parts=full.split(/\s*\/\s*/);
+      var bs=parts.length>1?parts[0]:'';var nm=parts.length>1?parts.slice(1).join(' / '):full;
+      return '<button class="eq-msel-opt'+(m._id===curVal?' on':'')+'" data-id="'+m._id+'" onclick="eqMselPick(\''+m._id+'\')">'+
+        (bs?'<span class="o-bs">'+bs+'</span>':'')+'<span class="o-nm">'+nm+'</span></button>';
+    }).join('');
+    var sel=list.filter(function(m){return m._id===curVal;})[0]||list[0];
+    if(cur)cur.textContent=esc(sel.pseudo||'Op\u00e9rateur');
+  }
+  window.eqMselToggle=function(e){
+    if(e)e.stopPropagation();
+    var w=document.getElementById('eq-msel');if(w)w.classList.toggle('open');
+  };
+  window.eqMselPick=function(id){
+    var w=document.getElementById('eq-msel');if(w)w.classList.remove('open');
+    var sel=document.getElementById('equip-member');if(sel)sel.value=id;
+    var list=(typeof membresOf==='function')?membresOf():[];
+    renderMsel(list,id);
+    if(window.equipSelect)window.equipSelect(id);
+  };
+  document.addEventListener('click',function(e){
+    var w=document.getElementById('eq-msel');
+    if(w&&w.classList.contains('open')&&!e.target.closest('#eq-msel'))w.classList.remove('open');
+  });
 
   /* ---------- ITEMS 3D montables sur l'opérateur ---------- */
   var ITEMS={
@@ -6369,7 +6407,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
     m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',anchor:'chest',off:[-0.09,-0.03,0.015],pos:[-0.15,1.4,0.17],size:0.07,rot:[0,0,0]},
-    smoke:{file:'item_m18_smoke.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0]},
+    smoke:{file:'item_m18_smoke.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0],meshMatch:/PainterExport_SmokeGrenade_0$/i},
     radio:{file:'item_radio.glb',label:'Radio PMR',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc152:{file:'item_radio_prc152.glb',label:'Radio PRC-152',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc148:{file:'item_radio_prc148.glb',label:'Radio PRC-148',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
@@ -6501,8 +6539,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyOpEquipState(id,ids){
     ids=ids||[];
     EQ._restoring=true;
-    Object.keys(EQ.mounted||{}).forEach(function(mid){if(ids.indexOf(mid)===-1)window.equipToggleItem(mid);});
-    ids.forEach(function(mid){if(!EQ.mounted||!EQ.mounted[mid]){if(ITEMS[mid])window.equipToggleItem(mid);}});
+    Object.keys(EQ.mounted||{}).forEach(function(mid){if(ids.indexOf(mid)===-1)window.equipToggleItem(mid,0,id);});
+    ids.forEach(function(mid){if(!EQ.mounted||!EQ.mounted[mid]){if(ITEMS[mid])window.equipToggleItem(mid,0,id);}});
     EQ._restoring=false;
   }
   function subscribeOpEquip(id){
@@ -6522,17 +6560,27 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   function loadAndSyncOpEquip(id){
     if(!id)return;
+    /* on mémorise l'opérateur demandé : memId() peut encore renvoyer le précédent selon l'ordre d'appel */
+    EQ.wantId=id;
+    /* on retire TOUT de suite les items de l'opérateur précédent, sinon ils restent collés au nouveau */
+    EQ._restoring=true;
+    Object.keys(EQ.mounted||{}).forEach(function(mid){
+      var o=EQ.mounted[mid];if(o&&(EQ.model||EQ.scene))(EQ.model||EQ.scene).remove(o);
+      delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;
+    });
+    EQ._restoring=false;
+    renderItemBar();
     /* le modèle 3D du personnage peut encore charger (surtout sur mobile) :
        sans lui, equipToggleItem() abandonne en silence -> opérateur nu. On attend qu'il soit prêt. */
     var waits=0;
     (function waitBody(){
+      if(EQ.wantId!==id)return;   /* l'utilisateur a déjà choisi un autre opérateur */
       if(!(EQ.model||EQ.scene)){if(waits++<80){setTimeout(waitBody,60);return;}}
-      if(memId()!==id)return;   /* l'utilisateur a changé d'opérateur entre-temps */
       var local=opEquipLoadLocal(id)||[];
       applyOpEquipState(id,local);
       if(sb){
         sb.from('entries').select('data').eq('id',opEquipCloudKey(id)).maybeSingle().then(function(r){
-          if(memId()!==id)return;
+          if(EQ.wantId!==id)return;
           var cloudIds=(r&&r.data&&r.data.data&&r.data.data.items)||null;
           if(cloudIds){opEquipSaveLocal(id,cloudIds);applyOpEquipState(id,cloudIds);}
         },function(){});
@@ -6540,22 +6588,32 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       }
     })();
   }
-  window.equipToggleItem=function(id,_retry){
+  window.equipToggleItem=function(id,_retry,_owner){
     if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};
+    var owner=(_owner!==undefined)?_owner:(EQ.wantId||memId());
     var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;
     /* corps 3D pas encore chargé -> on réessaie au lieu d'abandonner (sinon l'item est perdu) */
-    if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1);},60);return;}
-    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(memId());return;}
+    if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1,owner);},60);return;}
+    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
+    function visBoxOf(o){
+      var b=new THREE.Box3(),t=new THREE.Box3(),has=false;
+      o.traverse(function(m){if(m.isMesh&&m.visible){t.setFromObject(m);b.union(t);has=true;}});
+      if(!has)b.setFromObject(o);
+      return b;
+    }
     function place(obj){
       /* toggle annulé ou item re-basculé pendant le chargement -> on ignore ce résultat périmé */
       if(EQ.itemTok[id]!==tok||!(EQ.model||EQ.scene))return;
+      /* l'opérateur affiché a changé pendant le chargement -> cet item n'est pas le sien, on l'abandonne */
+      if(owner&&EQ.wantId&&EQ.wantId!==owner)return;
       obj.scale.set(1,1,1);obj.position.set(0,0,0);obj.rotation.set(0,0,0);
-      var box=new THREE.Box3().setFromObject(obj);var sz=new THREE.Vector3();box.getSize(sz);
+      /* on mesure uniquement les parties visibles (les copies filtrées fausseraient l'échelle) */
+      var box=visBoxOf(obj);var sz=new THREE.Vector3();box.getSize(sz);
       var sc=cfg.size/(Math.max(sz.x,sz.y,sz.z)||1);obj.scale.setScalar(sc);
-      box.setFromObject(obj);var c=new THREE.Vector3();box.getCenter(c);
+      box=visBoxOf(obj);var c=new THREE.Vector3();box.getCenter(c);
       var base;var A=(EQ.anchors&&cfg.anchor)?EQ.anchors[cfg.anchor]:null;
       if(A){var off=cfg.off||[0,0,0];base=A.clone();base.x+=off[0];base.y+=off[1];
         var fz=(cfg.anchor==='head'?EQ.anchors.headZ:EQ.anchors.chestZ);
@@ -6581,11 +6639,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(colHex);x.needsUpdate=true;}});}});
       EQ.editTarget=id;
       if(chip)chip.classList.remove('loading');renderItemBar();
-      if(!EQ._restoring)pushOpEquipNow(memId());
+      if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
     }
     if(EQ.itemObj[id]){place(EQ.itemObj[id]);return;}
     var ld=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
     ld.load(cfg.file,function(g){
+      /* certains .glb contiennent plusieurs copies empilées : on ne garde que celle demandée */
+      if(cfg.meshMatch){var any=false;
+        g.scene.traverse(function(o){if(o.isMesh){var mt=cfg.meshMatch.test(o.name||'');o.visible=mt;if(mt)any=true;}});
+        if(!any)g.scene.traverse(function(o){if(o.isMesh)o.visible=true;});   /* aucun match -> on n'efface pas tout */
+      }
       g.scene.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
         if(o.material){
           var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -6598,9 +6661,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               x.transparent=false;x.opacity=1;x.alphaMap=null;x.alphaTest=0;
               x.depthWrite=true;x.side=THREE.FrontSide;
               if(x.format!=null&&THREE.RGBFormat!=null)x.format=THREE.RGBFormat;
-              /* reflets excessifs -> aspect "miroir/hologramme" : on ramène à une finition mate d'équipement */
+              /* un matériau 100% métallique sans envMap rend noir (donc invisible sur fond sombre) */
               if(x.metalness!=null)x.metalness=Math.min(x.metalness,0.25);
-              if(x.roughness!=null)x.roughness=Math.max(x.roughness,0.6);
+              if(x.roughness!=null)x.roughness=Math.min(Math.max(x.roughness,0.4),0.85);
               if(x.envMapIntensity!=null)x.envMapIntensity=Math.min(x.envMapIntensity,0.3);
               if(x.emissive)x.emissive.setHex(0x000000);
             }else{x.transparent=true;x.opacity=Math.max(x.opacity!=null?x.opacity:1,0.65);x.depthWrite=true;}
@@ -6833,6 +6896,30 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     margin-left:10px;opacity:0;transition:opacity .2s;}
   .eq-cloud-badge.show{opacity:1;animation:eqCloudPulse 1s ease-in-out infinite;}
   @keyframes eqCloudPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+  /* menu déroulant opérateur (personnalisé, remplace le select natif non stylable) */
+  .eq-msel{position:relative;min-width:230px;font-family:var(--mono);}
+  .eq-msel-btn{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;
+    font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f2e8cf;
+    background:linear-gradient(180deg,rgba(32,38,24,.95),rgba(14,17,11,.95));
+    border:1px solid var(--line2);border-radius:11px;padding:12px 14px;transition:.14s;text-align:left;}
+  .eq-msel-btn:hover,.eq-msel.open .eq-msel-btn{border-color:var(--aor1);box-shadow:0 0 0 1px rgba(184,160,106,.25);}
+  .eq-msel-btn #eq-msel-cur{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .eq-msel-car{color:var(--amber);font-size:11px;transition:transform .18s;}
+  .eq-msel.open .eq-msel-car{transform:rotate(180deg);}
+  .eq-msel-list{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:40;display:none;flex-direction:column;
+    background:rgba(10,13,9,.98);border:1px solid var(--line2);border-radius:11px;padding:6px;
+    box-shadow:0 18px 44px rgba(0,0,0,.7);max-height:min(52vh,380px);overflow-y:auto;scrollbar-width:none;}
+  .eq-msel-list::-webkit-scrollbar{display:none;}
+  .eq-msel.open .eq-msel-list{display:flex;}
+  .eq-msel-opt{display:flex;align-items:center;gap:9px;cursor:pointer;background:none;border:none;border-radius:8px;
+    padding:10px 11px;min-height:42px;text-align:left;transition:.1s;}
+  .eq-msel-opt:hover{background:rgba(77,90,55,.35);}
+  .eq-msel-opt.on{background:linear-gradient(90deg,rgba(154,127,67,.4),transparent);}
+  .eq-msel-opt .o-bs{font-size:10px;font-weight:800;letter-spacing:1px;color:var(--amber);flex:none;min-width:46px;}
+  .eq-msel-opt .o-nm{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#dfe3d2;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .eq-msel-opt.on .o-nm{color:#fff;}
+  @media(max-width:760px){.eq-msel{min-width:0;width:100%;}}
   .eq-member-sel{min-width:190px;appearance:none;-webkit-appearance:none;font-family:var(--mono);font-size:11px;font-weight:700;
     letter-spacing:1px;text-transform:uppercase;color:#f2e8cf;background:linear-gradient(180deg,rgba(30,35,22,.95),rgba(14,17,11,.95));
     border:1px solid var(--line2);border-radius:10px;padding:10px 34px 10px 14px;cursor:pointer;transition:.12s;
