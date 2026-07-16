@@ -6369,7 +6369,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
     m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',anchor:'chest',off:[-0.09,-0.03,0.015],pos:[-0.15,1.4,0.17],size:0.07,rot:[0,0,0]},
-    smoke:{file:'item_m67.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0],tint:0x6a6f4a},
+    smoke:{file:'item_m18_smoke.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0]},
     radio:{file:'item_radio.glb',label:'Radio PMR',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc152:{file:'item_radio_prc152.glb',label:'Radio PRC-152',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc148:{file:'item_radio_prc148.glb',label:'Radio PRC-148',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
@@ -6985,12 +6985,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var GUN3D=[
     {id:'e553',file:'item_eotech_553.glb',grp:'optic',anchor:'rcvrTop',off:[0.03,0.024,0],pos:[0,0.075,0.02],size:0.15,rot:[0,-1.5708,0],dark:true},
     {id:'mag',file:'item_eotech_magnifier.glb',grp:'optic2',anchor:'rcvrTop',off:[-0.055,0.024,0],pos:[0,0.072,-0.12],size:0.12,rot:[Math.PI,1.5708,0],dark:true},
+    {id:'elcan',file:'item_elcan.glb',grp:'optic',anchor:'rcvrTop',off:[0.03,0.024,0],pos:[0,0.08,0.02],size:0.17,rot:[0,-1.5708,0],dark:true,meshMatch:/^(Mesh7|Mesh8|Mesh9|Mesh10|Mesh11|Mesh12|Mesh13|Mesh14|Mesh15)_/i},
+    {id:'nfscope',file:'item_nightforce.glb',grp:'optic',anchor:'rcvrTop',off:[0.03,0.024,0],pos:[0,0.085,0.02],size:0.22,rot:[0,-1.5708,0],dark:true},
     {id:'peq15',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],tan:true},
     {id:'dbal',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],dark:true},
     {id:'m600',file:'item_lampe.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],tan:true},
     {id:'sil_perf',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.12,rot:[0,0,0],autoAxis:true,meshMatch:/ATS4/i,dark:true},
     {id:'sil_smooth',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.11,rot:[0,0,0],autoAxis:true,meshMatch:/MD3/i,dark:true},
-    {id:'vgrip',file:'item_alfa_vgrip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.05],pos:[-0.05,-0.06,0.05],size:0.09,rot:[0,0,0]},
+    {id:'vgrip',file:'item_dd_vgrip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.05],pos:[-0.05,-0.06,0.05],size:0.09,rot:[0,0,0]},
     {id:'agrip',file:'item_afg2_grip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.08],pos:[-0.05,-0.06,0.08],size:0.09,rot:[0,0,0]}
   ];
   /* modèle 3D exact par arme (aucun modèle générique) */
@@ -7019,7 +7021,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {k:'laser',label:'RIS avant',x:43,y:20,mx:34,my:46,mode:'mount3d',opts:[
       {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
     {k:'optic',label:'Optique',x:60,y:23,mx:64,my:46,right:true,mode:'mount3d',opts:[
-      {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'}]},
+      {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'},
+      {v:'elcan',name:'ELCAN Specter DR',sub:'x1/x4 \u2014 + point rouge'},{v:'nfscope',name:'Nightforce',sub:'Lunette de pr\u00e9cision'}]},
     {k:'stock',label:'Crosse',x:87,y:33,mx:89,my:44,right:true,mode:'text',opts:[
       {v:'Fixe',sub:'Rigide'},{v:'R\u00e9tractable',sub:'Ajustable'},{v:'CTR',sub:'Magpul'},{v:'PDW',sub:'Compacte'}]},
     {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:80,my:72,right:true,mode:'text',opts:[
