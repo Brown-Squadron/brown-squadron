@@ -6661,7 +6661,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
                (sauf vraies lentilles/vitres, qu'on laisse légèrement translucides) */
             if(!isGlass){
               x.transparent=false;x.opacity=1;x.alphaMap=null;x.alphaTest=0;
-              x.depthWrite=true;x.side=THREE.FrontSide;
+              x.depthWrite=true;x.depthTest=true;
+              /* on NE force PAS x.side : les modèles double-face (JVN) clignotent si on les passe en FrontSide */
               if(x.format!=null&&THREE.RGBFormat!=null)x.format=THREE.RGBFormat;
               /* un matériau 100% métallique sans envMap rend noir (donc invisible sur fond sombre) */
               if(x.metalness!=null)x.metalness=Math.min(x.metalness,0.25);
@@ -6871,6 +6872,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-finish .fin-b:hover{border-color:var(--aor1);color:#fff;}
   .gs-finish .fin-b.on{background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#181305;border-color:var(--aor1b);}
   .gs-finish .fin-b.on i{color:#3a2c08;}
+  /* Paintjob : transparent au repos, vert quand le panneau est ouvert */
+  .gs-finish .gs-paintjob{color:var(--aor1b);background:rgba(8,10,7,.7);}
+  .gs-finish .gs-paintjob.on{background:linear-gradient(180deg,#6f8f47,#4d6a2c);color:#0d1206;border-color:#7fa552;
+    box-shadow:0 0 12px rgba(127,165,82,.45);}
   /* points de montage */
   .gs-node{position:absolute;z-index:7;transform:translate(-50%,-50%);display:flex;align-items:center;gap:9px;cursor:pointer;
     background:none;border:none;padding:0;}
@@ -7157,9 +7162,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button class="fin-b" data-mdl="hk416" onclick="gunsmithModel(\'hk416\')">HK416</button>'+
           '<button class="fin-b" data-mdl="hk417" onclick="gunsmithModel(\'hk417\')">HK417</button></div>'+
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
-          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS TAN</i></button>'+
+          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir</button>'+
           '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">Tan</button>'+
-          '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Paintjob</button></div>'+
+          '<button class="fin-b gs-paintjob" id="gs-paintjob" onclick="gsToggleParts()">Paintjob</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
         '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Chargement 3D\u2026</span><span class="gs-wtag">glisse pour tourner</span></div>'+
@@ -7442,7 +7447,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* teinte MK18 : RIS bronze/tan, reste noir (ou tout tan au choix). Retire toute texture blanc/bleu. */
   function applyWeaponFinish(){
     if(!GW.weapon)return;
-    var tan=0xb2a074,black=0x1a1a1c;
+    var tan=TAN_REF,black=BLACK_REF;
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
       var nm=(o.name||'').toLowerCase();
@@ -7589,7 +7594,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var col=fin==='tan'?TAN_REF:BLACK_REF;
       obj.traverse(function(o){if(o.isMesh&&o.visible&&o.material){
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
-        var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
+        var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){x.map=null;if(x.color)x.color.setHex(col);x.needsUpdate=true;});}});
       GW.grp.add(pivot);mount3D[id]=pivot;
       /* couleur admin enregistrée : ne s'applique QUE si aucun choix explicite N/Tan n'a été fait,
          sinon elle écraserait la couleur de référence du bouton (bug de priorité) */
@@ -7749,7 +7754,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.gsPartColor=function(k,hex){if(!GW.partCol)GW.partCol={};GW.partCol[k]=hex;applyPartColors();
     var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);};
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
-    if(p.classList.contains('show')){p.classList.remove('show');return;}
+    var pj=el&&el.querySelector('#gs-paintjob');
+    if(p.classList.contains('show')){p.classList.remove('show');if(pj)pj.classList.remove('on');return;}
     var sw=[['black','Noir',0x050505],['tan','Tan',0x413221],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
     p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
       var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
@@ -7757,7 +7763,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         '<span class="pp-sw">'+sw.map(function(s){return '<i title="'+s[1]+'" style="background:#'+('000000'+s[2].toString(16)).slice(-6)+'" onclick="gsPartColor(\''+pt.k+'\','+s[2]+')"></i>';}).join('')+
         (isAdmin()?'<input type="color" class="pp-free" oninput="gsPartColor(\''+pt.k+'\',parseInt(this.value.slice(1),16))">':'')+'</span></div>';
     }).join('');
-    p.classList.add('show');makeDraggable(p);
+    p.classList.add('show');if(pj)pj.classList.add('on');makeDraggable(p);
   };
   window.gunsmithModel=function(m){
     GW.modelKey=m;
@@ -7769,7 +7775,17 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.gunsmithItemFin=function(v,fin){
     if(!GW.itemFin)GW.itemFin={};GW.itemFin[v]=fin;
     var o=mount3D[v];if(o){var col=fin==='tan'?TAN_REF:BLACK_REF;
-      o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);});}});}
+      o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
+        /* matériau partagé -> on clone, sinon on repeindrait aussi les autres accessoires */
+        if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
+        var mm=Array.isArray(m.material)?m.material:[m.material];
+        mm.forEach(function(x){
+          /* sans retirer la texture, elle recouvre la couleur -> le bouton semblait ne rien faire */
+          x.map=null;
+          if(x.color)x.color.setHex(col);
+          x.needsUpdate=true;
+        });
+      }});}
     syncItemFinUI();
   };
   function syncItemFinUI(){
@@ -7782,7 +7798,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.gunsmithFinish=function(f){
     GW.finish=(f==='tan')?'tan':'black';
     applyWeaponFinish();
-    if(el)el.querySelectorAll('#gs-finish .fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
+    if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
   };
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
