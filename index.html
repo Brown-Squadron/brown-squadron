@@ -6662,6 +6662,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
             if(!isGlass){
               x.transparent=false;x.opacity=1;x.alphaMap=null;x.alphaTest=0;
               x.depthWrite=true;x.depthTest=true;
+              /* z-fighting (clignotement plein/vide) : décalage de polygones + faces dupliquées */
+              x.polygonOffset=false;x.polygonOffsetFactor=0;x.polygonOffsetUnits=0;
               /* on NE force PAS x.side : les modèles double-face (JVN) clignotent si on les passe en FrontSide */
               if(x.format!=null&&THREE.RGBFormat!=null)x.format=THREE.RGBFormat;
               /* un matériau 100% métallique sans envMap rend noir (donc invisible sur fond sombre) */
@@ -7461,12 +7463,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* cloner le matériau partagé pour pouvoir teinter RIS ≠ reste */
       if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
       var isGlass=/glass|lens/.test(nm);
-      var isRis=/^bar[-.]/.test(nm);       /* RIS/garde-main = groupe 'bar-' */
       var mm=Array.isArray(o.material)?o.material:[o.material];
       mm.forEach(function(x){
         if(isGlass){if(x.emissive)x.emissive.setHex(0x000000);return;}
-        /* RIS/garde-main : on garde le bronze natif du modèle 3D importé, jamais repeint */
-        if(isRis){if(x.emissive)x.emissive.setHex(0x000000);return;}
+        /* Noir/Tan = raccourci Paintjob : toute l'arme est repeinte, garde-main compris */
         x.map=null;x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
         x.metalness=0.55;x.roughness=0.5;if(x.envMapIntensity!=null)x.envMapIntensity=0.35;
         if(x.color)x.color.setHex(GW.finish==='tan'?tan:black);
@@ -7797,7 +7797,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   window.gunsmithFinish=function(f){
     GW.finish=(f==='tan')?'tan':'black';
+    /* raccourci Paintjob : on repeint TOUTE l'arme d'un coup -> on efface les couleurs par pièce
+       (sinon elles resteraient par-dessus). Les accessoires montés ne sont pas concernés. */
+    GW.partCol={};
     applyWeaponFinish();
+    /* le nuancier "par pièce" reflète le nouveau choix global */
+    if(el)el.querySelectorAll('#gs-parts .pp-cur').forEach(function(i){i.style.background='transparent';});
     if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
   };
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
