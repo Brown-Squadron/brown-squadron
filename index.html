@@ -6874,6 +6874,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-finish .fin-b:hover{border-color:var(--aor1);color:#fff;}
   .gs-finish .fin-b.on{background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#181305;border-color:var(--aor1b);}
   .gs-finish .fin-b.on i{color:#3a2c08;}
+  #gs-fin-toggle i{opacity:.65;font-size:7px;}
   /* Paintjob : transparent au repos, vert quand le panneau est ouvert */
   .gs-finish .gs-paintjob{color:var(--aor1b);background:rgba(8,10,7,.7);}
   .gs-finish .gs-paintjob.on{background:linear-gradient(180deg,#6f8f47,#4d6a2c);color:#0d1206;border-color:#7fa552;
@@ -7164,8 +7165,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button class="fin-b" data-mdl="hk416" onclick="gunsmithModel(\'hk416\')">HK416</button>'+
           '<button class="fin-b" data-mdl="hk417" onclick="gunsmithModel(\'hk417\')">HK417</button></div>'+
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
-          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir</button>'+
-          '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">Tan</button>'+
+          '<button class="fin-b on" id="gs-fin-toggle" data-fin="black" onclick="gunsmithFinishToggle()">Noir<i>/ Tan</i></button>'+
+          '<button class="fin-b" id="gs-fin-aor1" data-fin="aor1" onclick="gunsmithFinish(\'aor1\')">AOR1</button>'+
           '<button class="fin-b gs-paintjob" id="gs-paintjob" onclick="gsToggleParts()">Paintjob</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
@@ -7450,6 +7451,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyWeaponFinish(){
     if(!GW.weapon)return;
     var tan=TAN_REF,black=BLACK_REF;
+    var camo=(GW.finish==='aor1')?getWeaponCamo():null;
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
       var nm=(o.name||'').toLowerCase();
@@ -7466,14 +7468,29 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var mm=Array.isArray(o.material)?o.material:[o.material];
       mm.forEach(function(x){
         if(isGlass){if(x.emissive)x.emissive.setHex(0x000000);return;}
-        /* Noir/Tan = raccourci Paintjob : toute l'arme est repeinte, garde-main compris */
-        x.map=null;x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
+        x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
         x.metalness=0.55;x.roughness=0.5;if(x.envMapIntensity!=null)x.envMapIntensity=0.35;
-        if(x.color)x.color.setHex(GW.finish==='tan'?tan:black);
+        if(camo){
+          /* camo AOR1 : placage automatique (les UV des armes ne sont pas prévues pour un camo) */
+          x.map=camo;x.metalness=0.15;x.roughness=0.8;
+          if(x.color)x.color.setHex(0xffffff);
+        }else{
+          x.map=null;
+          if(x.color)x.color.setHex(GW.finish==='tan'?tan:black);
+        }
         x.needsUpdate=true;
       });
     });
     applyPartColors();
+  }
+  /* texture camo AOR1 pour les armes, mise à l'échelle pour un motif serré */
+  function getWeaponCamo(){
+    if(GW.camoTex)return GW.camoTex;
+    try{
+      var t=new THREE.TextureLoader().load('camo_aor1.png',function(){if(GW.r)GW.r.render(GW.scene,GW.cam);});
+      t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(6,6);
+      GW.camoTex=t;return t;
+    }catch(e){return null;}
   }
   /* points d'ancrage réels de l'arme (centres de meshes nommés), en repère du groupe */
   function meshCenterLocal(re){var c=null;GW.weapon.traverse(function(o){if(c||!o.isMesh||!o.visible)return;
@@ -7487,6 +7504,20 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       railBottom:meshCenterLocal(/^bar-bottom-rail|bar-bottom|rail-bottom/i)};
     if(A.muzzle&&A.rcvrTop){GW.fwd=A.muzzle.clone().sub(A.rcvrTop).setY(0).normalize();}
     GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
+    /* modèles sans nommage type MK18 (ex. M249) : on déduit les ancres de la géométrie
+       pour que les accessoires restent posables (l'admin affine ensuite avec l'éditeur) */
+    if(!(A.muzzle||A.railTop||A.rcvrTop)){
+      var bb=new THREE.Box3().setFromObject(GW.weapon);
+      var c=new THREE.Vector3();bb.getCenter(c);
+      var far=(Math.abs(bb.min.x-c.x)>Math.abs(bb.max.x-c.x))?bb.min.x:bb.max.x;
+      A.muzzle=new THREE.Vector3(far,c.y,c.z);
+      A.railTop=new THREE.Vector3(c.x,bb.max.y,c.z);
+      A.rcvrTop=new THREE.Vector3(c.x,bb.max.y,c.z);
+      A.railSide=new THREE.Vector3(c.x,c.y,bb.max.z);
+      A.railBottom=new THREE.Vector3(c.x,bb.min.y,c.z);
+      GW.fwd=new THREE.Vector3(far>c.x?1:-1,0,0);
+      GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
+    }
     GW.anchors=(A.muzzle||A.railTop||A.rcvrTop)?A:null;
     GW.anchorsSeq=GW.loadSeq;
     GW.grp.rotation.set(rx,ry,0);GW.grp.updateMatrixWorld(true);
@@ -7643,7 +7674,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     GW.finish=saved.finish||'black';
     GW.partCol=saved.partCol?JSON.parse(JSON.stringify(saved.partCol)):{};
     GW.itemFin=saved.itemFin?JSON.parse(JSON.stringify(saved.itemFin)):{};
-    if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
+    syncFinishUI();
     /* remonter tous les accessoires 3D sauvegardés (optique, laser/lampe, bouche, sous-canon) */
     var doMount=function(){
       GW.restoring=true;
@@ -7732,12 +7763,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       subscribeGunBuild(myId,mySlot);
     }else{cloudChecked=true;tryApply();}
   };
-  /* ---------- colorisation par pièce (maillages nommés, fallback Corps) ---------- */
+  /* ---------- colorisation par pièce (maillages nommés, fallback Corps) ----------
+     Les modèles n'ont pas tous la convention du MK18 : les motifs sont volontairement larges
+     et testés dans l'ordre (du plus spécifique au plus général). */
   var PARTS=[
-    {k:'grip',label:'Poign\u00e9e',re:/pistol-grip|grip(?!.*fore)/i},
-    {k:'stock',label:'Crosse',re:/buttstock|stock/i},
-    {k:'mag',label:'Chargeur',re:/^mag-|magazine|chargeur/i},
-    {k:'ris',label:'Garde-main',re:/^bar-|rail|ris|handguard|hand.?guard/i},
+    {k:'stock',label:'Crosse',re:/buttstock|butt.?plate|stock|crosse|shoulder|recoil.?pad/i},
+    {k:'mag',label:'Chargeur',re:/^mag[-_.]|magazine|chargeur|\bmag\b|clip|drum|pmag/i},
+    {k:'grip',label:'Poign\u00e9e pistolet',re:/pistol.?grip|p.?grip|grip.?pistol|poign[ée]e|handgrip|^grip[-_.]|\bgrip\b/i},
+    {k:'ris',label:'Garde-main',re:/^bar[-_.]|rail|\bris\b|handguard|hand.?guard|fore.?end|garde.?main|quad/i},
     {k:'body',label:'Corps',re:null}   /* catch-all : tout mesh non classé ailleurs */
   ];
   var PARTCOL={black:0x050505,tan:0x413221,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
@@ -7795,22 +7828,37 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var bn=btn.querySelector('[data-fin="black"]'),tn=btn.querySelector('[data-fin="tan"]');
       if(bn)bn.classList.toggle('on',fin==='black');if(tn)tn.classList.toggle('on',fin==='tan');});
   }
+  window.gunsmithFinishToggle=function(){
+    gunsmithFinish(GW.finish==='black'?'tan':'black');
+  };
+  function syncFinishUI(){
+    if(!el)return;
+    var t=el.querySelector('#gs-fin-toggle'),a=el.querySelector('#gs-fin-aor1');
+    var isCamo=(GW.finish==='aor1');
+    if(t){
+      t.classList.toggle('on',!isCamo);
+      /* le bouton fusionné affiche l'état courant, l'autre teinte en second */
+      t.innerHTML=(GW.finish==='tan')?'Tan<i>/ Noir</i>':'Noir<i>/ Tan</i>';
+      t.setAttribute('data-fin',isCamo?'black':GW.finish);
+    }
+    if(a)a.classList.toggle('on',isCamo);
+  }
   window.gunsmithFinish=function(f){
-    GW.finish=(f==='tan')?'tan':'black';
+    GW.finish=(f==='tan')?'tan':(f==='aor1')?'aor1':'black';
     /* raccourci Paintjob : on repeint TOUTE l'arme d'un coup -> on efface les couleurs par pièce
        (sinon elles resteraient par-dessus). Les accessoires montés ne sont pas concernés. */
     GW.partCol={};
     applyWeaponFinish();
     /* le nuancier "par pièce" reflète le nouveau choix global */
     if(el)el.querySelectorAll('#gs-parts .pp-cur').forEach(function(i){i.style.background='transparent';});
-    if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')===GW.finish);});
+    syncFinishUI();
   };
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
     SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
     GW.finish='black';GW.partCol={};GW.itemFin={};
     applyWeaponFinish();
-    if(el)el.querySelectorAll('#gs-finish .fin-b[data-fin]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-fin')==='black');});
+    syncFinishUI();
     refreshNodes();updateCount();closePop();
   };
   window.gunsmithSave=function(){
