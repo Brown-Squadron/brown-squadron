@@ -7492,9 +7492,18 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       GW.camoTex=t;return t;
     }catch(e){return null;}
   }
-  /* points d'ancrage réels de l'arme (centres de meshes nommés), en repère du groupe */
-  function meshCenterLocal(re){var c=null;GW.weapon.traverse(function(o){if(c||!o.isMesh||!o.visible)return;
-    if(re.test(o.name||'')){var b=new THREE.Box3().setFromObject(o);var v=new THREE.Vector3();b.getCenter(v);c=v;}});return c;}
+  /* points d'ancrage réels de l'arme (centres de meshes nommés), en repère du groupe.
+     NB : on ne filtre PAS sur o.visible — une pièce masquée (ex. poignée avant native)
+     doit rester un repère valide, sinon les positions enregistrées se décalent. */
+  function meshCenterLocal(re){var c=null;GW.weapon.traverse(function(o){if(c||!o.isMesh)return;
+    if(re.test(o.name||'')){
+      /* on passe par la géométrie : la Box3 d'un mesh masqué peut être vide et fausserait le repère */
+      var g=o.geometry;if(!g)return;
+      if(!g.boundingBox)g.computeBoundingBox();
+      var v=new THREE.Vector3();g.boundingBox.getCenter(v);
+      o.updateWorldMatrix(true,false);v.applyMatrix4(o.matrixWorld);
+      c=v;
+    }});return c;}
   function computeAnchors(){
     GW.anchors=null;GW.fwd=new THREE.Vector3(0,0,1);GW.up=new THREE.Vector3(0,1,0);GW.side=new THREE.Vector3(1,0,0);
     if(!GW.grp||!GW.weapon)return;
@@ -7504,20 +7513,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       railBottom:meshCenterLocal(/^bar-bottom-rail|bar-bottom|rail-bottom/i)};
     if(A.muzzle&&A.rcvrTop){GW.fwd=A.muzzle.clone().sub(A.rcvrTop).setY(0).normalize();}
     GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
-    /* modèles sans nommage type MK18 (ex. M249) : on déduit les ancres de la géométrie
-       pour que les accessoires restent posables (l'admin affine ensuite avec l'éditeur) */
-    if(!(A.muzzle||A.railTop||A.rcvrTop)){
-      var bb=new THREE.Box3().setFromObject(GW.weapon);
-      var c=new THREE.Vector3();bb.getCenter(c);
-      var far=(Math.abs(bb.min.x-c.x)>Math.abs(bb.max.x-c.x))?bb.min.x:bb.max.x;
-      A.muzzle=new THREE.Vector3(far,c.y,c.z);
-      A.railTop=new THREE.Vector3(c.x,bb.max.y,c.z);
-      A.rcvrTop=new THREE.Vector3(c.x,bb.max.y,c.z);
-      A.railSide=new THREE.Vector3(c.x,c.y,bb.max.z);
-      A.railBottom=new THREE.Vector3(c.x,bb.min.y,c.z);
-      GW.fwd=new THREE.Vector3(far>c.x?1:-1,0,0);
-      GW.side=new THREE.Vector3().crossVectors(GW.up,GW.fwd).normalize();
-    }
     GW.anchors=(A.muzzle||A.railTop||A.rcvrTop)?A:null;
     GW.anchorsSeq=GW.loadSeq;
     GW.grp.rotation.set(rx,ry,0);GW.grp.updateMatrixWorld(true);
