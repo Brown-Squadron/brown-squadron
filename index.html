@@ -1496,7 +1496,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <div><h2 class="text-tan tracking-widest">Loadout <span id="eq-cloud-badge" class="eq-cloud-badge">Synchronisation…</span></h2><p class="view-sub">// Configuration op&eacute;rateur &mdash; rendu 3D</p></div>
       <div class="eq-msel" id="eq-msel">
         <button class="eq-msel-btn" id="eq-msel-btn" onclick="eqMselToggle(event)">
-          <span id="eq-msel-cur">\u2014</span><span class="eq-msel-car">\u25BE</span>
+          <span id="eq-msel-cur">&mdash;</span><span class="eq-msel-car">&#9662;</span>
         </button>
         <div class="eq-msel-list" id="eq-msel-list"></div>
       </div>
@@ -6366,6 +6366,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     sel.innerHTML=list.map(function(m){return '<option value="'+m._id+'">'+esc(m.pseudo||'Op\u00e9rateur')+'</option>';}).join('');
     if(!list.length){sel.innerHTML='<option value="">Aucune fiche</option>';renderMsel([],'');return null;}
     if(prev&&list.some(function(m){return m._id===prev;}))sel.value=prev;
+    EQ.wantId=sel.value||(list[0]&&list[0]._id)||null;
     renderMsel(list,sel.value);
     return list[[].slice.call(sel.options).findIndex(function(o){return o.value===sel.value;})]||list[0];
   }
@@ -6493,7 +6494,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       '<div class="me-act"><button class="me-save" onclick="opMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
       '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
       '<div class="me-collbl">Couleur</div><div class="me-cols">'+
-        [['Noir',0x1a1a1c],['Tan',0x292015],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+        [['Noir',0x050505],['Tan',0x413221],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
           return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="opItemColor(\''+id+'\','+s[1]+')"></i>';
         }).join('')+
         '<input type="color" class="me-colfree" oninput="opItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
@@ -6608,7 +6609,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* toggle annulé ou item re-basculé pendant le chargement -> on ignore ce résultat périmé */
       if(EQ.itemTok[id]!==tok||!(EQ.model||EQ.scene))return;
       /* l'opérateur affiché a changé pendant le chargement -> cet item n'est pas le sien, on l'abandonne */
-      if(owner&&EQ.wantId&&EQ.wantId!==owner)return;
+      var nowId=EQ.wantId||memId();
+      if(owner&&nowId&&EQ.wantId&&EQ.wantId!==owner)return;
       obj.scale.set(1,1,1);obj.position.set(0,0,0);obj.rotation.set(0,0,0);
       /* on mesure uniquement les parties visibles (les copies filtrées fausseraient l'échelle) */
       var box=visBoxOf(obj);var sz=new THREE.Vector3();box.getSize(sz);
@@ -7069,8 +7071,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 <script>
 (function(){
   var curId=null,curSlot=null,el=null;
-  /* couleur Tan de référence, standard pour TOUS les items (bouton A1) — RGB 41/32/21 */
-  var TAN_REF=0x292015;
+  /* couleurs de référence, standard pour TOUS les items : bouton Tan (A1) et bouton Noir (N) */
+  var TAN_REF=0x413221, BLACK_REF=0x050505;
   /* modèles 3D d'accessoires réellement présents (montés sur l'arme) */
   var GUN3D=[
     {id:'e553',file:'item_eotech_553.glb',grp:'optic',anchor:'rcvrTop',off:[0.03,0.024,0],pos:[0,0.075,0.02],size:0.15,rot:[0,-1.5708,0],dark:true},
@@ -7510,7 +7512,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       '<div class="me-act"><button class="me-save" onclick="gsMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
       '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
       '<div class="me-collbl">Couleur</div><div class="me-cols">'+
-        [['Noir',0x1a1a1c],['Tan',0x292015],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+        [['Noir',0x050505],['Tan',0x413221],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
           return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="gsItemColor(\''+id+'\','+s[1]+')"></i>';
         }).join('')+
         '<input type="color" class="me-colfree" oninput="gsItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
@@ -7584,14 +7586,19 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var pivot=new THREE.Group();pivot.add(obj);pivot.position.set(base.x,base.y,base.z);
       /* teinte par item : noir ou Tan (référence standard RGB 41/32/21) */
       var fin=(GW.itemFin&&GW.itemFin[id])||(cfg.tan?'tan':'black');
-      var col=fin==='tan'?TAN_REF:0x2a2620;
+      var col=fin==='tan'?TAN_REF:BLACK_REF;
       obj.traverse(function(o){if(o.isMesh&&o.visible&&o.material){
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
       GW.grp.add(pivot);mount3D[id]=pivot;
-      try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
-        if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
-      }catch(e){}
+      /* couleur admin enregistrée : ne s'applique QUE si aucun choix explicite N/Tan n'a été fait,
+         sinon elle écraserait la couleur de référence du bouton (bug de priorité) */
+      var hasExplicitFin=!!(GW.itemFin&&GW.itemFin[id]);
+      if(!hasExplicitFin){
+        try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
+          if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
+        }catch(e){}
+      }
       /* override par preset admin enregistré (référence pour tous) */
       var pr=MOUNTPRESETS[presetKey(id)];
       if(pr){if(pr.s)pivot.scale.setScalar(pr.s);if(pr.p)pivot.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)pivot.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
@@ -7728,7 +7735,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {k:'ris',label:'Garde-main',re:/^bar-|rail|ris|handguard|hand.?guard/i},
     {k:'body',label:'Corps',re:null}   /* catch-all : tout mesh non classé ailleurs */
   ];
-  var PARTCOL={black:0x1a1a1c,tan:0x292015,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
+  var PARTCOL={black:0x050505,tan:0x413221,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
   function partOf(name){var n=name||'';for(var i=0;i<PARTS.length;i++){if(PARTS[i].re&&PARTS[i].re.test(n))return PARTS[i].k;}return 'body';}
   function applyPartColors(){
     if(!GW.weapon||!GW.partCol)return;
@@ -7743,7 +7750,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);};
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
     if(p.classList.contains('show')){p.classList.remove('show');return;}
-    var sw=[['black','Noir',0x1a1a1c],['tan','Tan',0x292015],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
+    var sw=[['black','Noir',0x050505],['tan','Tan',0x413221],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
     p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
       var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
       return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l"><span class="pp-cur" style="background:'+(cur!=null?'#'+('000000'+cur.toString(16)).slice(-6):'transparent')+'"></span>'+pt.label+'</span>'+
@@ -7761,7 +7768,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   window.gunsmithItemFin=function(v,fin){
     if(!GW.itemFin)GW.itemFin={};GW.itemFin[v]=fin;
-    var o=mount3D[v];if(o){var col=fin==='tan'?TAN_REF:0x2a2620;
+    var o=mount3D[v];if(o){var col=fin==='tan'?TAN_REF:BLACK_REF;
       o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);});}});}
     syncItemFinUI();
   };
