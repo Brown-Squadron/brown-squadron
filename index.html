@@ -6462,10 +6462,59 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.opMeReset=function(id){delete OPPRESET[id];opSavePresets();
     if(EQ.mounted[id]){(EQ.model||EQ.scene).remove(EQ.mounted[id]);delete EQ.mounted[id];}
     equipToggleItem(id);};
+  /* ---------- synchro cloud des items équipés sur le personnage (JVN, radio, grenade...) : instantané, comme le PAM ---------- */
+  var opEquipChannel=null,opEquipChannelKey=null;
+  function opEquipCloudKey(id){return 'opequip_'+id;}
+  function opEquipLoadLocal(id){try{return JSON.parse(localStorage.getItem('bs_opequip_'+id)||'null');}catch(e){return null;}}
+  function opEquipSaveLocal(id,ids){try{localStorage.setItem('bs_opequip_'+id,JSON.stringify(ids));}catch(e){}}
+  function pushOpEquipNow(id){
+    if(!id)return;
+    var ids=Object.keys(EQ.mounted||{});
+    opEquipSaveLocal(id,ids);
+    if(!sb)return;
+    sb.from('entries').upsert({id:opEquipCloudKey(id),type:'opequip',data:{items:ids},updated_at:new Date().toISOString()})
+      .then(function(r){if(r&&r.error&&window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+r.error.message,{type:'err'});},
+            function(err){if(window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+(err&&err.message||err),{type:'err'});});
+  }
+  function applyOpEquipState(id,ids){
+    ids=ids||[];
+    EQ._restoring=true;
+    Object.keys(EQ.mounted||{}).forEach(function(mid){if(ids.indexOf(mid)===-1)window.equipToggleItem(mid);});
+    ids.forEach(function(mid){if(!EQ.mounted||!EQ.mounted[mid]){if(ITEMS[mid])window.equipToggleItem(mid);}});
+    EQ._restoring=false;
+  }
+  function subscribeOpEquip(id){
+    if(!sb||!id)return;
+    var k=opEquipCloudKey(id);
+    if(opEquipChannelKey===k)return;   /* déjà abonné à cet opérateur */
+    if(opEquipChannel){try{sb.removeChannel(opEquipChannel);}catch(e){}opEquipChannel=null;}
+    opEquipChannelKey=k;
+    try{
+      opEquipChannel=sb.channel('opequip-'+k+'-'+Date.now())
+        .on('postgres_changes',{event:'*',schema:'public',table:'entries',filter:'id=eq.'+k},function(payload){
+          var d=(payload.new||{}).data;if(!d||memId()!==id)return;
+          opEquipSaveLocal(id,d.items||[]);
+          applyOpEquipState(id,d.items||[]);
+        }).subscribe(function(status,err){console.log('[opequip-live]',k,'status:',status,err||'');});
+    }catch(e){console.error('[subscribeOpEquip]',e);}
+  }
+  function loadAndSyncOpEquip(id){
+    if(!id)return;
+    var local=opEquipLoadLocal(id)||[];
+    applyOpEquipState(id,local);
+    if(sb){
+      sb.from('entries').select('data').eq('id',opEquipCloudKey(id)).maybeSingle().then(function(r){
+        if(memId()!==id)return;
+        var cloudIds=(r&&r.data&&r.data.data&&r.data.data.items)||null;
+        if(cloudIds){opEquipSaveLocal(id,cloudIds);applyOpEquipState(id,cloudIds);}
+      },function(){});
+      subscribeOpEquip(id);
+    }
+  }
   window.equipToggleItem=function(id){
     if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};
     var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;if(!parent)return;
-    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();return;}
+    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(memId());return;}
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
@@ -6493,6 +6542,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(colHex);x.needsUpdate=true;}});}});
       EQ.editTarget=id;
       if(chip)chip.classList.remove('loading');renderItemBar();
+      if(!EQ._restoring)pushOpEquipNow(memId());
     }
     if(EQ.itemObj[id]){place(EQ.itemObj[id]);return;}
     var ld=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
@@ -6838,9 +6888,27 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-note{position:absolute;left:50%;bottom:70px;transform:translateX(-50%);z-index:5;font-family:var(--mono);font-size:9px;
     letter-spacing:1px;color:var(--dim);text-align:center;max-width:60%;pointer-events:none;}
   @media(max-width:760px){
-    .gs-hero .gs-wname{font-size:26px;}.gs-topbar{top:64px;}
-    .gs-node .nd-lab{font-size:8px;padding:4px 6px;}.gs-node .nd-dot{width:26px;height:26px;font-size:14px;}
-    .gs-stats{display:none;}.gs-namewrap{top:96px;}.gs-pop{width:210px;}
+    .gs-panel{display:flex;flex-direction:column;height:100%;overflow-y:auto;padding:56px 14px 90px;gap:10px;}
+    .gs-x{top:12px;right:12px;width:34px;height:34px;font-size:16px;}
+    .gs-topbar{position:static;transform:none;order:1;align-self:center;margin:0;}
+    .gs-hero{position:static;order:0;margin-bottom:2px;}
+    .gs-hero .gs-wname{font-size:26px;}
+    .gs-finish{position:static;order:2;flex-wrap:wrap;gap:6px;}
+    .gs-finish .fin-l{width:100%;margin-bottom:2px;}
+    .gs-parts{position:static;order:3;width:100%;max-width:none;}
+    .gs-namewrap{position:static;order:4;}
+    .gs-name{width:100%;}
+    .gs-weapon{position:relative;order:5;height:34vh;min-height:220px;}
+    #gs-nodes{position:static;order:6;display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:2px 0;}
+    .gs-node{position:static!important;left:auto!important;top:auto!important;transform:none;
+      background:rgba(20,25,16,.65);border:1px solid var(--line2);border-radius:9px;padding:9px 10px;justify-content:flex-start;}
+    .gs-node.right{flex-direction:row;}
+    .gs-node .nd-lab{white-space:normal;}
+    .gs-stats{position:static;order:7;width:100%;}
+    .gs-note{position:static;order:8;transform:none;max-width:none;text-align:center;}
+    .gs-foot{position:static;order:9;justify-content:center;width:100%;padding-bottom:10px;}
+    .gs-medit{right:14px!important;left:14px!important;width:auto!important;}
+    .gs-pop{width:min(240px,calc(100vw - 28px));}
   }
 </style>
 <script>
@@ -7449,6 +7517,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(mySeq!==GW.openSeq||curId!==myId||curSlot!==mySlot||!weaponReady||!cloudChecked)return;
       var recent=Date.now()-(GW.lastSavedAt||0)<4000;   /* on vient d'enregistrer : on garde la main sur le cloud en retard */
       var finalData=(!recent&&cloudData)?cloudData:saved;
+      console.log('[gunsmith] ouverture -> op\u00e9rateur:',myId,'| emplacement:',mySlot,'| source:',(!recent&&cloudData)?'cloud':'local','| att:',JSON.stringify(finalData&&finalData.att||{}));
       if(myId){try{localStorage.setItem(key(myId,mySlot),JSON.stringify(finalData));}catch(e){}}
       applyGunBuildState(finalData);
     }
@@ -7529,6 +7598,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   window.gunsmithSave=function(){
     if(!el||!curId){if(window.bsToast)bsToast('S\u00e9lectionne un op\u00e9rateur',{type:'err'});return;}
+    console.log('[gunsmith] Enregistrer -> op\u00e9rateur:',curId,'| emplacement:',curSlot);
     var name=el.querySelector('#gs-name').value.trim();
     var att={},list=[];
     CATS.forEach(function(c){var v=SEL[c.k];if(!v)return;
@@ -7537,6 +7607,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         list.push(c.label+': '+names.join(' + '));}
       else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
+    console.log('[gunsmith] contenu sauvegard\u00e9 (att):',JSON.stringify(att));
     try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att,finish:GW.finish||'black',partCol:GW.partCol||{},itemFin:GW.itemFin||{}}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
     pushGunBuildNow();
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
@@ -7553,11 +7624,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   /* quand on ré-affiche le loadout, réappliquer les accessoires sauvegardés sur les cartes */
   var origSel=window.equipSelect;
-  window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);},30);return r;};
+  window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);loadAndSyncOpEquip(id);},30);return r;};
   var origEnter=window.enterEquip;
   window.enterEquip=function(){
     var r=origEnter?origEnter.apply(this,arguments):undefined;
-    setTimeout(function(){applySavedToCards(memId());},60);
+    setTimeout(function(){applySavedToCards(memId());loadAndSyncOpEquip(memId());},60);
     /* le loadout est lourd (3D, presets partagés) : on ne l'active qu'à l'ouverture de cet onglet, jamais au démarrage */
     if(!window._loadoutCloudInit){
       window._loadoutCloudInit=true;
