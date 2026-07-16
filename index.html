@@ -6422,7 +6422,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!EQ.mounted)EQ.mounted={};
     var anyOn=false;var isAdm=opIsAdmin();
     box.innerHTML=ITEMORDER.map(function(id){
-      var c=ITEMS[id];var on=!!EQ.mounted[id];if(on)anyOn=true;
+      var c=ITEMS[id];var on=!!(EQ.want&&EQ.want[id]);if(on)anyOn=true;
       return '<div class="eq-oprow2'+(on?' on':'')+'" data-item="'+id+'">'+
           '<span class="op-hit">'+
             '<span class="op-chk" onclick="equipToggleItem(\''+id+'\')">\u2713</span>'+
@@ -6530,7 +6530,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function opEquipSaveLocal(id,ids){try{localStorage.setItem('bs_opequip_'+id,JSON.stringify(ids));}catch(e){}}
   function pushOpEquipNow(id){
     if(!id)return;
-    var ids=Object.keys(EQ.mounted||{});
+    /* IMPORTANT : on sauvegarde la liste d'INTENTION (EQ.want), pas EQ.mounted.
+       Les .glb chargent en asynchrone : EQ.mounted est en retard de plusieurs secondes
+       et sauvegarderait un état périmé (voire vide) juste après un clic. */
+    var ids=Object.keys(EQ.want||{}).filter(function(k){return EQ.want[k];});
     opEquipSaveLocal(id,ids);
     if(!sb)return;
     sb.from('entries').upsert({id:opEquipCloudKey(id),type:'opequip',data:{items:ids},updated_at:new Date().toISOString()})
@@ -6540,9 +6543,13 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyOpEquipState(id,ids){
     ids=ids||[];
     EQ._restoring=true;
+    /* l'intention est la source de vérité : les cases se cochent tout de suite,
+       même si les .glb mettent encore quelques secondes à arriver */
+    EQ.want={};ids.forEach(function(mid){if(ITEMS[mid])EQ.want[mid]=true;});
     Object.keys(EQ.mounted||{}).forEach(function(mid){if(ids.indexOf(mid)===-1)window.equipToggleItem(mid,0,id);});
     ids.forEach(function(mid){if(!EQ.mounted||!EQ.mounted[mid]){if(ITEMS[mid])window.equipToggleItem(mid,0,id);}});
     EQ._restoring=false;
+    renderItemBar();
   }
   function subscribeOpEquip(id){
     if(!sb||!id)return;
@@ -6565,6 +6572,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     EQ.wantId=id;
     /* on retire TOUT de suite les items de l'opérateur précédent, sinon ils restent collés au nouveau */
     EQ._restoring=true;
+    EQ.want={};
     Object.keys(EQ.mounted||{}).forEach(function(mid){
       var o=EQ.mounted[mid];if(o&&(EQ.model||EQ.scene))(EQ.model||EQ.scene).remove(o);
       delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;
@@ -6582,8 +6590,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(sb){
         sb.from('entries').select('data').eq('id',opEquipCloudKey(id)).maybeSingle().then(function(r){
           if(EQ.wantId!==id)return;
-          var cloudIds=(r&&r.data&&r.data.data&&r.data.data.items)||null;
-          if(cloudIds){opEquipSaveLocal(id,cloudIds);applyOpEquipState(id,cloudIds);}
+          var d=(r&&r.data&&r.data.data)||null;
+          /* le cloud fait foi : s'il existe une entrée (même vide), on l'applique telle quelle */
+          if(d&&Array.isArray(d.items)){opEquipSaveLocal(id,d.items);applyOpEquipState(id,d.items);}
         },function(){});
         subscribeOpEquip(id);
       }
@@ -6593,10 +6602,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};
     var owner=(_owner!==undefined)?_owner:(EQ.wantId||memId());
     var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;
+    if(!EQ.want)EQ.want={};
     /* corps 3D pas encore chargé -> on réessaie au lieu d'abandonner (sinon l'item est perdu) */
     if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1,owner);},60);return;}
-    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
-    Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
+    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;EQ.want[id]=false;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
+    /* intention posée tout de suite : la case se coche sans attendre le téléchargement du .glb */
+    EQ.want[id]=true;
+    Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.want[mid]=false;EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
+    if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
     function visBoxOf(o){
@@ -7046,21 +7059,22 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     letter-spacing:1px;color:var(--dim);text-align:center;max-width:60%;pointer-events:none;}
   @media(max-width:760px){
     .gs-panel{padding-top:0;}
-    .gs-x{top:12px;right:12px;width:34px;height:34px;font-size:16px;}
-    /* en-tête : chaque bloc sur sa propre ligne, plus aucun chevauchement */
-    .gs-hero{top:14px;left:14px;}
-    .gs-hero .gs-wname{font-size:24px;}
+    .gs-x{top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;width:34px;height:34px;font-size:16px;z-index:20;}
+    /* en-tête : décalé sous la barre d'état du téléphone (heure, réseau, batterie) */
+    .gs-hero{top:calc(env(safe-area-inset-top,0px) + 46px);left:14px;right:56px;}
+    .gs-hero .gs-wname{font-size:21px;line-height:1.1;word-break:break-word;}
     .gs-hero .gs-wlvl{font-size:8px;letter-spacing:2px;margin-top:2px;}
-    .gs-topbar{top:auto;bottom:74px;left:50%;padding:4px;gap:4px;}
-    .gs-tab{font-size:8.5px;padding:6px 10px;letter-spacing:1px;}
-    .gs-finish{left:14px;gap:5px;flex-wrap:wrap;max-width:calc(100vw - 28px);}
-    #gs-model{top:96px;}
-    #gs-finish{top:132px;}
+    /* onglets Build/Opérateur : juste sous le titre, plus au milieu des boutons du bas */
+    .gs-topbar{top:calc(env(safe-area-inset-top,0px) + 8px);bottom:auto;left:14px;transform:none;padding:3px;gap:3px;}
+    .gs-tab{font-size:8px;padding:5px 9px;letter-spacing:1px;}
+    .gs-finish{left:14px;right:14px;gap:5px;flex-wrap:wrap;max-width:none;}
+    #gs-model{top:calc(env(safe-area-inset-top,0px) + 104px);}
+    #gs-finish{top:calc(env(safe-area-inset-top,0px) + 140px);}
     .gs-finish .fin-l{font-size:7px;letter-spacing:1px;margin-right:0;}
     .gs-finish .fin-b{font-size:8px;padding:5px 8px;}
-    .gs-namewrap{top:170px;left:14px;}
-    .gs-name{width:calc(100vw - 40px);font-size:13px;}
-    /* points de montage : on garde les pastilles flottantes, repositionnées pour le portrait */
+    /* nom de l'arme : sous la finition, ne chevauche plus les pastilles */
+    .gs-namewrap{top:calc(env(safe-area-inset-top,0px) + 178px);left:14px;right:14px;}
+    .gs-name{width:100%;font-size:12px;}
     .gs-node .nd-lab{font-size:7.5px;padding:3px 5px;letter-spacing:1px;}
     .gs-node .nd-sub{font-size:6.5px;letter-spacing:.5px;}
     .gs-node .nd-dot{width:24px;height:24px;font-size:13px;}
@@ -7068,11 +7082,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     .gs-node{gap:5px;}
     .gs-stats{display:none;}
     .gs-note{display:none;}
-    .gs-foot{right:auto;left:50%;transform:translateX(-50%);bottom:16px;gap:8px;}
-    .gs-reset{font-size:9.5px;padding:9px 12px;}
-    .gs-save{font-size:10.5px;padding:10px 18px;letter-spacing:1.5px;}
+    /* pied de page : les 2 boutons groupés, largeur pleine, au ras du bas */
+    .gs-foot{right:14px;left:14px;transform:none;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);gap:8px;justify-content:stretch;}
+    .gs-reset{flex:1;font-size:9.5px;padding:11px 8px;white-space:nowrap;}
+    .gs-save{flex:1.4;font-size:10.5px;padding:11px 8px;letter-spacing:1.5px;white-space:nowrap;}
     .gs-medit{right:12px!important;left:12px!important;width:auto!important;}
-    .gs-parts{left:12px;right:12px;width:auto;top:200px;max-height:52vh;}
+    .gs-parts{left:12px;right:12px;width:auto;top:calc(env(safe-area-inset-top,0px) + 210px);max-height:46vh;}
     .gs-pop{width:min(240px,calc(100vw - 24px));}
   }
 </style>
@@ -7114,22 +7129,22 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   /* points de montage MW : position en % du stage + options de la catégorie */
   var CATS=[
-    {k:'muzzle',label:'Bouche',x:16,y:60,mx:16,my:72,mode:'mount3d',opts:[
+    {k:'muzzle',label:'Bouche',x:16,y:60,mx:14,my:75,mode:'mount3d',opts:[
       {v:'sil_perf',name:'Silencieux perfor\u00e9',sub:'Vent\u00e9 / ajour\u00e9'},{v:'sil_smooth',name:'Silencieux lisse',sub:'Tube plein'}]},
-    {k:'barrel',label:'Canon',x:27,y:33,mx:9,my:44,mode:'text',opts:[
+    {k:'barrel',label:'Canon',x:27,y:33,mx:9,my:52,mode:'text',opts:[
       {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
-    {k:'laser',label:'RIS avant',x:43,y:20,mx:34,my:46,mode:'mount3d',opts:[
+    {k:'laser',label:'RIS avant',x:43,y:20,mx:34,my:54,mode:'mount3d',opts:[
       {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
-    {k:'optic',label:'Optique',x:60,y:23,mx:64,my:46,right:true,mode:'mount3d',opts:[
+    {k:'optic',label:'Optique',x:60,y:23,mx:64,my:54,right:true,mode:'mount3d',opts:[
       {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'},
       {v:'elcan',name:'ELCAN Specter DR',sub:'x1/x4 \u2014 + point rouge'},{v:'nfscope',name:'Nightforce',sub:'Lunette de pr\u00e9cision'}]},
-    {k:'stock',label:'Crosse',x:87,y:33,mx:89,my:44,right:true,mode:'text',opts:[
+    {k:'stock',label:'Crosse',x:87,y:33,mx:89,my:52,right:true,mode:'text',opts:[
       {v:'Fixe',sub:'Rigide'},{v:'R\u00e9tractable',sub:'Ajustable'},{v:'CTR',sub:'Magpul'},{v:'PDW',sub:'Compacte'}]},
-    {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:80,my:72,right:true,mode:'text',opts:[
+    {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:82,my:75,right:true,mode:'text',opts:[
       {v:'Standard',sub:'A2'},{v:'Angle',sub:'Ergonomique'},{v:'Textur\u00e9e',sub:'Grip+'},{v:'Speed',sub:'Rapide'}]},
-    {k:'mag',label:'Chargeur',x:54,y:77,mx:74,my:83,right:true,mode:'text',opts:[
+    {k:'mag',label:'Chargeur',x:54,y:77,mx:74,my:86,right:true,mode:'text',opts:[
       {v:'20 coups',sub:'Compact'},{v:'30 coups',sub:'Standard'},{v:'40 coups',sub:'\u00c9tendu'},{v:'60 coups',sub:'Tambour'}]},
-    {k:'under',label:'Sous-canon',x:34,y:68,mx:22,my:83,mode:'mount3d',opts:[
+    {k:'under',label:'Sous-canon',x:34,y:68,mx:22,my:86,mode:'mount3d',opts:[
       {v:'vgrip',name:'Poign\u00e9e verticale',sub:'ALFA Mod 4'},{v:'agrip',name:'Poign\u00e9e d\u2019angle',sub:'AFG-2'}]}
   ];
   function catByK(k){for(var i=0;i<CATS.length;i++)if(CATS[i].k===k)return CATS[i];return null;}
@@ -7781,11 +7796,44 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   ];
   var PARTCOL={black:0x050505,tan:0x413221,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
   function partOf(name){var n=name||'';for(var i=0;i<PARTS.length;i++){if(PARTS[i].re&&PARTS[i].re.test(n))return PARTS[i].k;}return 'body';}
+  /* Certains modèles (ex. HK417) nomment toutes les pièces "Object_0…N" : aucune détection par nom
+     n'est possible. On les classe alors par leur géométrie dans le repère de l'arme. */
+  function partOfGeom(o){
+    if(!GW.weapon||!o.geometry)return 'body';
+    if(GW.gSeq!==GW.loadSeq){
+      GW.gSeq=GW.loadSeq;
+      var bb=new THREE.Box3().setFromObject(GW.weapon);
+      GW.gBounds=bb;
+      var s=new THREE.Vector3();bb.getSize(s);
+      GW.gAxis=(s.x>=s.z)?'x':'z';           /* axe long de l'arme */
+      /* de quel côté est la crosse : le canon est l'extrémité la plus fine */
+      GW.gFlip=false;
+    }
+    var B=GW.gBounds,ax=GW.gAxis;
+    var len=B.max[ax]-B.min[ax];if(!len)return 'body';
+    if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+    var c=new THREE.Vector3();o.geometry.boundingBox.getCenter(c);
+    o.updateWorldMatrix(true,false);c.applyMatrix4(o.matrixWorld);
+    var t=(c[ax]-B.min[ax])/len;if(GW.gFlip)t=1-t;
+    var hRel=(c.y-B.min.y)/((B.max.y-B.min.y)||1);
+    if(hRel<0.36&&t>0.5)return 'grip';       /* sous l'arme, moitié arrière -> poignée pistolet */
+    if(hRel<0.42&&t>0.3&&t<=0.5)return 'mag';/* sous l'arme, au centre -> chargeur */
+    if(t>0.82)return 'stock';                /* extrémité arrière -> crosse */
+    return 'body';
+  }
+  /* le modèle n'a-t-il aucun nom exploitable ? (Object_0, mesh_3, Cube.001…) */
+  function weaponHasNames(){
+    if(GW.namesSeq===GW.loadSeq)return GW.hasNames;
+    GW.namesSeq=GW.loadSeq;var ok=false;
+    GW.weapon.traverse(function(o){if(o.isMesh&&!/^(object|mesh|cube|cylinder|node|primitive)[-_.\d]*$/i.test(o.name||''))ok=true;});
+    GW.hasNames=ok;return ok;
+  }
   function applyPartColors(){
     if(!GW.weapon||!GW.partCol)return;
     GW.weapon.traverse(function(o){
       if(!o.isMesh)return;
-      var pk=partOf(o.name);var hex=GW.partCol[pk];if(hex==null)return;
+      var pk=weaponHasNames()?partOf(o.name):partOfGeom(o);
+      var hex=GW.partCol[pk];if(hex==null)return;
       if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
       var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});
     });
