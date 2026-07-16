@@ -359,7 +359,7 @@
 
   h2{font-size:19px;font-weight:800;margin:0 0 2px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
   .view-sub{font-size:11px;color:var(--amber);margin:0 0 16px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
-  .view-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+  .view-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;position:relative;z-index:50;}
 
   .add-btn{background:var(--aor1);border:none;border-radius:var(--r);color:#1a1605;font-weight:800;font-size:13px;letter-spacing:1px;font-family:var(--mono);
     padding:11px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;text-transform:uppercase;}
@@ -6493,7 +6493,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       '<div class="me-act"><button class="me-save" onclick="opMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
       '<button class="me-reset" onclick="opMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
       '<div class="me-collbl">Couleur</div><div class="me-cols">'+
-        [['Noir',0x1a1a1c],['AOR1',0xb2a074],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+        [['Noir',0x1a1a1c],['Tan',0x292015],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
           return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="opItemColor(\''+id+'\','+s[1]+')"></i>';
         }).join('')+
         '<input type="color" class="me-colfree" oninput="opItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
@@ -6897,7 +6897,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .eq-cloud-badge.show{opacity:1;animation:eqCloudPulse 1s ease-in-out infinite;}
   @keyframes eqCloudPulse{0%,100%{opacity:.4;}50%{opacity:1;}}
   /* menu déroulant opérateur (personnalisé, remplace le select natif non stylable) */
-  .eq-msel{position:relative;min-width:230px;font-family:var(--mono);}
+  .eq-msel{position:relative;min-width:230px;font-family:var(--mono);z-index:60;}
+  .eq-msel.open{z-index:200;}
   .eq-msel-btn{width:100%;display:flex;align-items:center;gap:10px;cursor:pointer;
     font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#f2e8cf;
     background:linear-gradient(180deg,rgba(32,38,24,.95),rgba(14,17,11,.95));
@@ -7068,6 +7069,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 <script>
 (function(){
   var curId=null,curSlot=null,el=null;
+  /* couleur Tan de référence, standard pour TOUS les items (bouton A1) — RGB 41/32/21 */
+  var TAN_REF=0x292015;
   /* modèles 3D d'accessoires réellement présents (montés sur l'arme) */
   var GUN3D=[
     {id:'e553',file:'item_eotech_553.glb',grp:'optic',anchor:'rcvrTop',off:[0.03,0.024,0],pos:[0,0.075,0.02],size:0.15,rot:[0,-1.5708,0],dark:true},
@@ -7152,9 +7155,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           '<button class="fin-b" data-mdl="hk416" onclick="gunsmithModel(\'hk416\')">HK416</button>'+
           '<button class="fin-b" data-mdl="hk417" onclick="gunsmithModel(\'hk417\')">HK417</button></div>'+
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
-          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS AOR1</i></button>'+
-          '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">AOR1</button>'+
-          '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Colorisation</button></div>'+
+          '<button class="fin-b on" data-fin="black" onclick="gunsmithFinish(\'black\')">Noir <i>RIS TAN</i></button>'+
+          '<button class="fin-b" data-fin="tan" onclick="gunsmithFinish(\'tan\')">Tan</button>'+
+          '<button class="fin-b" onclick="gsToggleParts()" style="color:var(--aor1b)">Paintjob</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
         '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Chargement 3D\u2026</span><span class="gs-wtag">glisse pour tourner</span></div>'+
@@ -7443,8 +7446,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var nm=(o.name||'').toLowerCase();
       /* retirer le viseur natif (MRO red-dot) + guidons/hausses repliables */
       if(/^mro[-.]|^fs[-.]|^rs[-.]|bullseye/.test(nm)){o.visible=false;return;}
-      /* poignée avant noire native du modèle de base (MK18 etc.) : retirée définitivement, remplacée par l'accessoire 3D optionnel */
-      if(/vert.*grip|grip.*vert|vertical.?grip|foregrip.?native/i.test(nm)){o.visible=false;return;}
+      /* poignée avant native du modèle de base (maillage réel : "foregrip_low") : retirée définitivement,
+         remplacée au besoin par un accessoire 3D optionnel (sous-canon) */
+      if(/^foregrip[-_.]/i.test(nm)){o.visible=false;return;}
       o.visible=true;
       if(!GW.recolor)return;
       /* cloner le matériau partagé pour pouvoir teinter RIS ≠ reste */
@@ -7506,7 +7510,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       '<div class="me-act"><button class="me-save" onclick="gsMeSave(\''+id+'\')">Enregistrer (r\u00e9f.)</button>'+
       '<button class="me-reset" onclick="gsMeReset(\''+id+'\')">R\u00e9init.</button></div>'+
       '<div class="me-collbl">Couleur</div><div class="me-cols">'+
-        [['Noir',0x1a1a1c],['AOR1',0xb2a074],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
+        [['Noir',0x1a1a1c],['Tan',0x292015],['FDE',0x8a6d43],['OD',0x45502f],['Gris',0x6b6e73]].map(function(s){
           return '<i title="'+s[0]+'" data-h="'+s[1]+'" style="background:#'+('000000'+s[1].toString(16)).slice(-6)+'" onclick="gsItemColor(\''+id+'\','+s[1]+')"></i>';
         }).join('')+
         '<input type="color" class="me-colfree" oninput="gsItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
@@ -7578,9 +7582,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* centrer la géométrie dans un pivot -> l'agrandissement se fait SUR PLACE */
       obj.position.set(-c.x,-c.y,-c.z);
       var pivot=new THREE.Group();pivot.add(obj);pivot.position.set(base.x,base.y,base.z);
-      /* teinte par item : noir ou tan (choix indépendant) */
+      /* teinte par item : noir ou Tan (référence standard RGB 41/32/21) */
       var fin=(GW.itemFin&&GW.itemFin[id])||(cfg.tan?'tan':'black');
-      var col=fin==='tan'?0xb2a074:0x2a2620;
+      var col=fin==='tan'?TAN_REF:0x2a2620;
       obj.traverse(function(o){if(o.isMesh&&o.visible&&o.material){
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);if(x.map&&/scope_blue|blue/i.test(x.name||''))x.map=null;});}});
@@ -7720,12 +7724,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var PARTS=[
     {k:'grip',label:'Poign\u00e9e',re:/pistol-grip|grip(?!.*fore)/i},
     {k:'stock',label:'Crosse',re:/buttstock|stock/i},
-    {k:'fore',label:'Poign\u00e9e AV',re:/foregrip|vert.?grip|angled/i},
     {k:'mag',label:'Chargeur',re:/^mag-|magazine|chargeur/i},
     {k:'ris',label:'Garde-main',re:/^bar-|rail|ris|handguard|hand.?guard/i},
     {k:'body',label:'Corps',re:null}   /* catch-all : tout mesh non classé ailleurs */
   ];
-  var PARTCOL={black:0x1a1a1c,tan:0xb2a074,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
+  var PARTCOL={black:0x1a1a1c,tan:0x292015,green:0x45502f,grey:0x6b6e73,fde:0x8a6d43};
   function partOf(name){var n=name||'';for(var i=0;i<PARTS.length;i++){if(PARTS[i].re&&PARTS[i].re.test(n))return PARTS[i].k;}return 'body';}
   function applyPartColors(){
     if(!GW.weapon||!GW.partCol)return;
@@ -7740,7 +7743,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);};
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
     if(p.classList.contains('show')){p.classList.remove('show');return;}
-    var sw=[['black','Noir',0x1a1a1c],['tan','AOR1',0xb0894a],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
+    var sw=[['black','Noir',0x1a1a1c],['tan','Tan',0x292015],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
     p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
       var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
       return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l"><span class="pp-cur" style="background:'+(cur!=null?'#'+('000000'+cur.toString(16)).slice(-6):'transparent')+'"></span>'+pt.label+'</span>'+
@@ -7758,7 +7761,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   window.gunsmithItemFin=function(v,fin){
     if(!GW.itemFin)GW.itemFin={};GW.itemFin[v]=fin;
-    var o=mount3D[v];if(o){var col=fin==='tan'?0xb2a074:0x2a2620;
+    var o=mount3D[v];if(o){var col=fin==='tan'?TAN_REF:0x2a2620;
       o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color)x.color.setHex(col);});}});}
     syncItemFinUI();
   };
