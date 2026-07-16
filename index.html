@@ -6204,6 +6204,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 
     /* interaction : glisser pour pivoter (uniquement dans la zone tête -> mains), ou taper sur un équipement pour l'ouvrir en 3D */
     function inZone(e){var r=canvas.getBoundingClientRect();var p=pt(e);var x=(p.x-r.left)/r.width,y=(p.y-r.top)/r.height;
+      /* mobile : zone restreinte au personnage (tête -> bassin), le reste laisse défiler la page */
+      if(window.innerWidth<=760)return x>0.32&&x<0.68&&y>0.12&&y<0.55;
       return x>0.22&&x<0.78&&y>0.08&&y<0.62;}
     function down(e){EQ.pointerActive=true;EQ.userTouched=true;var p=pt(e);EQ.px=p.x;EQ.py=p.y;EQ.vY=0;EQ.gest=0;EQ.sx=p.x;EQ.sy=p.y;
       EQ.drag=inZone(e);}
@@ -7131,14 +7133,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var CATS=[
     {k:'muzzle',label:'Bouche',x:16,y:60,mx:14,my:75,mode:'mount3d',opts:[
       {v:'sil_perf',name:'Silencieux perfor\u00e9',sub:'Vent\u00e9 / ajour\u00e9'},{v:'sil_smooth',name:'Silencieux lisse',sub:'Tube plein'}]},
-    {k:'barrel',label:'Canon',x:27,y:33,mx:9,my:52,mode:'text',opts:[
+    {k:'barrel',label:'Canon',x:27,y:33,mx:8,my:60,mode:'text',opts:[
       {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
-    {k:'laser',label:'RIS avant',x:43,y:20,mx:34,my:54,mode:'mount3d',opts:[
+    {k:'laser',label:'RIS avant',x:43,y:20,mx:30,my:50,mode:'mount3d',opts:[
       {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
-    {k:'optic',label:'Optique',x:60,y:23,mx:64,my:54,right:true,mode:'mount3d',opts:[
+    {k:'optic',label:'Optique',x:60,y:23,mx:68,my:50,right:true,mode:'mount3d',opts:[
       {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'},
       {v:'elcan',name:'ELCAN Specter DR',sub:'x1/x4 \u2014 + point rouge'},{v:'nfscope',name:'Nightforce',sub:'Lunette de pr\u00e9cision'}]},
-    {k:'stock',label:'Crosse',x:87,y:33,mx:89,my:52,right:true,mode:'text',opts:[
+    {k:'stock',label:'Crosse',x:87,y:33,mx:90,my:60,right:true,mode:'text',opts:[
       {v:'Fixe',sub:'Rigide'},{v:'R\u00e9tractable',sub:'Ajustable'},{v:'CTR',sub:'Magpul'},{v:'PDW',sub:'Compacte'}]},
     {k:'rear',label:'Poign\u00e9e arri\u00e8re',x:82,y:63,mx:82,my:75,right:true,mode:'text',opts:[
       {v:'Standard',sub:'A2'},{v:'Angle',sub:'Ergonomique'},{v:'Textur\u00e9e',sub:'Grip+'},{v:'Speed',sub:'Rapide'}]},
@@ -7398,7 +7400,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function initWeapon(){
     var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!window.THREE)return;
     var scene=new THREE.Scene();
-    var cam=new THREE.PerspectiveCamera(32,1,0.01,50);cam.position.set(0,0.02,1.75);cam.lookAt(0,0,0);GW.zoom=1.75;
+    var cam=new THREE.PerspectiveCamera(32,1,0.01,50);cam.position.set(0,0.02,4);cam.lookAt(0,0,0);GW.zoom=4;  /* dézoom max par défaut */
     var r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
     r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
     if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
@@ -7412,6 +7414,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* rotation à la souris/doigt — seulement dans la bande centrale (autour de l'arme) */
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
     function inZone(e){var r=cv.getBoundingClientRect();var p=pt(e);var x=(p.x-r.left)/r.width,y=(p.y-r.top)/r.height;
+      /* mobile : zone réduite à l'arme elle-même pour que le reste de l'écran reste scrollable */
+      if(window.innerWidth<=760)return x>0.2&&x<0.8&&y>0.42&&y<0.66;
       return x>0.05&&x<0.95&&y>0.18&&y<0.9;}
     cv.addEventListener('mousedown',function(e){if(!inZone(e))return;GW.drag=true;GW.touched=true;var p=pt(e);GW.px=p.x;GW.py=p.y;});
     window.addEventListener('mousemove',function(e){if(!GW.drag)return;var p=pt(e);GW.tRot+=(p.x-GW.px)*0.01;GW.rx=Math.max(-0.6,Math.min(0.6,GW.rx+(p.y-GW.py)*0.006));GW.px=p.x;GW.py=p.y;});
@@ -7760,6 +7764,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(mdlRow){mdlRow.style.display='';mdlRow.querySelectorAll('.fin-b').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-mdl')===GW.modelKey);});}
     el.classList.add('show');
     if(!GW.inited)initWeapon();
+    /* on repart toujours du dézoom max : vue d'ensemble, pastilles bien réparties */
+    GW.zoom=4;if(GW.cam)GW.cam.position.z=4;
     setTimeout(resizeWeapon,60);
     if(!GW.raf)weaponLoop();
     closePop();
@@ -7816,8 +7822,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     o.updateWorldMatrix(true,false);c.applyMatrix4(o.matrixWorld);
     var t=(c[ax]-B.min[ax])/len;if(GW.gFlip)t=1-t;
     var hRel=(c.y-B.min.y)/((B.max.y-B.min.y)||1);
-    if(hRel<0.36&&t>0.5)return 'grip';       /* sous l'arme, moitié arrière -> poignée pistolet */
-    if(hRel<0.42&&t>0.3&&t<=0.5)return 'mag';/* sous l'arme, au centre -> chargeur */
+    if(hRel<0.5&&t>0.5)return 'grip';        /* sous l'arme, moitié arrière -> poignée pistolet */
+    if(hRel<0.45&&t>0.28&&t<=0.5)return 'mag';/* sous l'arme, au centre -> chargeur */
     if(t>0.82)return 'stock';                /* extrémité arrière -> crosse */
     return 'body';
   }
