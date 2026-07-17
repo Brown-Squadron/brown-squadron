@@ -5912,7 +5912,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var gear=new THREE.MeshStandardMaterial({color:0x14180f,roughness:.7,metalness:.18});
     var gearL=new THREE.MeshStandardMaterial({color:0x1e2416,roughness:.75,metalness:.14});
     var glove=new THREE.MeshStandardMaterial({color:0x0c0e09,roughness:.85,metalness:.06});
-    var boot=new THREE.MeshStandardMaterial({color:0xb08d57,roughness:.72,metalness:.08});
+    var boot=new THREE.MeshStandardMaterial({color:0x3b2c1d,roughness:.72,metalness:.08});  /* dark earth fonc\u00e9 */
     var skin=new THREE.MeshStandardMaterial({color:0xc39a70,roughness:.82,metalness:0});
     var metal=new THREE.MeshStandardMaterial({color:0x232520,roughness:.42,metalness:.7});
     var tanMetal=new THREE.MeshStandardMaterial({color:0x9a7f43,roughness:.5,metalness:.5});
@@ -6127,7 +6127,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
               else if(/armour|armor|carrier|plate|vest|body|chest|rig|jpc/.test(n))EQ.armorMats.push(mm);
-              else if(/boot|shoe|chaussure/.test(n)){if(mm.color)mm.color.setHex(0xb08d57);}
+              else if(/boot|shoe|chaussure/.test(n)){if(mm.color)mm.color.setHex(0x3b2c1d);}  /* dark earth fonc\u00e9 */
               else if(/glove|hand|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
@@ -6406,7 +6406,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* ---------- ITEMS 3D montables sur l'opérateur ---------- */
   var ITEMS={
     nvgq:{file:'item_nvg_quad.glb',label:'JVN Quad',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
-    nvgt:{file:'item_nvg_tnvd.glb',label:'JVN TNVD',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.14,rot:[0,0,0]},
+    nvgt:{file:'item_nvg_tnvd.glb',label:'JVN Mono',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.14,rot:[0,0,0],
+      meshHide:/^Object_(19|58|61|64|66)$/},
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
     m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',anchor:'chest',off:[-0.09,-0.03,0.015],pos:[-0.15,1.4,0.17],size:0.07,rot:[0,0,0]},
@@ -6639,6 +6640,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
       obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
       (EQ.model||EQ.scene).add(obj);EQ.mounted[id]=obj;
+      /* la découpe doit être réappliquée : un objet cloné depuis le cache réaffiche tout */
+      if(cfg.meshHide)obj.traverse(function(o){if(o.isMesh&&cfg.meshHide.test(o.name||''))o.visible=false;});
       /* filet de sécurité : un objet déjà en cache peut encore être translucide -> on re-force l'opaque */
       obj.traverse(function(o){if(o.isMesh&&o.material){
         var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -6666,6 +6669,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         g.scene.traverse(function(o){if(o.isMesh){var mt=cfg.meshMatch.test(o.name||'');o.visible=mt;if(mt)any=true;}});
         if(!any)g.scene.traverse(function(o){if(o.isMesh)o.visible=true;});   /* aucun match -> on n'efface pas tout */
       }
+      /* découpe : on retire les pièces listées (ex. le 2e tube des jumelles -> monoculaire) */
+      if(cfg.meshHide){g.scene.traverse(function(o){if(o.isMesh&&cfg.meshHide.test(o.name||''))o.visible=false;});}
       g.scene.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
         if(o.material){
           var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -6890,6 +6895,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   .gs-finish .fin-b.on{background:linear-gradient(180deg,#c4ab6f,#9a7f43);color:#181305;border-color:var(--aor1b);}
   .gs-finish .fin-b.on i{color:#3a2c08;}
   #gs-fin-toggle i{opacity:.65;font-size:7px;}
+  .gs-finish .gs-freset{color:var(--muted);background:rgba(8,10,7,.7);font-size:13px;padding:5px 9px;line-height:1;}
+  .gs-finish .gs-freset:hover{color:var(--aor1b);border-color:var(--aor1);}
   /* Paintjob : transparent au repos, vert quand le panneau est ouvert */
   .gs-finish .gs-paintjob{color:var(--aor1b);background:rgba(8,10,7,.7);}
   .gs-finish .gs-paintjob.on{background:linear-gradient(180deg,#6f8f47,#4d6a2c);color:#0d1206;border-color:#7fa552;
@@ -6963,7 +6970,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     box-shadow:0 20px 50px rgba(0,0,0,.7);padding:11px;}
   .gs-parts::-webkit-scrollbar{display:none;}
   .gs-parts.show{display:block;}
-  .gs-parts .pp-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;cursor:move;}
+  .gs-parts .pp-h{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:10px;cursor:move;position:relative;padding-right:24px;}
+  .gs-parts .pp-x{position:absolute;top:-3px;right:0;cursor:pointer;color:var(--muted);font-size:13px;line-height:1;padding:3px 5px;}
+  .gs-parts .pp-x:hover{color:#fff;}
   .gs-parts .pp-row{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:12px;}
   .gs-parts .pp-l{font-family:var(--mono);font-size:9.5px;color:#dfe3d2;display:flex;align-items:center;gap:7px;}
   .gs-parts .pp-cur{width:14px;height:14px;border-radius:4px;border:1px solid rgba(255,255,255,.3);flex:none;}
@@ -7135,9 +7144,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       {v:'sil_perf',name:'Silencieux perfor\u00e9',sub:'Vent\u00e9 / ajour\u00e9'},{v:'sil_smooth',name:'Silencieux lisse',sub:'Tube plein'}]},
     {k:'barrel',label:'Canon',x:27,y:33,mx:8,my:60,mode:'text',opts:[
       {v:'10.3"',sub:'CQB'},{v:'11.5"',sub:'Polyvalent'},{v:'14.5"',sub:'Standard'},{v:'16"',sub:'Port\u00e9e'}]},
-    {k:'laser',label:'RIS avant',x:43,y:20,mx:30,my:50,mode:'mount3d',opts:[
+    {k:'laser',label:'RIS avant',x:43,y:30,mx:30,my:50,mode:'mount3d',opts:[
       {v:'peq15',name:'AN/PEQ-15',sub:'Laser \u2014 AOR1'},{v:'dbal',name:'DBAL-A2',sub:'Laser \u2014 dark earth'},{v:'m600',name:'Surefire M600',sub:'Lampe \u2014 RIS droite'}]},
-    {k:'optic',label:'Optique',x:60,y:23,mx:68,my:50,right:true,mode:'mount3d',opts:[
+    {k:'optic',label:'Optique',x:60,y:31,mx:68,my:50,right:true,mode:'mount3d',opts:[
       {v:'e553',name:'EOTech 553',sub:'Holographique \u2014 seul ou +G43'},{v:'mag',name:'Magnifier G43',sub:'x3 \u2014 en compl\u00e9ment'},
       {v:'elcan',name:'ELCAN Specter DR',sub:'x1/x4 \u2014 + point rouge'},{v:'nfscope',name:'Nightforce',sub:'Lunette de pr\u00e9cision'}]},
     {k:'stock',label:'Crosse',x:87,y:33,mx:90,my:60,right:true,mode:'text',opts:[
@@ -7184,7 +7193,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         '<div class="gs-finish" id="gs-finish"><span class="fin-l">Finition</span>'+
           '<button class="fin-b on" id="gs-fin-toggle" data-fin="black" onclick="gunsmithFinishToggle()">Noir<i>/ Tan</i></button>'+
           '<button class="fin-b" id="gs-fin-aor1" data-fin="aor1" onclick="gunsmithFinish(\'aor1\')">AOR1</button>'+
-          '<button class="fin-b gs-paintjob" id="gs-paintjob" onclick="gsToggleParts()">Paintjob</button></div>'+
+          '<button class="fin-b gs-paintjob" id="gs-paintjob" onclick="gsToggleParts()">Paintjob</button>'+
+          '<button class="fin-b gs-freset" id="gs-freset" onclick="gunsmithFinishReset()" title="Couleur d\'origine du mod\u00e8le">\u21BA</button></div>'+
         '<div class="gs-parts" id="gs-parts"></div>'+
         '<div class="gs-namewrap"><input class="gs-name" id="gs-name" maxlength="24" placeholder="NOM DE L\'ARME"></div>'+
         '<div class="gs-weapon"><canvas id="gs-weapon-canvas"></canvas><span class="gs-wlabel">// Chargement 3D\u2026</span><span class="gs-wtag">glisse pour tourner</span></div>'+
@@ -7494,10 +7504,17 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(!GW.recolor)return;
       /* cloner le matériau partagé pour pouvoir teinter RIS ≠ reste */
       if(!o.userData._cl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._cl=1;}
+      /* mémoriser l'état d'origine (une seule fois) pour pouvoir le restaurer */
+      if(!o.userData._orig){
+        var om=Array.isArray(o.material)?o.material:[o.material];
+        o.userData._orig=om.map(function(x){return {map:x.map,color:(x.color?x.color.getHex():null),metalness:x.metalness,roughness:x.roughness};});
+      }
       var isGlass=/glass|lens/.test(nm);
       var mm=Array.isArray(o.material)?o.material:[o.material];
       mm.forEach(function(x){
         if(isGlass){if(x.emissive)x.emissive.setHex(0x000000);return;}
+        /* mode "couleur d'origine" : on ne repeint pas, on laisse le matériau restauré */
+        if(GW.finish==='orig'){x.needsUpdate=true;return;}
         x.emissiveMap=null;if(x.emissive)x.emissive.setHex(0x000000);
         x.metalness=0.55;x.roughness=0.5;if(x.envMapIntensity!=null)x.envMapIntensity=0.35;
         if(camo){
@@ -7857,13 +7874,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});
     });
   }
-  window.gsPartColor=function(k,hex){if(!GW.partCol)GW.partCol={};GW.partCol[k]=hex;applyPartColors();
-    var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);};
+  window.gsCloseParts=function(e){
+    if(e)e.stopPropagation();
+    var p=el&&el.querySelector('#gs-parts');if(p)p.classList.remove('show');
+    var pj=el&&el.querySelector('#gs-paintjob');if(pj)pj.classList.remove('on');
+  };
   window.gsToggleParts=function(){var p=el&&el.querySelector('#gs-parts');if(!p)return;
     var pj=el&&el.querySelector('#gs-paintjob');
     if(p.classList.contains('show')){p.classList.remove('show');if(pj)pj.classList.remove('on');return;}
     var sw=[['black','Noir',0x050505],['tan','Tan',0x413221],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
-    p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce</div>'+PARTS.map(function(pt){
+    p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce<span class="pp-x" onclick="gsCloseParts(event)">\u2715</span></div>'+PARTS.map(function(pt){
       var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
       return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l"><span class="pp-cur" style="background:'+(cur!=null?'#'+('000000'+cur.toString(16)).slice(-6):'transparent')+'"></span>'+pt.label+'</span>'+
         '<span class="pp-sw">'+sw.map(function(s){return '<i title="'+s[1]+'" style="background:#'+('000000'+s[2].toString(16)).slice(-6)+'" onclick="gsPartColor(\''+pt.k+'\','+s[2]+')"></i>';}).join('')+
@@ -7901,6 +7921,24 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var bn=btn.querySelector('[data-fin="black"]'),tn=btn.querySelector('[data-fin="tan"]');
       if(bn)bn.classList.toggle('on',fin==='black');if(tn)tn.classList.toggle('on',fin==='tan');});
   }
+  /* remet la couleur d'origine du modèle 3D — uniquement l'arme, pas les accessoires montés */
+  window.gunsmithFinishReset=function(){
+    if(!GW.weapon)return;
+    GW.finish='orig';GW.partCol={};
+    GW.weapon.traverse(function(o){
+      if(!o.isMesh||!o.userData._orig)return;
+      var mm=Array.isArray(o.material)?o.material:[o.material];
+      mm.forEach(function(x,i){
+        var s=o.userData._orig[i]||o.userData._orig[0];if(!s)return;
+        x.map=s.map;if(s.color!=null&&x.color)x.color.setHex(s.color);
+        if(s.metalness!=null)x.metalness=s.metalness;
+        if(s.roughness!=null)x.roughness=s.roughness;
+        x.needsUpdate=true;
+      });
+    });
+    if(el)el.querySelectorAll('#gs-parts .pp-cur').forEach(function(i){i.style.background='transparent';});
+    syncFinishUI();
+  };
   window.gunsmithFinishToggle=function(){
     gunsmithFinish(GW.finish==='black'?'tan':'black');
   };
@@ -7925,6 +7963,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* le nuancier "par pièce" reflète le nouveau choix global */
     if(el)el.querySelectorAll('#gs-parts .pp-cur').forEach(function(i){i.style.background='transparent';});
     syncFinishUI();
+  };
+  /* application fiable d'une couleur de pièce : on repeint immédiatement et on garde l'état */
+  window.gsPartColor=function(k,hex){
+    if(!GW.partCol)GW.partCol={};
+    GW.partCol[k]=hex;
+    applyPartColors();
+    var i=el&&el.querySelector('#gs-parts .pp-row[data-k="'+k+'"] .pp-cur');
+    if(i)i.style.background='#'+('000000'+hex.toString(16)).slice(-6);
   };
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
