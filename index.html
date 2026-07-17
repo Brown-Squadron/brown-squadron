@@ -6416,7 +6416,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     prc148:{file:'item_radio_prc148.glb',label:'Radio PRC-148',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     bino:{file:'item_nvg_bino.glb',label:'Jumelles NV',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
     drone:{file:'item_drone.glb',label:'Drone DJI Mini',ico:'\u2708',grp:'tool',anchor:'chest',off:[0.17,-0.3,0],pos:[0.28,1.2,0.16],size:0.14,rot:[0,0,0]},
-    boltc:{file:'item_boltcutters.glb',label:'Pince coupante',ico:'\u2702',grp:'tool',anchor:'chest',off:[-0.17,-0.32,0],pos:[0.24,1.0,0.14],size:0.2,rot:[0,0,0.4]}
+    boltc:{file:'item_boltcutters.glb',label:'Pince coupante',ico:'\u2702',grp:'tool2',anchor:'chest',off:[-0.17,-0.32,0],pos:[0.24,1.0,0.14],size:0.2,rot:[0,0,0.4]}
   };
   var ITEMORDER=['nvgq','nvgt','bino','prc152','prc148','radio','m67','smoke','drone','boltc'];
   function renderItemBar(){
@@ -6568,7 +6568,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         }).subscribe(function(status,err){console.log('[opequip-live]',k,'status:',status,err||'');});
     }catch(e){console.error('[subscribeOpEquip]',e);}
   }
-  function loadAndSyncOpEquip(id){
+  window.loadAndSyncOpEquip=function(id){
     if(!id)return;
     /* on mémorise l'opérateur demandé : memId() peut encore renvoyer le précédent selon l'ordre d'appel */
     EQ.wantId=id;
@@ -7812,19 +7812,32 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       GW.gBounds=bb;
       var s=new THREE.Vector3();bb.getSize(s);
       GW.gAxis=(s.x>=s.z)?'x':'z';           /* axe long de l'arme */
-      /* de quel côté est la crosse : le canon est l'extrémité la plus fine */
-      GW.gFlip=false;
+      /* Où est la crosse ? C'est l'extrémité la plus "haute/épaisse" : on compare le volume
+         occupé par les meshes du premier tiers vs du dernier tiers de l'arme. */
+      var ax=GW.gAxis,lo=0,hi=0;
+      GW.weapon.traverse(function(m){
+        if(!m.isMesh||!m.geometry)return;
+        if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();
+        var cc=new THREE.Vector3();m.geometry.boundingBox.getCenter(cc);
+        m.updateWorldMatrix(true,false);cc.applyMatrix4(m.matrixWorld);
+        var tt=(cc[ax]-bb.min[ax])/((bb.max[ax]-bb.min[ax])||1);
+        var b2=new THREE.Box3().setFromObject(m);var s2=new THREE.Vector3();b2.getSize(s2);
+        if(tt<0.33)lo+=s2.y;else if(tt>0.67)hi+=s2.y;
+      });
+      GW.gFlip=(lo>hi);   /* si le côté "bas" est plus massif, la crosse y est -> on inverse */
     }
-    var B=GW.gBounds,ax=GW.gAxis;
-    var len=B.max[ax]-B.min[ax];if(!len)return 'body';
+    var B=GW.gBounds,ax2=GW.gAxis;
+    var len=B.max[ax2]-B.min[ax2];if(!len)return 'body';
     if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
     var c=new THREE.Vector3();o.geometry.boundingBox.getCenter(c);
     o.updateWorldMatrix(true,false);c.applyMatrix4(o.matrixWorld);
-    var t=(c[ax]-B.min[ax])/len;if(GW.gFlip)t=1-t;
+    var t=(c[ax2]-B.min[ax2])/len;if(GW.gFlip)t=1-t;
     var hRel=(c.y-B.min.y)/((B.max.y-B.min.y)||1);
-    if(hRel<0.5&&t>0.5)return 'grip';        /* sous l'arme, moitié arrière -> poignée pistolet */
-    if(hRel<0.45&&t>0.28&&t<=0.5)return 'mag';/* sous l'arme, au centre -> chargeur */
-    if(t>0.82)return 'stock';                /* extrémité arrière -> crosse */
+    var b3=new THREE.Box3().setFromObject(o);var sz=new THREE.Vector3();b3.getSize(sz);
+    var small=sz[ax2]<len*0.5;                /* les gros blocs = corps, on n'y touche pas */
+    if(small&&hRel<0.42&&t>0.52)return 'grip';   /* petite pièce sous l'arme, arrière -> poignée */
+    if(small&&hRel<0.42&&t>0.3&&t<=0.52)return 'mag';
+    if(small&&t>0.84)return 'stock';
     return 'body';
   }
   /* le modèle n'a-t-il aucun nom exploitable ? (Object_0, mesh_3, Cube.001…) */
@@ -7949,11 +7962,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   /* quand on ré-affiche le loadout, réappliquer les accessoires sauvegardés sur les cartes */
   var origSel=window.equipSelect;
-  window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);loadAndSyncOpEquip(id);},30);return r;};
+  window.equipSelect=function(id){var r=origSel?origSel.apply(this,arguments):undefined;setTimeout(function(){applySavedToCards(id);if(window.loadAndSyncOpEquip)window.loadAndSyncOpEquip(id);},30);return r;};
   var origEnter=window.enterEquip;
   window.enterEquip=function(){
     var r=origEnter?origEnter.apply(this,arguments):undefined;
-    setTimeout(function(){applySavedToCards(memId());loadAndSyncOpEquip(memId());},60);
+    setTimeout(function(){applySavedToCards(memId());if(window.loadAndSyncOpEquip)window.loadAndSyncOpEquip(memId());},60);
     /* le loadout est lourd (3D, presets partagés) : on ne l'active qu'à l'ouverture de cet onglet, jamais au démarrage */
     if(!window._loadoutCloudInit){
       window._loadoutCloudInit=true;
