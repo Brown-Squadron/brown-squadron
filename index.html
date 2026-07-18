@@ -2247,7 +2247,7 @@ function compressImage(file,cb,maxDim,quality){
   };
   r.readAsDataURL(file);
 }
-function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function nl2br(s){return esc(s).replace(/\n/g,'<br>');}
 function collabStatus(m){var e=document.getElementById('collab-status');if(e)e.textContent=m;}
 function cacheLocal(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}}
@@ -2366,7 +2366,7 @@ function switchTab(btn){
   if(id==='view-direction'){renderDirDocs();}
   if(id==='view-eval'){enterEval();}
   if(id==='view-comms'){enterComms();}
-  if(id==='view-equip'){enterEquip();}
+  if(id==='view-equip'&&window.enterEquip){enterEquip();}
 }
 function showView(id){
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -2427,6 +2427,7 @@ function delDirDoc(ts){
 function viewDirDoc(ts){
   var d=dirData().filter(function(x){return x.ts===ts;})[0];if(!d)return;
   var w=window.open('','_blank');
+  if(!w){if(window.bsToast)bsToast('Popup bloqu\u00e9 par le navigateur',{type:'err'});return;}
   if((d.type||'').indexOf('image')===0){w.document.write('<img src="'+d.data+'" style="max-width:100%">');}
   else{w.document.write('<iframe src="'+d.data+'" style="border:0;width:100%;height:100vh"></iframe>');}
 }
@@ -2468,30 +2469,6 @@ function renderDirDocs(){
 }
 
 /* ============ DRAG DES ONGLETS ============ */
-function initTabDrag(){
-  var bar=document.getElementById('tabbar');if(!bar||bar._dragInit)return;bar._dragInit=true;
-  var order=[];try{order=JSON.parse(localStorage.getItem('bs_taborder'))||[];}catch(e){}
-  if(order.length){order.forEach(function(v){var b=bar.querySelector('button[data-view="'+v+'"]');if(b)bar.appendChild(b);});}
-  var btns=bar.querySelectorAll('button');
-  var dragB=null,sx=0,moved=false;
-  btns.forEach(function(b){
-    b.setAttribute('draggable','false');
-    var press=null;
-    function down(x){press=setTimeout(function(){dragB=b;moved=false;sx=x;b.style.opacity='.5';},250);}
-    function up(){if(press)clearTimeout(press);if(dragB){dragB.style.opacity='';saveTabOrder();dragB=null;}}
-    b.addEventListener('touchstart',function(e){down(e.touches[0].clientX);},{passive:true});
-    b.addEventListener('touchmove',function(e){if(!dragB)return;var x=e.touches[0].clientX;var t=document.elementFromPoint(x,e.touches[0].clientY);var tb=t&&t.closest?t.closest('#tabbar button'):null;if(tb&&tb!==dragB){var r=tb.getBoundingClientRect();if(x<r.left+r.width/2)bar.insertBefore(dragB,tb);else bar.insertBefore(dragB,tb.nextSibling);}e.preventDefault();},{passive:false});
-    b.addEventListener('touchend',up);
-    b.addEventListener('mousedown',function(e){down(e.clientX);});
-  });
-  document.addEventListener('mousemove',function(e){if(!dragB)return;var t=document.elementFromPoint(e.clientX,e.clientY);var tb=t&&t.closest?t.closest('#tabbar button'):null;if(tb&&tb!==dragB){var r=tb.getBoundingClientRect();if(e.clientX<r.left+r.width/2)bar.insertBefore(dragB,tb);else bar.insertBefore(dragB,tb.nextSibling);}});
-  document.addEventListener('mouseup',function(){if(dragB){dragB.style.opacity='';saveTabOrder();dragB=null;}});
-}
-function saveTabOrder(){
-  var ids=[].slice.call(document.querySelectorAll('#tabbar button')).map(function(b){return b.getAttribute('data-view');});
-  try{localStorage.setItem('bs_taborder',JSON.stringify(ids));}catch(e){}
-}
-
 /* ============ DASHBOARD ACCUEIL ============ */
 var DASH_ORDER_KEY='bs_dash_order';
 function dashWidgets(){
@@ -2627,14 +2604,14 @@ function wireTabDrag(){
 }
 function wireDashDrag(){
   var grid=document.getElementById('dash-grid');
-  var dragEl=null;
   grid.querySelectorAll('.dw-grip').forEach(function(g){
-    g.addEventListener('dragstart',function(e){dragEl=g.closest('.dwidget');dragEl.classList.add('drag');e.dataTransfer.effectAllowed='move';});
-    g.addEventListener('dragend',function(){if(dragEl)dragEl.classList.remove('drag');dragEl=null;
+    g.addEventListener('dragstart',function(e){grid._dragEl=g.closest('.dwidget');grid._dragEl.classList.add('drag');e.dataTransfer.effectAllowed='move';});
+    g.addEventListener('dragend',function(){if(grid._dragEl)grid._dragEl.classList.remove('drag');grid._dragEl=null;
       var ids=[].slice.call(grid.querySelectorAll('.dwidget')).map(function(d){return d.getAttribute('data-id');});saveDashOrder(ids);});
   });
+  if(grid._dragWired)return;grid._dragWired=1;   /* listener conteneur ajouté une seule fois (évite l'accumulation) */
   grid.addEventListener('dragover',function(e){
-    e.preventDefault();if(!dragEl)return;
+    e.preventDefault();var dragEl=grid._dragEl;if(!dragEl)return;
     var after=dashAfter(grid,e.clientY,e.clientX);
     if(after==null)grid.appendChild(dragEl);else grid.insertBefore(dragEl,after);
   });
@@ -3708,7 +3685,6 @@ function renderPdfToImages(dataUrl){
     }catch(e){reject(e);}
   });
 }
-function docsToPages(docs){return '';}
 
 /* ============ DRILL / COURS ============ */
 function coursOf(){
@@ -4954,7 +4930,7 @@ var gpsOn=false;          /* est-ce que j'émets ma position */
 var gpsWatchId=null;      /* id du watchPosition navigateur */
 var gpsSendTimer=null;    /* throttle envoi */
 var gpsLastSent=0;
-var GPS_SEND_MS=2000;     /* intervalle d'envoi normal ; allongé en blackout pour la batterie */
+var GPS_SEND_MS=3000;     /* intervalle d'envoi normal ; allongé en blackout pour la batterie */
 var gpsMyPseudo='';
 var gpsMarkers={};        /* pseudo -> {marker,label} affichés sur la carte */
 var gpsChannel=null;      /* abonnement realtime */
@@ -5176,7 +5152,7 @@ function renderDeployed(){
   if(!keys.length){box.innerHTML='<div class="dep-empty">Aucun indicatif déployé</div>';return;}
   box.innerHTML=keys.sort().map(function(k){
     var m=gpsMarkers[k];var col=(m&&m.color)||'#46b29d';
-    return '<button class="dep-item" onclick="focusDeployed(\''+encodeURIComponent(k)+'\')">'+
+    return '<button class="dep-item" onclick="focusDeployed(\''+encodeURIComponent(k).replace(/'/g,'%27')+'\')">'+
       '<span class="dep-dot" style="background:'+col+'"></span>'+
       '<span class="dep-name">'+esc(k)+'</span></button>';
   }).join('');
@@ -5520,7 +5496,7 @@ function renderComms(rows){
   box.innerHTML=rows.map(function(m){
     var mine=(m.callsign&&me&&m.callsign.toUpperCase()===me.toUpperCase());
     var t='';try{var d=new Date(m.created_at);t=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);}catch(e){}
-    var del=(isAdmin&&m.id)?'<button class="msg-del" onclick="deleteMsg('+m.id+')" title="Supprimer (Admin)">&times;</button>':'';
+    var del=(isAdmin&&m.id)?'<button class="msg-del" onclick="deleteMsg(\''+m.id+'\')" title="Supprimer (Admin)">&times;</button>':'';
     return '<div class="comms-msg'+(mine?' mine':'')+'">'+del+'<div class="who">'+esc(m.callsign||'?')+'</div>'+esc(m.body||'')+'<div class="when">'+t+'</div></div>';
   }).join('');
   if(atBottom)box.scrollTop=box.scrollHeight;
@@ -5553,18 +5529,19 @@ function subscribeComms(){
 /* drag des conversations (réordonner) */
 function wireConvDrag(){
   var list=document.getElementById('tchat-list');if(!list)return;
-  var items=list.querySelectorAll('.tconv');var dragEl=null;
+  var items=list.querySelectorAll('.tconv');
   items.forEach(function(it){
     var h=it.querySelector('.tchat-drag');if(!h)return;
-    h.addEventListener('dragstart',function(e){dragEl=it;e.dataTransfer.effectAllowed='move';});
-    h.addEventListener('dragend',function(){dragEl=null;persistConvOrder();});
+    h.addEventListener('dragstart',function(e){list._dragEl=it;e.dataTransfer.effectAllowed='move';});
+    h.addEventListener('dragend',function(){list._dragEl=null;persistConvOrder();});
   });
+  if(!list._dragWired){list._dragWired=1;   /* listener conteneur ajouté une seule fois */
   list.addEventListener('dragover',function(e){
-    e.preventDefault();if(!dragEl)return;
+    e.preventDefault();var dragEl=list._dragEl;if(!dragEl)return;
     var after=null,els=[].slice.call(list.querySelectorAll('.tconv:not(.dragging)'));
     for(var i=0;i<els.length;i++){var b=els[i].getBoundingClientRect();if(e.clientY<b.top+b.height/2){after=els[i];break;}}
     if(after==null)list.appendChild(dragEl);else list.insertBefore(dragEl,after);
-  });
+  });}
   function persistConvOrder(){
     var ids=[].slice.call(list.querySelectorAll('.tconv')).map(function(x){return x.getAttribute('data-cid');});
     saveConvOrder(ids);
@@ -6093,7 +6070,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   }
   /* ---------- chargement du modèle 3D réaliste (GLB) ---------- */
   function loadModel(scene){
-    if(!THREE.GLTFLoader){if(EQ.op)EQ.op.visible=true;return;}
+    if(!THREE.GLTFLoader){if(EQ.op)EQ.op.visible=true;var _l0=document.getElementById('eq-loading');if(_l0)_l0.classList.add('hide');return;}
     try{
       var loader=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
       loader.load('operator.glb',function(gltf){
@@ -6192,9 +6169,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     /* opérateur cubique de secours : masqué par défaut, il ne sert que si le vrai modèle 3D échoue */
     op.visible=false;
     EQ.rotTarget=op;
-    loadModel(scene);
-
+    /* EQ.op doit être affecté AVANT loadModel : ses chemins d'échec synchrones (loader absent)
+       s'appuient sur EQ.op pour afficher le secours et masquer le spinner */
     EQ.scene=scene;EQ.cam=cam;EQ.r=r;EQ.op=op;EQ.floor=floor;
+    loadModel(scene);
 
     /* textures camo */
     loadCamo(window.CAMO_AOR2,function(t){EQ.tex2=t;applyAor(EQ.aor,true);});
@@ -6407,7 +6385,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   var ITEMS={
     nvgq:{file:'item_nvg_quad.glb',label:'JVN Quad',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
     nvgt:{file:'item_nvg_tnvd.glb',label:'JVN Mono',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.14,rot:[0,0,0],
-      meshHide:/^Object_(19|58|61|64|66)$/},
+      meshHide:/Lens_1_L1|^Object_(64|66)$/},
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
     m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',anchor:'chest',off:[-0.09,-0.03,0.015],pos:[-0.15,1.4,0.17],size:0.07,rot:[0,0,0]},
@@ -6449,7 +6427,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function opStep(k){return {px:0.01,py:0.01,pz:0.01,rx:0.05,ry:0.05,rz:0.05,s:0.005}[k];}
   var OPITEMCOL={};try{OPITEMCOL=JSON.parse(localStorage.getItem('bs_opitemcol')||'{}');}catch(e){OPITEMCOL={};}
   function opSaveItemColLocal(){try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}}
-  function opSaveItemCol(){opSaveItemColLocal();pushOpPresetsSoon();}
   /* ---------- synchro cloud des références admin (position + couleur des items du personnage), pour TOUS les comptes ---------- */
   var opPresetChannel=null,opPresetPushT=null;
   function pushOpPresetsSoon(){
@@ -6502,7 +6479,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         }).join('')+
         '<input type="color" class="me-colfree" oninput="opItemColor(\''+id+'\',parseInt(this.value.slice(1),16))">'+
       '</div></div>';
-    p.classList.add('show');makeDraggable(p);
+    p.classList.add('show');if(window.makeDraggable)window.makeDraggable(p);
   }
   window.opItemColor=function(id,hex){
     var o=EQ.mounted[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
@@ -6577,9 +6554,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     EQ._restoring=true;
     EQ.want={};
     Object.keys(EQ.mounted||{}).forEach(function(mid){
-      var o=EQ.mounted[mid];if(o&&(EQ.model||EQ.scene))(EQ.model||EQ.scene).remove(o);
+      var o=EQ.mounted[mid];if(o){if(window.disposeClonedMats)disposeClonedMats(o);if(EQ.model||EQ.scene)(EQ.model||EQ.scene).remove(o);}
       delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;
     });
+    /* filet de sécurité : on retire aussi tout objet d'équipement resté orphelin dans la scène */
+    var host=EQ.model||EQ.scene;
+    if(host){host.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem)host.remove(c);});}
     EQ._restoring=false;
     renderItemBar();
     /* le modèle 3D du personnage peut encore charger (surtout sur mobile) :
@@ -6608,10 +6588,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!EQ.want)EQ.want={};
     /* corps 3D pas encore chargé -> on réessaie au lieu d'abandonner (sinon l'item est perdu) */
     if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1,owner);},60);return;}
-    if(EQ.mounted[id]){parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;EQ.want[id]=false;var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
+    if(EQ.mounted[id]){if(window.disposeClonedMats)disposeClonedMats(EQ.mounted[id]);parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;EQ.want[id]=false;
+      /* filet : on retire toute copie orpheline du même item restée dans la scène */
+      parent.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem===id)parent.remove(c);});
+      var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
     /* intention posée tout de suite : la case se coche sans attendre le téléchargement du .glb */
     EQ.want[id]=true;
-    Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){(EQ.model||EQ.scene).remove(EQ.mounted[mid]);delete EQ.mounted[mid];EQ.want[mid]=false;EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
+    Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){
+      var h=(EQ.model||EQ.scene);if(window.disposeClonedMats)disposeClonedMats(EQ.mounted[mid]);h.remove(EQ.mounted[mid]);
+      h.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem===mid)h.remove(c);});
+      delete EQ.mounted[mid];EQ.want[mid]=false;EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
     if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
@@ -6640,8 +6626,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
       obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
       (EQ.model||EQ.scene).add(obj);EQ.mounted[id]=obj;
+      obj.userData._eqItem=id;   /* marqueur : permet de retrouver/nettoyer les objets d'équipement */
       /* la découpe doit être réappliquée : un objet cloné depuis le cache réaffiche tout */
-      if(cfg.meshHide)obj.traverse(function(o){if(o.isMesh&&cfg.meshHide.test(o.name||''))o.visible=false;});
+      if(cfg.meshHide)obj.traverse(function(o){
+        if(!o.isMesh)return;
+        var path=o.name||'',p=o.parent;
+        while(p){path+=' '+(p.name||'');p=p.parent;}
+        if(cfg.meshHide.test(path))o.visible=false;
+      });
       /* filet de sécurité : un objet déjà en cache peut encore être translucide -> on re-force l'opaque */
       obj.traverse(function(o){if(o.isMesh&&o.material){
         var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -6661,7 +6653,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       if(chip)chip.classList.remove('loading');renderItemBar();
       if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
     }
-    if(EQ.itemObj[id]){place(EQ.itemObj[id]);return;}
+    /* on clone : réutiliser la même instance laisse des objets fantômes dans la scène
+       (item décoché qui reste affiché, ou qui « suit » d'un opérateur à l'autre) */
+    if(EQ.itemObj[id]){place(EQ.itemObj[id].clone(true));return;}
     var ld=window.bsGLTF?window.bsGLTF():new THREE.GLTFLoader();
     ld.load(cfg.file,function(g){
       /* certains .glb contiennent plusieurs copies empilées : on ne garde que celle demandée */
@@ -6669,8 +6663,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         g.scene.traverse(function(o){if(o.isMesh){var mt=cfg.meshMatch.test(o.name||'');o.visible=mt;if(mt)any=true;}});
         if(!any)g.scene.traverse(function(o){if(o.isMesh)o.visible=true;});   /* aucun match -> on n'efface pas tout */
       }
-      /* découpe : on retire les pièces listées (ex. le 2e tube des jumelles -> monoculaire) */
-      if(cfg.meshHide){g.scene.traverse(function(o){if(o.isMesh&&cfg.meshHide.test(o.name||''))o.visible=false;});}
+      /* découpe : on retire les pièces listées (ex. la 2e optique des jumelles -> monoculaire).
+         On teste aussi les noms des parents : les noms utiles sont sur les groupes, pas sur les meshes. */
+      if(cfg.meshHide){g.scene.traverse(function(o){
+        if(!o.isMesh)return;
+        var path=o.name||'',p=o.parent;
+        while(p){path+=' '+(p.name||'');p=p.parent;}
+        if(cfg.meshHide.test(path))o.visible=false;
+      });}
       g.scene.traverse(function(o){if(o.isMesh){o.frustumCulled=false;
         if(o.material){
           var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -6697,7 +6697,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
           });
         }
       }});
-      EQ.itemObj[id]=g.scene;place(g.scene);
+      EQ.itemObj[id]=g.scene;place(g.scene.clone(true));
     },undefined,function(){if(chip)chip.classList.remove('loading');
       if(window.bsToast)bsToast('Mod\u00e8le 3D introuvable : '+cfg.file,{type:'err'});
     });
@@ -7287,7 +7287,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         b.classList.toggle('on',!!o&&!!mount3D[o.v]);});
     }}
   }
-  function mountedIds(){return Object.keys(mount3D);}
   function refreshNodes(){
     if(!el)return;
     applyNodePos();
@@ -7332,7 +7331,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     mods.innerHTML=STATS.map(function(s){
       /* base remont\u00e9e vers ~96 selon le % upgrade */
       var v=s.base+(96-s.base)*lift;
-      var sel=SEL[s.k];/* noop */
       Object.keys(STATMOD).forEach(function(ck){
         var val=SEL[ck];if(val==null)return;
         var table=STATMOD[ck];if(!table)return;
@@ -7384,11 +7382,13 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   /* ---------- positions des points de montage (nodes) : réglées par admin, partagées ---------- */
   var NODEPOS={};try{NODEPOS=JSON.parse(localStorage.getItem('bs_nodepos')||'{}');}catch(e){NODEPOS={};}
-  function nodeKey(k){return (GW.modelKey||GW.curSlot||'p')+'|'+k;}
   function applyNodePos(){
     if(!el)return;
+    var mob=window.innerWidth<=760;
     el.querySelectorAll('.gs-node').forEach(function(n){
-      var c=catByK(n.getAttribute('data-k'));if(c){n.style.left=c.x+'%';n.style.top=c.y+'%';}
+      var c=catByK(n.getAttribute('data-k'));if(!c)return;
+      n.style.left=(mob&&c.mx!=null?c.mx:c.x)+'%';
+      n.style.top =(mob&&c.my!=null?c.my:c.y)+'%';
     });
   }
   function enableNodeDrag(box){/* désactivé : on ne déplace plus les pastilles + */}
@@ -7399,7 +7399,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var sx,sy,ox,oy,on=false;
     function pt(e){var t=e.touches&&e.touches[0];return{x:t?t.clientX:e.clientX,y:t?t.clientY:e.clientY};}
     function dn(e){var h=e.target.closest&&e.target.closest('[data-drag]');if(!h||!panel.contains(h))return;
-      if(e.target.closest('.me-x,.me-min'))return;on=true;var p=pt(e);sx=p.x;sy=p.y;
+      if(e.target.closest('.me-x,.me-min,.pp-x'))return;on=true;var p=pt(e);sx=p.x;sy=p.y;
       var r=panel.getBoundingClientRect();ox=r.left;oy=r.top;panel.style.right='auto';panel.style.left=ox+'px';panel.style.top=oy+'px';
       if(e.cancelable)e.preventDefault();}
     function mv(e){if(!on)return;var p=pt(e);panel.style.left=(ox+p.x-sx)+'px';panel.style.top=(oy+p.y-sy)+'px';}
@@ -7407,6 +7407,19 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     panel.addEventListener('mousedown',dn);window.addEventListener('mousemove',mv);window.addEventListener('mouseup',up);
     panel.addEventListener('touchstart',dn,{passive:false});window.addEventListener('touchmove',mv,{passive:false});window.addEventListener('touchend',up);
   }
+  window.makeDraggable=makeDraggable;
+  /* libère UNIQUEMENT les matériaux clonés par instance (marqués _mcl/_cl).
+     Ne JAMAIS disposer géométries/textures : elles sont partagées avec le cache. */
+  function disposeClonedMats(root){
+    if(!root||!root.traverse)return;
+    root.traverse(function(o){
+      if(o.isMesh&&o.material&&(o.userData._mcl||o.userData._cl)){
+        var mm=Array.isArray(o.material)?o.material:[o.material];
+        mm.forEach(function(x){if(x&&x.dispose)x.dispose();});
+      }
+    });
+  }
+  window.disposeClonedMats=disposeClonedMats;
   function initWeapon(){
     var cv=el&&el.querySelector('#gs-weapon-canvas');if(!cv||!window.THREE)return;
     var scene=new THREE.Scene();
@@ -7624,10 +7637,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function toggleMount(id){
     var cfg=null;GUN3D.forEach(function(a){if(a.id===id)cfg=a;});if(!cfg||!GW.grp)return;
     if(!GW.mountTok)GW.mountTok={};
-    if(mount3D[id]){GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');
+    if(mount3D[id]){if(window.disposeClonedMats)disposeClonedMats(mount3D[id]);GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;var me=el&&el.querySelector('#gs-medit');if(me)me.classList.remove('show');
       syncAllMountSel();return;}
     Object.keys(mount3D).forEach(function(mid){var c;GUN3D.forEach(function(a){if(a.id===mid)c=a;});
-      if(c&&c.grp===cfg.grp){GW.grp.remove(mount3D[mid]);delete mount3D[mid];GW.mountTok[mid]=(GW.mountTok[mid]||0)+1;}});
+      if(c&&c.grp===cfg.grp){if(window.disposeClonedMats)disposeClonedMats(mount3D[mid]);GW.grp.remove(mount3D[mid]);delete mount3D[mid];GW.mountTok[mid]=(GW.mountTok[mid]||0)+1;}});
     syncAllMountSel();
     var tok=(GW.mountTok[id]=(GW.mountTok[id]||0)+1),seq=GW.loadSeq,tries=0;
     function visBox(o){var b=new THREE.Box3(),t=new THREE.Box3(),has=false;
@@ -7710,7 +7723,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     saved=saved||{};
     var nameEl=el&&el.querySelector('#gs-name');if(nameEl&&saved.name!=null)nameEl.value=saved.name;
     var wn2=el&&el.querySelector('#gs-wname');if(wn2&&saved.name)wn2.textContent=saved.name;
-    SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
+    SEL={};if(!GW.mountTok)GW.mountTok={};Object.keys(mount3D).forEach(function(id){if(window.disposeClonedMats)disposeClonedMats(mount3D[id]);if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;});
     var att=saved.att||{};
     Object.keys(att).forEach(function(k){SEL[k]=att[k];});
     GW.finish=saved.finish||'black';
@@ -7726,8 +7739,14 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       CATS.forEach(function(c){if(c.mode==='mount3d'&&Array.isArray(SEL[c.k]))SEL[c.k].forEach(function(id){todo.push(id);});});
       todo.forEach(function(id){if(!mount3D[id])toggleMount(id);});
       applyWeaponFinish();refreshNodes();updateCount();
-      /* on relâche le verrou une fois les chargements asynchrones terminés */
-      setTimeout(function(){GW.restoring=false;refreshNodes();updateCount();},2500);
+      /* on relâche le verrou quand TOUS les accessoires attendus sont réellement montés
+         (et non après un délai fixe : un .glb lent sur mobile était sinon perdu de la sélection) */
+      var t0=Date.now();
+      (function releaseWhenReady(){
+        var allMounted=todo.every(function(id){return !!mount3D[id];});
+        if(allMounted||Date.now()-t0>15000){GW.restoring=false;refreshNodes();updateCount();return;}
+        setTimeout(releaseWhenReady,120);
+      })();
     };
     /* on attend que l'arme ET ses ancres soient réellement prêtes avant de monter les accessoires */
     var waits=0;
@@ -7875,7 +7894,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     });
   }
   window.gsCloseParts=function(e){
-    if(e)e.stopPropagation();
+    if(e){e.stopPropagation();if(e.preventDefault)e.preventDefault();}
     var p=el&&el.querySelector('#gs-parts');if(p)p.classList.remove('show');
     var pj=el&&el.querySelector('#gs-paintjob');if(pj)pj.classList.remove('on');
   };
@@ -7883,7 +7902,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var pj=el&&el.querySelector('#gs-paintjob');
     if(p.classList.contains('show')){p.classList.remove('show');if(pj)pj.classList.remove('on');return;}
     var sw=[['black','Noir',0x050505],['tan','Tan',0x413221],['fde','FDE',0x8a6d43],['green','AOR2',0x45502f],['grey','Gris',0x6b6e73]];
-    p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce<span class="pp-x" onclick="gsCloseParts(event)">\u2715</span></div>'+PARTS.map(function(pt){
+    p.innerHTML='<div class="pp-h" data-drag>Couleur par pi\u00e8ce<span class="pp-x" onclick="gsCloseParts(event)" ontouchend="gsCloseParts(event)">\u2715</span></div>'+PARTS.map(function(pt){
       var cur=(GW.partCol&&GW.partCol[pt.k]!=null)?GW.partCol[pt.k]:null;
       return '<div class="pp-row" data-k="'+pt.k+'"><span class="pp-l"><span class="pp-cur" style="background:'+(cur!=null?'#'+('000000'+cur.toString(16)).slice(-6):'transparent')+'"></span>'+pt.label+'</span>'+
         '<span class="pp-sw">'+sw.map(function(s){return '<i title="'+s[1]+'" style="background:#'+('000000'+s[2].toString(16)).slice(-6)+'" onclick="gsPartColor(\''+pt.k+'\','+s[2]+')"></i>';}).join('')+
@@ -7946,11 +7965,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!el)return;
     var t=el.querySelector('#gs-fin-toggle'),a=el.querySelector('#gs-fin-aor1');
     var isCamo=(GW.finish==='aor1');
+    var isOrig=(GW.finish==='orig');
     if(t){
-      t.classList.toggle('on',!isCamo);
+      t.classList.toggle('on',!isCamo&&!isOrig);
       /* le bouton fusionné affiche l'état courant, l'autre teinte en second */
       t.innerHTML=(GW.finish==='tan')?'Tan<i>/ Noir</i>':'Noir<i>/ Tan</i>';
-      t.setAttribute('data-fin',isCamo?'black':GW.finish);
+      t.setAttribute('data-fin',(isCamo||isOrig)?'black':GW.finish);
     }
     if(a)a.classList.toggle('on',isCamo);
   }
@@ -7974,7 +7994,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   };
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
-    SEL={};Object.keys(mount3D).forEach(function(id){if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];});
+    SEL={};if(!GW.mountTok)GW.mountTok={};Object.keys(mount3D).forEach(function(id){if(window.disposeClonedMats)disposeClonedMats(mount3D[id]);if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;});
     GW.finish='black';GW.partCol={};GW.itemFin={};
     applyWeaponFinish();
     syncFinishUI();
