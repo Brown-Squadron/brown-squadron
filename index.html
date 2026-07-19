@@ -6835,8 +6835,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       var obj=src.clone(true);obj.position.set(0,0,0);obj.rotation.set(0,0,0);obj.scale.set(1,1,1);
       obj.traverse(function(o){if(o.isMesh)o.frustumCulled=false;});
       var box=new THREE.Box3().setFromObject(obj);var sz=new THREE.Vector3();box.getSize(sz);
-      var sc=1.25/(Math.max(sz.x,sz.y,sz.z)||1);obj.scale.setScalar(sc);
+      /* CADRAGE ADAPTATIF : les objets très allongés (pince, silencieux...) remplissaient
+         tout le cadre et semblaient "cassés". S'ils sont 5x plus longs que hauts,
+         on réduit la taille cible pour garder de l'air autour. */
+      var dims=[sz.x,sz.y,sz.z].sort(function(a,b){return b-a;});
+      var elong=dims[0]/Math.max(dims[1],0.001);
+      var fit=elong>5?0.92:1.25;
+      var sc=fit/(Math.max(sz.x,sz.y,sz.z)||1);obj.scale.setScalar(sc);
       box.setFromObject(obj);var c=new THREE.Vector3();box.getCenter(c);obj.position.set(-c.x,-c.y,-c.z);
+      /* départ en vue 3/4 : jamais pile dans l'axe */
+      IV.rot=0.65;IV.tRot=0.65;
       IV.grp.add(obj);
     }
     if(IV.cache[cfg.file]){place(IV.cache[cfg.file]);}
@@ -7450,14 +7458,15 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function pushGunPresetsSoon(){
     if(!sb)return;clearTimeout(gunPresetPushT);
     gunPresetPushT=setTimeout(function(){
-      var itemCol={};try{itemCol=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');}catch(e){}
-      sb.from('entries').upsert({id:'__gunpresets__',type:'gunpresets',data:{mount:MOUNTPRESETS,col:itemCol},updated_at:new Date().toISOString()}).then(function(){},function(){});
+      /* RÈGLE : seules les POSITIONS admin sont communes. Les couleurs ne sont
+         plus partagées : elles sont propres à chaque arme de chaque opérateur. */
+      sb.from('entries').upsert({id:'__gunpresets__',type:'gunpresets',data:{mount:MOUNTPRESETS},updated_at:new Date().toISOString()}).then(function(){},function(){});
     },150);
   }
   function applyRemoteGunPresets(d){
     if(!d)return;
     MOUNTPRESETS=d.mount||{};try{localStorage.setItem('bs_mountpreset',JSON.stringify(MOUNTPRESETS));}catch(e){}
-    try{localStorage.setItem('bs_itemcol',JSON.stringify(d.col||{}));}catch(e){}
+    /* (les couleurs partagées d'autrefois sont volontairement ignorées) */
   }
   window.gwInitCloudPresets=function(){
     if(!sb)return;
@@ -7706,7 +7715,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var o=mount3D[id];if(o)o.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
       if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
       var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(hex);x.needsUpdate=true;}});}});
-    if(isAdmin()){saveItemColLocal(id,hex);}
+    if(isAdmin()){/* plus d'enregistrement partagé : la couleur reste propre à cette arme */}
     var box=el&&el.querySelector('#gs-medit .me-cols');if(box)box.querySelectorAll('i').forEach(function(i){i.classList.toggle('on',+i.getAttribute('data-h')===hex);});
   };
   window.gsMeMin=function(e){if(e)e.stopPropagation();var p=el&&el.querySelector('#gs-medit');if(p)p.classList.toggle('min');};
@@ -7773,13 +7782,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         if(!o.userData._mcl){o.material=Array.isArray(o.material)?o.material.map(function(m){return m.clone();}):o.material.clone();o.userData._mcl=1;}
         var mm=Array.isArray(o.material)?o.material:[o.material];mm.forEach(function(x){x.map=null;if(x.color)x.color.setHex(col);x.needsUpdate=true;});}});
       GW.grp.add(pivot);mount3D[id]=pivot;
-      /* couleur admin enregistrée : ne s'applique QUE si aucun choix explicite N/Tan n'a été fait,
-         sinon elle écraserait la couleur de référence du bouton (bug de priorité) */
-      var hasExplicitFin=!!(GW.itemFin&&GW.itemFin[id]);
-      if(!hasExplicitFin){
-        try{var _ic=JSON.parse(localStorage.getItem('bs_itemcol')||'{}');var _h=_ic[presetKey(id)];
-          if(_h!=null){pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(_h);x.needsUpdate=true;}});}});}
-        }catch(e){}
+      /* couleur PERSONNELLE choisie pour cet accessoire — propre à CETTE arme
+         de CET opérateur (elle prime sur la teinte Noir/Tan de base) */
+      var myCol=(GW.itemCol&&GW.itemCol[id]);
+      if(myCol!=null){
+        pivot.traverse(function(m){if(m.isMesh&&m.visible&&m.material){if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(myCol);x.needsUpdate=true;}});}});
       }
       /* override par preset admin enregistré (référence pour tous) */
       var pr=MOUNTPRESETS[presetKey(id)];
@@ -7820,6 +7827,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     GW.finish=saved.finish||'black';
     GW.partCol=saved.partCol?JSON.parse(JSON.stringify(saved.partCol)):{};
     GW.itemFin=saved.itemFin?JSON.parse(JSON.stringify(saved.itemFin)):{};
+    GW.itemCol=saved.itemCol?JSON.parse(JSON.stringify(saved.itemCol)):{};
     syncFinishUI();
     /* remonter tous les accessoires 3D sauvegardés (optique, laser/lampe, bouche, sous-canon) */
     var doMount=function(){
@@ -8034,7 +8042,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   /* remet la couleur d'origine du modèle 3D — uniquement l'arme, pas les accessoires montés */
   window.gunsmithFinishReset=function(){
     if(!GW.weapon)return;
-    GW.finish='orig';GW.partCol={};
+    GW.finish='orig';GW.partCol={};GW.itemCol={};
     GW.weapon.traverse(function(o){
       if(!o.isMesh||!o.userData._orig)return;
       var mm=Array.isArray(o.material)?o.material:[o.material];
@@ -8086,7 +8094,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.closeGunsmith=function(){if(el){el.classList.remove('show');closePop();}};
   window.gunsmithReset=function(){
     SEL={};if(!GW.mountTok)GW.mountTok={};Object.keys(mount3D).forEach(function(id){if(window.disposeClonedMats)disposeClonedMats(mount3D[id]);if(GW.grp)GW.grp.remove(mount3D[id]);delete mount3D[id];GW.mountTok[id]=(GW.mountTok[id]||0)+1;});
-    GW.finish='black';GW.partCol={};GW.itemFin={};
+    GW.finish='black';GW.partCol={};GW.itemFin={};GW.itemCol={};
     applyWeaponFinish();
     syncFinishUI();
     refreshNodes();updateCount();closePop();
@@ -8103,7 +8111,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       else if(c.mode!=='mount3d'){att[c.k]=v;list.push(c.label+': '+v);}
     });
     console.log('[gunsmith] contenu sauvegard\u00e9 (att):',JSON.stringify(att));
-    try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att,finish:GW.finish||'black',partCol:GW.partCol||{},itemFin:GW.itemFin||{}}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
+    try{localStorage.setItem(key(curId,curSlot),JSON.stringify({name:name,att:att,finish:GW.finish||'black',partCol:GW.partCol||{},itemFin:GW.itemFin||{},itemCol:GW.itemCol||{}}));}catch(e){if(window.bsToast)bsToast('Sauvegarde impossible',{type:'err'});return;}
     pushGunBuildNow();
     var card=document.querySelector('.eq-col.left .eq-slot[data-weapon="'+curSlot+'"]');
     if(card){
