@@ -6111,7 +6111,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
               else if(/armour|armor|carrier|plate|vest|body|chest|rig|jpc/.test(n))EQ.armorMats.push(mm);
-              else if(/boot|shoe|chaussure/.test(n)){if(mm.color)mm.color.setHex(0x3b2c1d);}  /* dark earth fonc\u00e9 */
+              else if(/boot|shoe|sneaker|chaussure/.test(n)){if(mm.color)mm.color.setHex(0x9c7a52);}  /* chaussures -> marron clair */
               else if(/glove|hand|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
@@ -6420,7 +6420,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     prc148:{file:'item_radio_prc148.glb',label:'Radio PRC-148',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     bino:{file:'item_nvg_bino.glb',label:'Jumelles NV',ico:'\u25D1',grp:'nvg',anchor:'head',off:[0,0.03,0.02],pos:[0,1.86,0.1],size:0.15,rot:[0,0,0]},
     drone:{file:'item_drone.glb',label:'Drone DJI Mini',ico:'\u2708',grp:'tool',anchor:'chest',off:[0.17,-0.3,0],pos:[0.28,1.2,0.16],size:0.14,rot:[0,0,0]},
-    boltc:{file:'item_boltcutters.glb',label:'Pince coupante',ico:'\u2702',grp:'tool2',anchor:'chest',off:[-0.16,-0.34,0.07],pos:[0.24,1.0,0.16],size:0.3,rot:[0,0,0.5]}
+    boltc:{file:'item_boltcutters.glb',label:'Pince coupante',ico:'\u2702',grp:'tool2',anchor:'chest',off:[-0.02,-0.1,-0.26],pos:[0.0,1.15,-0.2],size:0.34,rot:[0,0,0.9]}
   };
   var ITEMORDER=['nvgq','nvgt','bino','prc152','prc148','radio','m67','smoke','drone','boltc'];
   function renderItemBar(){
@@ -6443,6 +6443,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.equipToggleOpPanel=function(){var p=document.getElementById('eq-oppanel');if(p)p.classList.toggle('open');};
   /* ---------- éditeur de placement items opérateur (ADMIN) ---------- */
   var OPPRESET={};try{OPPRESET=JSON.parse(localStorage.getItem('bs_opmount')||'{}');}catch(e){OPPRESET={};}
+  /* MIGRATION v2 pince : l'ancien préréglage corrompu (Taille 0,007) est purgé UNE fois,
+     puis marqué, pour ne pas effacer les futurs réglages admin. Nouveau modèle 3D = repart à zéro. */
+  if(!OPPRESET.__boltc_v2){delete OPPRESET.boltc;OPPRESET.__boltc_v2=1;
+    try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}}
   function opSavePresetsLocal(){try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}}
   function opSavePresets(){opSavePresetsLocal();pushOpPresetsSoon();}
   function opIsAdmin(){return document.body.classList.contains('role-admin');}
@@ -6463,6 +6467,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function applyRemoteOpPresets(d){
     if(!d)return;
     OPPRESET=d.op||{};try{localStorage.setItem('bs_opmount',JSON.stringify(OPPRESET));}catch(e){}
+    /* migration v2 pince : si le cloud contient encore l'ancien préréglage corrompu, on le purge
+       et on renvoie la version nettoyée (une seule fois grâce au marqueur) */
+    if(!OPPRESET.__boltc_v2){delete OPPRESET.boltc;OPPRESET.__boltc_v2=1;opSavePresets();}
     OPITEMCOL=d.col||{};try{localStorage.setItem('bs_opitemcol',JSON.stringify(OPITEMCOL));}catch(e){}
   }
   window.eqInitCloudPresets=function(){
