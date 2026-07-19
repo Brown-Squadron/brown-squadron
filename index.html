@@ -6123,7 +6123,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(o){if(window.disposeClonedMats)disposeClonedMats(o);if(o.parent)o.parent.remove(o);}
               delete EQ.mounted[mid];if(!EQ.itemTok)EQ.itemTok={};EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;});
             if(wids.length){EQ._restoring=true;
-              wids.forEach(function(mid){EQ.want[mid]=false;window.equipToggleItem(mid);});
+              if(!EQ.loading)EQ.loading={};
+              wids.forEach(function(mid){EQ.want[mid]=false;EQ.loading[mid]=false;window.equipToggleItem(mid);});
               EQ._restoring=false;renderItemBar();}
           }
         }catch(eRm){console.error('[remount items]',eRm);}
@@ -6155,7 +6156,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     scene.background=bgTex();
     var cam=new THREE.PerspectiveCamera(33,1,0.1,50);cam.position.set(0.15,1.2,4.5);cam.lookAt(0,1.15,0);
     var r=new THREE.WebGLRenderer({canvas:canvas,antialias:true,alpha:true});
-    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1:2));
     if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
     if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.05;}
 
@@ -6404,7 +6405,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     e553:{file:'item_eotech_553.glb',label:'EOTech 553',ico:'\u25C9',grp:'optic',pos:[0.14,1.44,0.19],size:0.11,rot:[0,0,0]},
     mag:{file:'item_eotech_magnifier.glb',label:'Magnifier G43',ico:'\u25CE',grp:'optic',pos:[-0.02,1.44,0.19],size:0.1,rot:[0,0,0]},
     m67:{file:'item_m67.glb',label:'Grenade M67',ico:'\u25CF',grp:'nade',anchor:'chest',off:[-0.09,-0.03,0.015],pos:[-0.15,1.4,0.17],size:0.07,rot:[0,0,0]},
-    smoke:{file:'item_m18_smoke.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0],meshMatch:/PainterExport_SmokeGrenade_0$/i},
+    smoke:{file:'item_m18_smoke.glb',label:'Fumig\u00e8ne',ico:'\u25D3',grp:'nade2',anchor:'chest',off:[-0.16,-0.03,0.015],pos:[-0.24,1.4,0.15],size:0.08,rot:[0,0,0],meshMatch:/^Object_1$/i},
     radio:{file:'item_radio.glb',label:'Radio PMR',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc152:{file:'item_radio_prc152.glb',label:'Radio PRC-152',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
     prc148:{file:'item_radio_prc148.glb',label:'Radio PRC-148',ico:'\u2584',grp:'radio',anchor:'chest',off:[0.11,0.05,0.01],pos:[-0.2,1.5,0.14],size:0.11,rot:[0,0,0]},
@@ -6524,6 +6525,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function opEquipCloudKey(id){return 'opequip_'+id;}
   function opEquipLoadLocal(id){try{return JSON.parse(localStorage.getItem('bs_opequip_'+id)||'null');}catch(e){return null;}}
   function opEquipSaveLocal(id,ids){try{localStorage.setItem('bs_opequip_'+id,JSON.stringify(ids));}catch(e){}}
+  var opEquipPushT2=null,opEquipLastSig='';
   function pushOpEquipNow(id){
     if(!id)return;
     /* IMPORTANT : on sauvegarde la liste d'INTENTION (EQ.want), pas EQ.mounted.
@@ -6532,18 +6534,37 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var ids=Object.keys(EQ.want||{}).filter(function(k){return EQ.want[k];});
     opEquipSaveLocal(id,ids);
     if(!sb)return;
-    sb.from('entries').upsert({id:opEquipCloudKey(id),type:'opequip',data:{items:ids},updated_at:new Date().toISOString()})
-      .then(function(r){if(r&&r.error&&window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+r.error.message,{type:'err'});},
-            function(err){if(window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+(err&&err.message||err),{type:'err'});});
+    /* ANTI-AVALANCHE : envoi au cloud seulement si la liste a VRAIMENT changé,
+       et regroupé (500 ms). Avant : chaque montage 3D poussait -> écho realtime ->
+       relecture -> relance de tous les téléchargements -> boucle infinie sur mobile lent. */
+    var sig=id+'|'+ids.slice().sort().join(',');
+    if(sig===opEquipLastSig)return;
+    clearTimeout(opEquipPushT2);
+    opEquipPushT2=setTimeout(function(){
+      opEquipLastSig=sig;
+      sb.from('entries').upsert({id:opEquipCloudKey(id),type:'opequip',data:{items:ids},updated_at:new Date().toISOString()})
+        .then(function(r){if(r&&r.error&&window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+r.error.message,{type:'err'});},
+              function(err){if(window.bsToast)bsToast('Synchro cloud \u00e9chou\u00e9e : '+(err&&err.message||err),{type:'err'});});
+    },500);
   }
   function applyOpEquipState(id,ids){
     ids=ids||[];
+    if(!EQ.loading)EQ.loading={};
+    /* ANTI-AVALANCHE : si l'état demandé est déjà celui affiché/en cours, on ne touche à rien.
+       Sinon chaque écho realtime relançait tous les téléchargements .glb depuis zéro. */
+    var cur=Object.keys(EQ.want||{}).filter(function(k){return EQ.want[k];}).sort().join(',');
+    var nxt=ids.filter(function(m){return ITEMS[m];}).sort().join(',');
+    if(cur===nxt){
+      var pending=ids.some(function(m){return ITEMS[m]&&!(EQ.mounted&&EQ.mounted[m])&&!EQ.loading[m];});
+      if(!pending){renderItemBar();return;}
+    }
     EQ._restoring=true;
     /* l'intention est la source de vérité : les cases se cochent tout de suite,
        même si les .glb mettent encore quelques secondes à arriver */
     EQ.want={};ids.forEach(function(mid){if(ITEMS[mid])EQ.want[mid]=true;});
     Object.keys(EQ.mounted||{}).forEach(function(mid){if(ids.indexOf(mid)===-1)window.equipToggleItem(mid,0,id);});
-    ids.forEach(function(mid){if(!EQ.mounted||!EQ.mounted[mid]){if(ITEMS[mid])window.equipToggleItem(mid,0,id);}});
+    /* on ne (re)lance QUE ce qui n'est ni monté ni déjà en cours de téléchargement */
+    ids.forEach(function(mid){if(ITEMS[mid]&&!(EQ.mounted&&EQ.mounted[mid])&&!EQ.loading[mid])window.equipToggleItem(mid,0,id);});
     EQ._restoring=false;
     renderItemBar();
   }
@@ -6568,7 +6589,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     EQ.wantId=id;
     /* on retire TOUT de suite les items de l'opérateur précédent, sinon ils restent collés au nouveau */
     EQ._restoring=true;
-    EQ.want={};
+    EQ.want={};EQ.loading={};opEquipLastSig='';
     Object.keys(EQ.mounted||{}).forEach(function(mid){
       var o=EQ.mounted[mid];if(o){if(window.disposeClonedMats)disposeClonedMats(o);if(EQ.model||EQ.scene)(EQ.model||EQ.scene).remove(o);}
       delete EQ.mounted[mid];EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;
@@ -6598,28 +6619,28 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     })();
   }
   window.equipToggleItem=function(id,_retry,_owner){
-    if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};
+    if(!EQ.mounted)EQ.mounted={};if(!EQ.itemObj)EQ.itemObj={};if(!EQ.itemTok)EQ.itemTok={};if(!EQ.loading)EQ.loading={};
     var owner=(_owner!==undefined)?_owner:(EQ.wantId||memId());
     var cfg=ITEMS[id];if(!cfg)return;var parent=EQ.model||EQ.scene;
     if(!EQ.want)EQ.want={};
     /* corps 3D pas encore chargé -> on réessaie au lieu d'abandonner (sinon l'item est perdu) */
     if(!parent){if((_retry||0)<80)setTimeout(function(){window.equipToggleItem(id,(_retry||0)+1,owner);},60);return;}
-    if(EQ.mounted[id]){if(window.disposeClonedMats)disposeClonedMats(EQ.mounted[id]);parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;EQ.want[id]=false;
+    if(EQ.mounted[id]){if(window.disposeClonedMats)disposeClonedMats(EQ.mounted[id]);parent.remove(EQ.mounted[id]);delete EQ.mounted[id];EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;EQ.want[id]=false;EQ.loading[id]=false;
       /* filet : on retire toute copie orpheline du même item restée dans la scène */
       parent.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem===id)parent.remove(c);});
       var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
     /* item coché mais .glb encore en téléchargement -> ce clic veut le DÉCOCHER.
        Avant ce correctif, cliquer pendant le chargement relançait le montage (impossible d'annuler). */
     if(!_retry&&!EQ._restoring&&EQ.want[id]&&!EQ.mounted[id]){
-      EQ.want[id]=false;EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;
+      EQ.want[id]=false;EQ.loading[id]=false;EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;
       var chipOff=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chipOff)chipOff.classList.remove('loading');
       renderItemBar();pushOpEquipNow(EQ.wantId||memId());return;}
     /* intention posée tout de suite : la case se coche sans attendre le téléchargement du .glb */
-    EQ.want[id]=true;
+    EQ.want[id]=true;EQ.loading[id]=true;
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){
       var h=(EQ.model||EQ.scene);if(window.disposeClonedMats)disposeClonedMats(EQ.mounted[mid]);h.remove(EQ.mounted[mid]);
       h.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem===mid)h.remove(c);});
-      delete EQ.mounted[mid];EQ.want[mid]=false;EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
+      delete EQ.mounted[mid];EQ.want[mid]=false;EQ.loading[mid]=false;EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;}});
     if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
@@ -6630,6 +6651,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       return b;
     }
     function place(obj){
+      EQ.loading[id]=false;
       /* toggle annulé ou item re-basculé pendant le chargement -> on ignore ce résultat périmé */
       if(EQ.itemTok[id]!==tok||!(EQ.model||EQ.scene))return;
       /* ANTI-FANTÔME : si l'item n'est plus coché quand le .glb finit de charger
@@ -6689,7 +6711,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(colHex);x.needsUpdate=true;}});}});
       EQ.editTarget=id;
       if(chip)chip.classList.remove('loading');renderItemBar();
-      if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());
+      /* NOTE : plus de push cloud ici. L'intention a déjà été envoyée au clic ;
+         re-pousser à chaque montage déclenchait l'avalanche écho->relecture->re-téléchargements. */
     }
     /* on clone : réutiliser la même instance laisse des objets fantômes dans la scène
        (item décoché qui reste affiché, ou qui « suit » d'un opérateur à l'autre) */
@@ -6737,6 +6760,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       }});
       EQ.itemObj[id]=g.scene;place(g.scene.clone(true));
     },undefined,function(){if(chip)chip.classList.remove('loading');
+      /* échec réseau/fichier : on décoche pour que la case reflète la réalité,
+         sinon l'item restait "coché" à vie sans jamais apparaître */
+      EQ.loading[id]=false;EQ.want[id]=false;renderItemBar();
       if(window.bsToast)bsToast('Mod\u00e8le 3D introuvable : '+cfg.file,{type:'err'});
     });
   };
@@ -6759,7 +6785,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     if(!IV.inited){
       IV.scene=new THREE.Scene();
       IV.cam=new THREE.PerspectiveCamera(34,1,0.01,60);IV.cam.position.set(0,0,2.3);IV.cam.lookAt(0,0,0);
-      IV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});IV.r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
+      IV.r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});IV.r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1:2));
       if(THREE.sRGBEncoding)IV.r.outputEncoding=THREE.sRGBEncoding;
       if(THREE.ACESFilmicToneMapping){IV.r.toneMapping=THREE.ACESFilmicToneMapping;IV.r.toneMappingExposure=1.1;}
       IV.scene.add(new THREE.AmbientLight(0x4a5040,0.75));
@@ -7463,7 +7489,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var scene=new THREE.Scene();
     var cam=new THREE.PerspectiveCamera(32,1,0.01,50);cam.position.set(0,0.02,4);cam.lookAt(0,0,0);GW.zoom=4;  /* dézoom max par défaut */
     var r=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
-    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1.4:2));
+    r.setPixelRatio(Math.min(window.devicePixelRatio||1,(window.matchMedia&&window.matchMedia("(max-width:760px)").matches)?1:2));
     if(THREE.sRGBEncoding)r.outputEncoding=THREE.sRGBEncoding;
     if(THREE.ACESFilmicToneMapping){r.toneMapping=THREE.ACESFilmicToneMapping;r.toneMappingExposure=1.1;}
     scene.add(new THREE.AmbientLight(0x42483c,0.7));
