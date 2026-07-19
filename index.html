@@ -5676,6 +5676,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   #equip-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;z-index:2;}
   #equip-canvas:active{cursor:grabbing;}
   .equip-stage.has-photo #equip-canvas{opacity:0;pointer-events:none;}
+  .eq-photo-tag{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:7;pointer-events:none;
+    font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#e8dcae;
+    background:rgba(10,12,8,.72);border:1px solid rgba(201,161,94,.4);border-radius:6px;padding:5px 10px;white-space:nowrap;}
   .eq-photo{position:absolute;inset:0;z-index:2;display:none;align-items:flex-end;justify-content:center;pointer-events:none;}
   .equip-stage.has-photo .eq-photo{display:flex;}
   .eq-photo img{max-width:82%;max-height:98%;object-fit:contain;object-position:bottom center;
@@ -5834,6 +5837,10 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
 <script>
 (function(){
   var EQ={inited:false,aor:'aor2',member:null,raf:0,rotY:-0.28,rotX:0,tRotY:-0.28,tRotX:0,drag:false,px:0,py:0,vY:0,userTouched:false,uniform:[],shirt:[],carrier:[],knee:[],accentMats:[],accent:null,rim:null,ring:null,t0:0};
+  /* CORRECTIF memId : cette fonction vivait dans un AUTRE bloc <script> sans window.
+     -> chaque appel ici levait "memId is not defined" (crash silencieux des clics
+     et de chaque message temps réel Supabase). On la définit localement. */
+  function memId(){var s=document.getElementById('equip-member');return s&&s.value?s.value:'';}
   var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   function stage(){return document.getElementById('equip-stage');}
@@ -6141,6 +6148,8 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   function opMeshBox(model,re){var out=null;model.traverse(function(o){if(!o.isMesh)return;if(re.test(o.name||'')){var b=new THREE.Box3().setFromObject(o);if(!out)out=b;else out.union(b);}});return out;}
   function computeOpAnchors(model){
     EQ.anchors=null;try{
+      /* même correctif de mesure que visBoxOf : matrices à jour avant de calculer les ancres */
+      model.updateWorldMatrix(true,true);
       var face=opMeshBox(model,/face|eye|head/i),chest=opMeshBox(model,/bodyarmour|armour|armor|vest|ubac/i);
       var A={};
       if(face){var fc=new THREE.Vector3();face.getCenter(fc);A.head=fc.clone();A.head.y=face.max.y+0.02;A.headZ=face.max.z;}
@@ -6645,6 +6654,11 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var tok=(EQ.itemTok[id]=(EQ.itemTok[id]||0)+1);
     var chip=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chip)chip.classList.add('loading');
     function visBoxOf(o){
+      /* CORRECTIF MESURE : dans Three r128, setFromObject ne remet PAS à jour les
+         matrices des parents -> les mesures sortaient en unités BRUTES du fichier
+         (x19, x40...) au lieu des mètres. On force la mise à jour de toute la
+         hiérarchie d'abord : mesures justes, garde-fous fiables, centrage correct. */
+      o.updateWorldMatrix(true,true);
       var b=new THREE.Box3(),t=new THREE.Box3(),has=false;
       o.traverse(function(m){if(m.isMesh&&m.visible){t.setFromObject(m);b.union(t);has=true;}});
       if(!has)b.setFromObject(o);
@@ -6706,6 +6720,19 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         }
       }
       var colHex=OPITEMCOL[id];
+      /* CLAMP ABSOLU : quoi qu'il arrive (préréglage, écho, réglage manuel), un item
+         d'équipement ne peut JAMAIS dépasser ~90 cm dans la scène. Au-delà, retour
+         au placement automatique. Dernier rempart contre tout objet géant. */
+      (function(){
+        var fb=visBoxOf(obj);var fs=new THREE.Vector3();fb.getSize(fs);
+        var fmax=Math.max(fs.x,fs.y,fs.z);
+        if(!isFinite(fmax)||fmax>0.9){
+          obj.scale.setScalar(sc);
+          obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
+          obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
+          console.warn('[opitem] clamp absolu appliqu\u00e9 \u00e0',id,'(taille',fmax,')');
+        }
+      })();
       if(colHex!=null)obj.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
         if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
         var mm=Array.isArray(m.material)?m.material:[m.material];mm.forEach(function(x){if(x.color){x.map=null;x.color.setHex(colHex);x.needsUpdate=true;}});}});
@@ -6864,7 +6891,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     var st=stage();if(!st)return;
     var id=curId(),aor=curAor();var data=id?get(id,aor):'';
     var box=document.getElementById('eq-photo');
-    if(data){box.innerHTML='<img src="'+data+'" alt="Opérateur">';st.classList.add('has-photo');}
+    if(data){box.innerHTML='<img src="'+data+'" alt="Opérateur"><div class="eq-photo-tag">PHOTO OP\u00c9RATEUR \u2014 3D MASQU\u00c9E \u00b7 supprime la photo pour revoir la 3D</div>';st.classList.add('has-photo');}
     else{box.innerHTML='';st.classList.remove('has-photo');}
   }
   window.equipUploadPhoto=function(){
