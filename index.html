@@ -6112,6 +6112,21 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
         var g=new THREE.Group();g.add(model);scene.add(g);
         EQ.model=g;EQ.rotTarget=g;EQ.modelInner=model;
         computeOpAnchors(model);
+        /* CORRECTIF SATELLITE : les items cochés AVANT l'arrivée du corps 3D avaient été
+           accrochés à la SCÈNE (faute de corps) -> ils flottaient et "tournaient autour"
+           du personnage. Maintenant que le corps est là, on les décroche et on les
+           re-monte proprement dessus. */
+        try{
+          if(EQ.want){
+            var wids=Object.keys(EQ.want).filter(function(k){return EQ.want[k];});
+            Object.keys(EQ.mounted||{}).forEach(function(mid){var o=EQ.mounted[mid];
+              if(o){if(window.disposeClonedMats)disposeClonedMats(o);if(o.parent)o.parent.remove(o);}
+              delete EQ.mounted[mid];if(!EQ.itemTok)EQ.itemTok={};EQ.itemTok[mid]=(EQ.itemTok[mid]||0)+1;});
+            if(wids.length){EQ._restoring=true;
+              wids.forEach(function(mid){EQ.want[mid]=false;window.equipToggleItem(mid);});
+              EQ._restoring=false;renderItemBar();}
+          }
+        }catch(eRm){console.error('[remount items]',eRm);}
         if(EQ.op)EQ.op.visible=false;
         var l=document.getElementById('eq-loading');if(l)l.classList.add('hide');
       },undefined,function(){
@@ -6654,7 +6669,20 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       }});
       /* preset admin enregistré (référence partagée) : position + couleur */
       var pr=(OPPRESET||{})[id];
-      if(pr){if(pr.s)obj.scale.setScalar(pr.s);if(pr.p)obj.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)obj.rotation.set(pr.r[0],pr.r[1],pr.r[2]);}
+      if(pr){if(pr.s)obj.scale.setScalar(pr.s);if(pr.p)obj.position.set(pr.p[0],pr.p[1],pr.p[2]);if(pr.r)obj.rotation.set(pr.r[0],pr.r[1],pr.r[2]);
+        /* GARDE-FOU : un préréglage corrompu (échelle géante / position aberrante) rendait
+           l'objet énorme -> écran envahi ou objet visible seulement en dézoomant à fond.
+           Si le résultat est absurde, on revient au placement calculé automatiquement. */
+        var chkB=visBoxOf(obj);var chkS=new THREE.Vector3();chkB.getSize(chkS);
+        var chkMax=Math.max(chkS.x,chkS.y,chkS.z);
+        if(!isFinite(chkMax)||chkMax>1.2||chkMax<=0||
+           Math.abs(obj.position.x)>3||Math.abs(obj.position.y)>4||Math.abs(obj.position.z)>3){
+          obj.scale.setScalar(sc);
+          obj.position.set(base.x-c.x,base.y-c.y,base.z-c.z);
+          obj.rotation.set(cfg.rot[0],cfg.rot[1],cfg.rot[2]);
+          console.warn('[opitem] préréglage ignoré (valeurs aberrantes) pour',id);
+        }
+      }
       var colHex=OPITEMCOL[id];
       if(colHex!=null)obj.traverse(function(m){if(m.isMesh&&m.visible&&m.material){
         if(!m.userData._mcl){m.material=Array.isArray(m.material)?m.material.map(function(x){return x.clone();}):m.material.clone();m.userData._mcl=1;}
@@ -7126,7 +7154,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     {id:'peq15',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],tan:true},
     {id:'dbal',file:'item_peq15.glb',grp:'laser',anchor:'railTop',off:[0.05,0.018,0.03],pos:[0,0.05,0.2],size:0.09,rot:[0,1.5708,0],dark:true},
     {id:'m600',file:'item_lampe.glb',grp:'light',anchor:'railSide',off:[0.03,-0.005,-0.045],pos:[0.07,0.015,0.08],size:0.1,rot:[Math.PI,0,0],tan:true},
-    {id:'sil_perf',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.12,rot:[0,0,0],autoAxis:true,meshMatch:/ATS4/i,dark:true},
+    {id:'sil_perf',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.12,rot:[0,0,0],autoAxis:true,meshMatch:/ATS5/i,dark:true},
     {id:'sil_smooth',file:'item_silencers.glb',grp:'muzzle',anchor:'muzzle',off:[0,0,0],pos:[-0.34,0,0],size:0.11,rot:[0,0,0],autoAxis:true,meshMatch:/MD3/i,dark:true},
     {id:'vgrip',file:'item_dd_vgrip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.05],pos:[-0.05,-0.06,0.05],size:0.09,rot:[0,0,0]},
     {id:'agrip',file:'item_afg2_grip.glb',grp:'under',anchor:'railBottom',off:[0,-0.02,0.08],pos:[-0.05,-0.06,0.08],size:0.09,rot:[0,0,0]}
