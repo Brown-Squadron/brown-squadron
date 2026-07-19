@@ -6502,6 +6502,7 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
   window.opMeClose=function(){var p=document.getElementById('eq-medit');if(p)p.classList.remove('show');};
   window.opMeReset=function(id){delete OPPRESET[id];opSavePresets();
     if(EQ.mounted[id]){(EQ.model||EQ.scene).remove(EQ.mounted[id]);delete EQ.mounted[id];}
+    if(EQ.want)EQ.want[id]=false;   /* sinon le garde-fou anti-annulation bloquerait le remontage */
     equipToggleItem(id);};
   /* ---------- synchro cloud des items équipés sur le personnage (JVN, radio, grenade...) : instantané, comme le PAM ---------- */
   var opEquipChannel=null,opEquipChannelKey=null;
@@ -6592,6 +6593,12 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
       /* filet : on retire toute copie orpheline du même item restée dans la scène */
       parent.children.slice().forEach(function(c){if(c&&c.userData&&c.userData._eqItem===id)parent.remove(c);});
       var me=document.getElementById('eq-medit');if(me)me.classList.remove('show');renderItemBar();if(!EQ._restoring)pushOpEquipNow(EQ.wantId||memId());return;}
+    /* item coché mais .glb encore en téléchargement -> ce clic veut le DÉCOCHER.
+       Avant ce correctif, cliquer pendant le chargement relançait le montage (impossible d'annuler). */
+    if(!_retry&&!EQ._restoring&&EQ.want[id]&&!EQ.mounted[id]){
+      EQ.want[id]=false;EQ.itemTok[id]=(EQ.itemTok[id]||0)+1;
+      var chipOff=document.querySelector('.eq-oprow2[data-item="'+id+'"]');if(chipOff)chipOff.classList.remove('loading');
+      renderItemBar();pushOpEquipNow(EQ.wantId||memId());return;}
     /* intention posée tout de suite : la case se coche sans attendre le téléchargement du .glb */
     EQ.want[id]=true;
     Object.keys(EQ.mounted).forEach(function(mid){if(ITEMS[mid]&&ITEMS[mid].grp===cfg.grp){
@@ -6610,6 +6617,9 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
     function place(obj){
       /* toggle annulé ou item re-basculé pendant le chargement -> on ignore ce résultat périmé */
       if(EQ.itemTok[id]!==tok||!(EQ.model||EQ.scene))return;
+      /* ANTI-FANTÔME : si l'item n'est plus coché quand le .glb finit de charger
+         (ex. le cloud a remis la liste à jour entre-temps), on n'affiche RIEN */
+      if(!EQ.want||!EQ.want[id])return;
       /* l'opérateur affiché a changé pendant le chargement -> cet item n'est pas le sien, on l'abandonne */
       var nowId=EQ.wantId||memId();
       if(owner&&nowId&&EQ.wantId&&EQ.wantId!==owner)return;
