@@ -6129,6 +6129,16 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(mm.roughness==null)mm.roughness=.8;
               mm.metalness=Math.min(mm.metalness!=null?mm.metalness:.2,0.12);
               if(mm.emissive)mm.emissive.setHex(0x000000);
+              var n=((mm.name||'')+' '+(o.name||'')).toLowerCase();
+              /* CHAUSSURES EN PREMIER : la texture des baskets est violette (team-color).
+                 On la retire complètement et on force une teinte sable, sinon le violet
+                 ressortait à travers, quel que soit l'opérateur. */
+              if(/sneaker|boot|shoe|chaussure|feet|foot/.test(n)){
+                mm.map=null;if(mm.color)mm.color.setHex(0xb89a6a);   /* sable */
+                mm.metalness=Math.min(mm.metalness||0,.1);mm.roughness=Math.max(mm.roughness||0,.85);
+                mm.needsUpdate=true;
+                return;   /* on ne passe PAS ce matériau dans le filtre anti-bleu ci-dessous */
+              }
               if(mm.envMapIntensity!=null)mm.envMapIntensity=0.25;
               /* purge de tout bleu/blanc r\u00e9siduel : on d\u00e9sature les teintes froides vers du neutre/terre */
               if(mm.color){
@@ -6145,7 +6155,6 @@ try{if(sessionStorage.getItem('bs_auth')==='1'){startApp();}}catch(e){}
               if(/helmet|casque|head.?gear/.test(n)){EQ.helmetMats.push(mm);EQ.helmetTexOrig=EQ.helmetTexOrig||mm.map;}
               if(/trouser|ubac|combat|shirt|sleeve|pant/.test(n))EQ.clothMats.push(mm);
               else if(/armour|armor|carrier|plate|vest|body|chest|rig|jpc/.test(n))EQ.armorMats.push(mm);
-              else if(/boot|shoe|sneaker|chaussure/.test(n)){if(mm.color)mm.color.setHex(0x9c7a52);}  /* chaussures -> marron clair */
               else if(/glove|hand|belt|pouch|strap|gear/.test(n)){if(mm.color)mm.color.setHex(0x23261f);}
             });
           }}});
