@@ -709,6 +709,13 @@
 
   /* ===== OPERATIONS ===== */
   .op-hint{font-size:11.5px;color:var(--dim);margin:10px 0 0;font-family:var(--mono);}
+  .op-self{margin-top:11px;display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.5px;
+    background:linear-gradient(180deg,#4e7a34,#3c5f28);color:#e9f5df;border:1px solid #6d9a4e;
+    border-radius:8px;padding:9px 16px;cursor:pointer;font-weight:600;}
+  .op-self:hover{filter:brightness(1.12);}
+  .op-self.done{background:#20241b;color:#8fbf74;border-color:#3f5c31;cursor:default;}
+  .op-whoami{margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.5px;}
+  .op-whoami a{color:var(--aor1);text-decoration:underline;}
   .opcard{position:relative;cursor:pointer;overflow:hidden;border-radius:14px;padding:15px 17px;margin-bottom:12px;
     background:linear-gradient(155deg,rgba(33,40,26,.92),rgba(18,22,14,.96));
     border:1px solid rgba(184,160,106,.18);backdrop-filter:blur(8px);
@@ -3477,21 +3484,72 @@ function renderOps(){
   var list=operationsOf().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   var box=document.getElementById('ops-list');if(!box)return;
   if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128506;</div>AUCUNE OPÉRATION.<br>Tape <b>+ Opération</b> pour en créer une.</div>';return;}
+  var ro=!canEditOps();                       /* compte en lecture seule */
+  var myId=myMemberId();
   box.innerHTML=list.map(function(o){
     var col=TYPE_COLOR[o.evtype]||'var(--aor1)';
     var nbp=(o.presents||[]).length;
     var dstr=o.date?(o.date_fin&&o.date_fin>o.date?(frDate(o.date)+' → '+frDate(o.date_fin)):frDate(o.date)):'';
     var dh=[dstr,heureRange(o)].filter(Boolean).join(' · ');
+    var iAmIn=myId&&(o.presents||[]).indexOf(myId)>=0;
+    /* lecture seule : bouton d'auto-inscription (pas de désinscription possible) */
+    var selfBtn=ro?('<button class="op-self'+(iAmIn?' done':'')+'" onclick="event.stopPropagation();'+
+        (iAmIn?'alert(\'Tu es déjà inscrit.\\n\\nPour te désengager : salon « Annulation de présence » + MP à Flo sur Messenger.\')'
+              :'selfPresence(\''+o._id+'\')')+'">'+
+        (iAmIn?'&#10003; Inscrit':'&#10003; Je serai présent')+'</button>'):'';
     return '<div class="opcard" onclick="openOp(\''+o._id+'\')"><div class="ostripe" style="background:'+col+'"></div>'+
-      '<button class="trash" onclick="event.stopPropagation();delOp(\''+o._id+'\')">&#128465;</button>'+
+      (ro?'':'<button class="trash" onclick="event.stopPropagation();delOp(\''+o._id+'\')">&#128465;</button>')+
       '<span class="otype" style="background:'+col+'">'+(TYPE_LABEL[o.evtype]||'Év.')+'</span>'+
       '<div class="oname">'+(esc(o.name)||'SANS NOM')+'</div>'+
       '<div class="ometa">'+(o.lieu?'&#128205; '+esc(o.lieu)+'   ':'')+(dh?'&#128197; '+esc(dh):'')+'</div>'+
       '<div class="ocount">&#128100; '+nbp+' membre(s) validé(s)</div>'+
+      selfBtn+
     '</div>';
   }).join('');
+  /* petit lien pour corriger son identité si on s'est trompé de nom */
+  if(ro){var who=myId&&db[myId]?(db[myId].pseudo||[db[myId].prenom,db[myId].nom].filter(Boolean).join(' ')):null;
+    box.innerHTML+='<div class="op-whoami">'+(who?('Tu es identifié comme <b>'+esc(who)+'</b> · '):'')+
+      '<a href="#" onclick="event.preventDefault();changeWhoAmI()">changer de nom</a></div>';}
 }
 function frDate(iso){if(!iso)return '';var p=iso.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+
+/* ===== PRÉSENCE LECTURE SEULE =====
+   Un compte "lecture" peut S'INSCRIRE lui-même à une opération (un seul clic),
+   mais ne peut PAS se désinscrire : tout désengagement doit passer par le salon
+   "Annulation de présence" + MP à Flo (règle de l'unité). */
+function myMemberId(){try{return localStorage.getItem('bs_myid')||'';}catch(e){return '';}}
+function setMyMemberId(id){try{localStorage.setItem('bs_myid',id);}catch(e){}}
+
+function askWhoAmI(cb){
+  var mem=membresOf();
+  if(!mem.length){alert('Aucun membre dans l\'effectif.');return;}
+  var opts=mem.map(function(m,i){return (i+1)+') '+(m.pseudo||[m.prenom,m.nom].filter(Boolean).join(' ')||'—');}).join('\n');
+  var r=prompt('Qui es-tu ? Tape le numéro correspondant à ton nom :\n\n'+opts);
+  if(r===null)return;
+  var idx=parseInt(r,10)-1;
+  if(isNaN(idx)||idx<0||idx>=mem.length){alert('Numéro invalide.');return;}
+  setMyMemberId(mem[idx]._id);cb(mem[idx]._id);
+}
+
+window.selfPresence=function(opId){
+  var go=function(myId){
+    var o=db[opId];if(!o)return;
+    var list=(o.presents||[]).slice();
+    if(list.indexOf(myId)>=0){
+      alert('Tu es déjà inscrit à cette opération.\n\nPour te désengager : passe par le salon « Annulation de présence » (onglet COMMS) ET envoie un message privé à Flo sur Messenger.');
+      return;
+    }
+    list.push(myId);o.presents=list;o.type='operation';db[opId]=o;
+    if(typeof cacheLocal==='function')cacheLocal();
+    if(typeof cloudSave==='function')cloudSave(opId);
+    renderOps();
+    var me=db[myId];var nm=me?(me.pseudo||[me.prenom,me.nom].filter(Boolean).join(' ')):'toi';
+    alert('✓ Présence enregistrée pour '+nm+'.\n\nSi tu dois annuler plus tard : salon « Annulation de présence » + MP à Flo.');
+  };
+  var id=myMemberId();
+  if(id&&db[id])go(id);else askWhoAmI(go);
+};
+window.changeWhoAmI=function(){askWhoAmI(function(){renderOps();});};
 
 function newOp(){
   if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
@@ -3566,6 +3624,12 @@ function renderPresence(){
   document.getElementById('presence-count').textContent='// '+opPresents.length+' validé(s)';
 }
 function togglePresence(id){
+  /* lecture seule : l'inscription passe UNIQUEMENT par le bouton "Je serai présent"
+     sur la carte d'opération. Ici, aucune modification possible (ni cocher ni décocher). */
+  if(!canEditOps()){
+    alert('Lecture seule : utilise le bouton « Je serai présent » sur la carte de l\'opération.\n\nPour te désengager : salon « Annulation de présence » + MP à Flo sur Messenger.');
+    return;
+  }
   var i=opPresents.indexOf(id);
   if(i>=0)opPresents.splice(i,1);else opPresents.push(id);
   renderPresence();
@@ -5237,34 +5301,65 @@ function removeGpsMarker(pseudo){
 
 /* ============ CLOUD ============ */
 var _syncBusy=false,_lastSyncAt=null;
+try{_lastSyncAt=localStorage.getItem('bs_lastsync')||null;}catch(e){}
+
 async function cloudRefresh(force){
-  if(!sb){collabStatus('// MODE LOCAL — '+Object.keys(db).length+' élément(s)');return;}
-  if(_syncBusy)return;                               /* anti-chevauchement : une sync à la fois */
+  if(!sb){collabStatus('// MODE LOCAL \u2014 '+Object.keys(db).length+' \u00e9l\u00e9ment(s)');return;}
+  if(_syncBusy)return;                               /* anti-chevauchement : une sync a la fois */
   _syncBusy=true;
   var incremental=(_lastSyncAt&&!force);
-  collabStatus(incremental?'// synchro...':'// synchronisation complète...');
-  /* garde-fou réseau : au-delà de 12 s on abandonne proprement au lieu de rester bloqué */
-  var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-  var killed=false,killer=setTimeout(function(){killed=true;if(ctrl)ctrl.abort();},12000);
+  collabStatus(incremental?'// synchro...':'// synchronisation...');
+  /* SYNC PAR PAQUETS : au lieu de tout demander d'un coup (echec total si le reseau
+     lache), on recupere 12 elements a la fois. Chaque paquet recu est GARDE, meme si
+     le suivant echoue -> sur mauvais reseau l'app se remplit progressivement au lieu
+     de repartir de zero a chaque tentative. */
+  var PAGE=12,page=0,maxTs=_lastSyncAt,done=false,partial=false,errMsg='';
+  var cursor=incremental?_lastSyncAt:null;   /* forcé = on repart de zéro ; sinon on continue */
   try{
-    var q=sb.from('entries').select('id,type,data,updated_at');
-    /* INCRÉMENTAL : on ne redemande que les lignes changées depuis la dernière sync réussie.
-       Avant, chaque sync retéléchargeait TOUTE la base (tous les builds/équipements) -> lent. */
-    if(incremental)q=q.gt('updated_at',_lastSyncAt);
-    if(ctrl&&q.abortSignal)q=q.abortSignal(ctrl.signal);
-    var res=await q;
-    clearTimeout(killer);
-    if(res.error)throw res.error;
-    var rows=res.data||[],maxTs=_lastSyncAt;
-    rows.forEach(function(row){var d=row.data||{};d.type=row.type;db[row.id]=d;
-      if(row.updated_at&&(!maxTs||row.updated_at>maxTs))maxTs=row.updated_at;});
-    _lastSyncAt=maxTs||new Date().toISOString();
-    if(rows.length||!incremental){cacheLocal();renderAll();}   /* rien de neuf -> pas de re-rendu inutile */
-    collabStatus('// SYNC ✓ '+Object.keys(db).length+' élément(s) — '+new Date().toLocaleTimeString('fr-FR'));
-  }catch(err){
-    clearTimeout(killer);
-    var msg=killed?'délai dépassé (réseau lent)':(err.message||err);
-    collabStatus('// HORS-LIGNE — cache local ('+msg+')');renderAll();
+    while(!done&&page<40){
+      var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+      var killed=false;
+      var killer=setTimeout(function(){killed=true;if(ctrl)ctrl.abort();},20000);
+      try{
+        /* on demande TOUJOURS les 12 plus anciens éléments non encore reçus :
+           le curseur avance à chaque paquet, donc rien n'est sauté ni redemandé. */
+        var q=sb.from('entries').select('id,type,data,updated_at')
+               .order('updated_at',{ascending:true}).limit(PAGE);
+        if(cursor)q=q.gt('updated_at',cursor);
+        if(ctrl&&q.abortSignal)q=q.abortSignal(ctrl.signal);
+        var res=await q;
+        clearTimeout(killer);
+        if(res.error)throw res.error;
+        var rows=res.data||[];
+        rows.forEach(function(row){var d=row.data||{};d.type=row.type;db[row.id]=d;
+          if(row.updated_at&&(!maxTs||row.updated_at>maxTs))maxTs=row.updated_at;
+          if(row.updated_at&&(!cursor||row.updated_at>cursor))cursor=row.updated_at;});
+        /* on sauvegarde APRES CHAQUE PAQUET : le deja-recu est securise */
+        if(rows.length){cacheLocal();
+          collabStatus('// SYNC\u2026 '+Object.keys(db).length+' \u00e9l\u00e9ment(s) re\u00e7us');}
+        if(rows.length<PAGE)done=true;else page++;
+      }catch(e2){
+        clearTimeout(killer);
+        errMsg=killed?'r\u00e9seau lent':(e2.message||e2);
+        partial=true;done=true;               /* on s'arrete mais on GARDE tout le recu */
+      }
+    }
+    /* On mémorise la progression MÊME en cas de coupure : les éléments déjà reçus
+       ne seront pas redemandés à la reprise -> chaque tentative fait avancer, et
+       un réseau très faible finit par tout récupérer au bout de quelques passages. */
+    if(maxTs){_lastSyncAt=maxTs;try{localStorage.setItem('bs_lastsync',maxTs);}catch(e){}}
+    cacheLocal();renderAll();
+    if(partial){
+      collabStatus('// SYNC PARTIELLE \u2014 '+Object.keys(db).length+' \u00e9l\u00e9ment(s) \u00b7 '+errMsg+' \u00b7 reprise auto');
+      /* RÉSEAU FAIBLE : on relance vite (8 s) pour finir de récupérer le reste,
+         au lieu d'attendre le prochain cycle. Chaque tentative avance un peu. */
+      clearTimeout(window._syncRetryT);
+      window._syncRetryT=setTimeout(function(){if(!document.hidden&&sb)cloudRefresh(false);},8000);
+    }else{
+      collabStatus('// SYNC \u2713 '+Object.keys(db).length+' \u00e9l\u00e9ment(s) \u2014 '+new Date().toLocaleTimeString('fr-FR'));
+    }
+  }catch(errG){
+    collabStatus('// HORS-LIGNE \u2014 cache local ('+(errG.message||errG)+')');renderAll();
   }finally{_syncBusy=false;}
 }
 async function cloudSave(id){
