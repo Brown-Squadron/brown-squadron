@@ -2249,7 +2249,8 @@ function compressImage(file,cb,maxDim,quality){
 }
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function nl2br(s){return esc(s).replace(/\n/g,'<br>');}
-function collabStatus(m){var e=document.getElementById('collab-status');if(e)e.textContent=m;}
+var APP_VERSION='v21-07';   /* marqueur de version : visible dans la barre de statut */
+function collabStatus(m){var e=document.getElementById('collab-status');if(e)e.textContent=m+'  \u00b7  '+APP_VERSION;}
 function cacheLocal(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}}
 function loadCache(){try{return JSON.parse(localStorage.getItem(DB_KEY))||{};}catch(e){return {};}}
 function val(id){return document.getElementById(id).value.trim();}
