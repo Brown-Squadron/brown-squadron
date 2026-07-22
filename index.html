@@ -3574,6 +3574,26 @@ function fillOpForm(o){
   document.getElementById('o_scenario').value=o.scenario||'';
   var g=document.getElementById('o_gps');if(g)g.value=(o.gps&&typeof o.gps.lat==='number')?(o.gps.lat.toFixed(5)+', '+o.gps.lon.toFixed(5)):'';
   opTypeHint();renderDocs();renderPresence();
+  /* LECTURE SEULE : on verrouille les champs du haut (nom, dates, lieu, scénario...).
+     Seule la liste de présence reste cliquable, et le bouton Enregistrer sauvegarde
+     uniquement les noms ajoutés. */
+  var lock=!canEditOps();
+  ['o_type','o_name','o_lieu','o_date','o_date_fin','o_heure','o_heure_fin','o_infos','o_scenario','o_gps']
+    .forEach(function(idf){var el=document.getElementById(idf);if(!el)return;
+      if(lock){el.setAttribute('disabled','disabled');el.style.opacity='.55';el.style.cursor='not-allowed';}
+      else{el.removeAttribute('disabled');el.style.opacity='';el.style.cursor='';}});
+  var hint=document.getElementById('op-ro-hint');
+  if(lock&&!hint){
+    var pl=document.getElementById('presence-list');
+    if(pl&&pl.parentNode){
+      hint=document.createElement('div');hint.id='op-ro-hint';
+      hint.style.cssText='font-family:var(--mono);font-size:11px;color:#c9a15e;background:rgba(201,161,94,.1);'+
+        'border:1px solid rgba(201,161,94,.3);border-radius:8px;padding:9px 12px;margin-bottom:10px;line-height:1.5;';
+      hint.innerHTML='LECTURE SEULE \u2014 tu peux <b>cocher les noms</b> puis <b>ENREGISTRER</b> en bas.<br>'+
+        'Le retrait d\'un nom est impossible : passe par le salon \u00ab Annulation de pr\u00e9sence \u00bb + MP \u00e0 Flo.';
+      pl.parentNode.insertBefore(hint,pl);
+    }
+  }else if(!lock&&hint){hint.remove();}
 }
 function opTypeHint(){
   var t=document.getElementById('o_type').value;
@@ -3624,13 +3644,19 @@ function renderPresence(){
   document.getElementById('presence-count').textContent='// '+opPresents.length+' validé(s)';
 }
 function togglePresence(id){
-  /* lecture seule : l'inscription passe UNIQUEMENT par le bouton "Je serai présent"
-     sur la carte d'opération. Ici, aucune modification possible (ni cocher ni décocher). */
+  var i=opPresents.indexOf(id);
+  /* LECTURE SEULE : peut COCHER un nom, mais jamais le DÉCOCHER.
+     Tout désengagement doit passer par le salon « Annulation de présence » + MP à Flo. */
   if(!canEditOps()){
-    alert('Lecture seule : utilise le bouton « Je serai présent » sur la carte de l\'opération.\n\nPour te désengager : salon « Annulation de présence » + MP à Flo sur Messenger.');
+    if(i>=0){
+      alert('Ce membre est déjà inscrit.\n\nPour un désengagement : salon « Annulation de présence » (onglet COMMS) ET message privé à Flo sur Messenger.');
+      return;
+    }
+    opPresents.push(id);renderPresence();
+    var st=document.getElementById('op-status');
+    if(st){st.textContent='// nom ajouté — pense à ENREGISTRER en bas';setTimeout(function(){if(st.textContent.indexOf('nom ajouté')>=0)st.textContent='';},4000);}
     return;
   }
-  var i=opPresents.indexOf(id);
   if(i>=0)opPresents.splice(i,1);else opPresents.push(id);
   renderPresence();
 }
@@ -3650,13 +3676,33 @@ function readOpForm(){
   db[currentOpId]=o;return o;
 }
 function saveOp(){
-  if(!canEditOps()){alert('Lecture seule : tu n\'as pas les droits de modification.');return;}
+  var st=document.getElementById('op-status');
+  /* LECTURE SEULE : l'enregistrement est autorise, mais UNIQUEMENT pour les presences.
+     On repart de la fiche telle qu'elle est en base : aucun champ du haut (nom, date,
+     lieu, scenario, docs...) ne peut etre modifie par un compte lecture. */
+  if(!canEditOps()){
+    var ref=db[currentOpId];
+    if(!ref){if(st)st.textContent='// op\u00e9ration introuvable';return;}
+    var base=(ref.presents||[]);
+    var merged=base.slice();
+    opPresents.forEach(function(id){if(merged.indexOf(id)<0)merged.push(id);});
+    ref.presents=merged;ref.type='operation';db[currentOpId]=ref;
+    opPresents=merged.slice();renderPresence();
+    cacheLocal();
+    if(st)st.textContent='// transmission...';
+    cloudSave(currentOpId).then(function(ok){
+      if(st){st.textContent=ok?'// PR\u00c9SENCES ENREGISTR\u00c9ES \u2713':'// ENREGISTR\u00c9 (local) \u2713';
+        setTimeout(function(){st.textContent='';},2500);}
+      renderOps();renderCalendar();
+    });
+    return;
+  }
   var o=readOpForm();
-  if(!o.name){document.getElementById('op-status').textContent='// nom requis';return;}
+  if(!o.name){st.textContent='// nom requis';return;}
   cacheLocal();
-  var st=document.getElementById('op-status');st.textContent='// transmission...';
+  st.textContent='// transmission...';
   cloudSave(currentOpId).then(function(ok){
-    st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// ENREGISTRÉ (local) ✓';
+    st.textContent=ok?'// ENREGISTR\u00c9 (cloud) \u2713':'// ENREGISTR\u00c9 (local) \u2713';
     renderOps();renderCalendar();setTimeout(function(){st.textContent='';},2500);
   });
 }
