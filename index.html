@@ -1346,6 +1346,58 @@
   /* le tabbar mobile est en grille (voir règle plus haut dans
      OPTIMISATION MOBILE) : tous les onglets tiennent sans défiler,
      rien à cacher ni à faire deviner. */
+
+  /* ============================================================
+     ===== REFONTE V5 — nouveaux blocs d'info + carte des bases
+     couche additive, posée en dernier : aucun id/onclick touché.
+     ============================================================ */
+
+  /* -- barre outils Membres : recherche + KPIs en direct -- */
+  .mem-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+  .mem-search{flex:1 1 220px;display:flex;align-items:center;gap:9px;background:var(--surface);
+    border:1.5px solid var(--line2);border-radius:var(--r-pill);padding:10px 15px;min-width:0;
+    transition:border-color .15s;}
+  .mem-search:focus-within{border-color:var(--aor1);}
+  .mem-search svg{flex:none;color:var(--muted);}
+  .mem-search input{flex:1;min-width:0;background:none;border:none;color:var(--txt);font-size:14px;padding:0;}
+  .mem-search input:focus{outline:none;}
+  .mem-search input::placeholder{color:var(--muted);}
+  .mem-kpis{display:flex;gap:8px;flex:0 0 auto;}
+  .mem-kpi{display:flex;flex-direction:column;align-items:center;gap:1px;background:var(--surface);
+    border:1px solid var(--line2);border-radius:var(--r-lg);padding:8px 14px;min-width:64px;}
+  .mem-kpi .v{font-family:var(--mono);font-size:16px;font-weight:800;color:var(--txt);line-height:1;}
+  .mem-kpi .v i{font-size:11px;font-style:normal;font-weight:700;margin-left:1px;opacity:.85;}
+  .mem-kpi .l{font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
+  @media(max-width:520px){
+    .mem-toolbar{flex-direction:column;align-items:stretch;}
+    .mem-kpis{justify-content:stretch;}
+    .mem-kpi{flex:1;min-width:0;padding:8px 6px;}
+  }
+
+  /* -- chips de filtre (type d'opération, etc.) : même piste visuelle
+     que les KPIs/recherche, réutilisable sur n'importe quel écran -- */
+  .filter-chiprow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .filter-chip{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.3px;
+    padding:7px 13px;border-radius:var(--r-pill);border:1.5px solid var(--line2);color:var(--muted);
+    background:var(--surface);cursor:pointer;text-transform:uppercase;transition:.14s;}
+  .filter-chip:hover{border-color:var(--aor1);color:var(--txt);}
+  .filter-chip.on{color:#fff;}
+
+  /* -- basemap-switch : les groupes deviennent de vrais contrôles
+     segmentés (piste + pastille pleine active), au lieu de boutons
+     individuels à double bordure -- */
+  .basemap-switch .basemap-btn{background:transparent;border:none;border-radius:var(--r-pill);
+    box-shadow:none;color:var(--muted);}
+  .basemap-switch .basemap-btn:hover:not(.on){background:rgba(255,255,255,.05);color:var(--txt);}
+  .basemap-switch .basemap-btn.on{background:linear-gradient(180deg,var(--aor1),var(--aor1b));
+    box-shadow:0 3px 12px rgba(184,160,106,.4);color:#1b1f14;}
+
+  /* -- profondeur cohérente sur les blocs de carte (dwidget/mcard/
+     opcard/mem-kpi) : légère élévation au lieu d'un simple contour
+     plat, même famille visuelle partout dans l'appli -- */
+  .dwidget,.mcard,.opcard{box-shadow:0 2px 12px rgba(0,0,0,.28);}
+  .drow,.pmember,.kititem{box-shadow:0 1px 6px rgba(0,0,0,.18);}
+  .eval-block,.eval-phase{box-shadow:0 2px 12px rgba(0,0,0,.22);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1586,6 +1638,13 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
         <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newMembre()"><span class="plus">+</span> Fiche</button>
       </div>
     </div>
+    <div class="mem-toolbar">
+      <div class="mem-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="membres-search" placeholder="Rechercher un membre, un r&ocirc;le..." oninput="renderMembres()">
+      </div>
+      <div class="mem-kpis" id="membres-kpis"></div>
+    </div>
     <div id="membres-list"></div>
   </div>
 
@@ -1781,6 +1840,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
     <div style="text-align:center;margin-bottom:14px">
       <button class="pdf" onclick="genCalendarPDF()">&#128196; Imprimer le calendrier en PDF</button>
     </div>
+    <div class="mem-kpis" id="cal-kpis" style="justify-content:center;margin-bottom:14px"></div>
     <div class="legend">
       <span><i class="ldot" style="background:var(--op)"></i>Op&eacute;ration</span>
       <span><i class="ldot" style="background:var(--drill)"></i>Drill</span>
@@ -1796,6 +1856,14 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <div><h2 class="text-tan tracking-widest">Op&eacute;rations</h2><p class="view-sub">// Missions &amp; événements</p></div>
       <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newOp()"><span class="plus">+</span> Op&eacute;ration</button>
     </div>
+    <div class="mem-toolbar">
+      <div class="mem-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="ops-search" placeholder="Rechercher une op&eacute;ration, un lieu..." oninput="renderOps()">
+      </div>
+      <div class="mem-kpis" id="ops-kpis"></div>
+    </div>
+    <div class="filter-chiprow" id="ops-chiprow"></div>
     <div id="ops-list"></div>
   </div>
 
@@ -1880,6 +1948,13 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
       <div><h2 class="text-tan tracking-widest">Drill</h2><p class="view-sub">// Cours &amp; fiches d'instruction</p></div>
       <button class="add-btn transition hover:brightness-110 active:scale-95" onclick="newCours()"><span class="plus">+</span> Cours</button>
+    </div>
+    <div class="mem-toolbar">
+      <div class="mem-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="cours-search" placeholder="Rechercher un cours, une cat&eacute;gorie..." oninput="renderCours()">
+      </div>
+      <div class="mem-kpis" id="cours-kpis"></div>
     </div>
     <div id="cours-list"></div>
   </div>
@@ -2846,9 +2921,33 @@ function renderOpDay(){
     (rest.length?rest.map(row).join(''):'<div class="opday-empty">Tout l\'effectif est engag\u00e9.</div>');
 }
 function renderMembres(){
-  var list=membresOf();var box=document.getElementById('membres-list');
+  var all=membresOf();var box=document.getElementById('membres-list');
   var dEl=document.getElementById('odb-date');if(dEl)dEl.textContent=pamDateFR();
-  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128100;</div>AUCUNE FICHE.<br>Tape <b>+ Fiche</b> pour créer la tienne.</div>';return;}
+  /* KPIs sur l'effectif complet (non affecté par le filtre de recherche) */
+  var kpiBox=document.getElementById('membres-kpis');
+  if(kpiBox){
+    var kTot=0,kHas=0,dScoreTot=0;
+    var dl={'':0,acq:1,ok:2,exp:3};
+    all.forEach(function(m){
+      var k=m.kit||[];kTot+=k.length;kHas+=k.filter(function(x){return x.has;}).length;
+      var dd=m.drills||{};var s=0;['acte1','acte2','acte3'].forEach(function(a){if(dd[a])s+=dl[(dd[a].level)||'']||0;});
+      dScoreTot+=s;
+    });
+    var kpct=kTot?Math.round(kHas/kTot*100):0;
+    var dpct=all.length?Math.round(dScoreTot/(all.length*9)*100):0;
+    kpiBox.innerHTML=
+      '<div class="mem-kpi"><span class="v">'+all.length+'</span><span class="l">Effectif</span></div>'+
+      '<div class="mem-kpi"><span class="v" style="color:var(--aor1)">'+kpct+'<i>%</i></span><span class="l">Kit moyen</span></div>'+
+      '<div class="mem-kpi"><span class="v" style="color:#6fa8d8">'+dpct+'<i>%</i></span><span class="l">Drills moyen</span></div>';
+  }
+  /* filtre recherche (pseudo / prénom / nom / rôle) */
+  var sEl=document.getElementById('membres-search');
+  var q=sEl?sEl.value.trim().toLowerCase():'';
+  var list=!q?all:all.filter(function(m){
+    return [m.pseudo,m.prenom,m.nom,m.role].filter(Boolean).join(' ').toLowerCase().indexOf(q)>-1;
+  });
+  if(!all.length){box.innerHTML='<div class="empty"><div class="big">&#128100;</div>AUCUNE FICHE.<br>Tape <b>+ Fiche</b> pour créer la tienne.</div>';return;}
+  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128269;</div>AUCUN R&Eacute;SULTAT.<br>Essaie un autre terme de recherche.</div>';return;}
   box.innerHTML='<div class="cards">'+list.map(function(m){
     var kit=m.kit||[];var has=kit.filter(function(k){return k.has;}).length;
     var pct=kit.length?Math.round(has/kit.length*100):0;
@@ -3461,6 +3560,16 @@ function eventsByDate(){
 function renderCalendar(){
   document.getElementById('cal-year').textContent=calYear;
   var idx=eventsByDate();
+  var kpiBox=document.getElementById('cal-kpis');
+  if(kpiBox){
+    var todayStr0=new Date().toISOString().slice(0,10);
+    var allOps=operationsOf();
+    var yearCount=allOps.filter(function(o){return (o.date||'').slice(0,4)===String(calYear);}).length;
+    var upcoming=allOps.filter(function(o){return o.date&&o.date>=todayStr0;}).length;
+    kpiBox.innerHTML=
+      '<div class="mem-kpi"><span class="v">'+yearCount+'</span><span class="l">'+calYear+'</span></div>'+
+      '<div class="mem-kpi"><span class="v" style="color:var(--aor1)">'+upcoming+'</span><span class="l">&Agrave; venir</span></div>';
+  }
   var months=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
   var dow=['L','M','M','J','V','S','D'];var todayStr=new Date().toISOString().slice(0,10);var html='';
   /* le mois en cours s'affiche en premier (uniquement sur l'année courante) */
@@ -3582,10 +3691,39 @@ function goOps(){
   document.querySelectorAll('.tabbar button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')==='view-operations');});
   showView('view-operations');renderOps();
 }
+var opsTypeFilter='';
+function setOpsFilter(t){opsTypeFilter=t;renderOps();}
 function renderOps(){
-  var list=operationsOf().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  var all=operationsOf().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
   var box=document.getElementById('ops-list');if(!box)return;
-  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128506;</div>AUCUNE OPÉRATION.<br>Tape <b>+ Opération</b> pour en créer une.</div>';return;}
+  /* KPIs sur l'ensemble (non affectés par la recherche/le filtre de type) */
+  var kpiBox=document.getElementById('ops-kpis');
+  if(kpiBox){
+    var today=new Date().toISOString().slice(0,10);
+    var upcoming=all.filter(function(o){return o.date&&o.date>=today;}).length;
+    kpiBox.innerHTML=
+      '<div class="mem-kpi"><span class="v">'+all.length+'</span><span class="l">Total</span></div>'+
+      '<div class="mem-kpi"><span class="v" style="color:var(--aor1)">'+upcoming+'</span><span class="l">&Agrave; venir</span></div>';
+  }
+  /* chips de filtre par type */
+  var chipBox=document.getElementById('ops-chiprow');
+  if(chipBox){
+    var types=[['','Tous']].concat(Object.keys(TYPE_LABEL).map(function(k){return [k,TYPE_LABEL[k]];}));
+    chipBox.innerHTML=types.map(function(t){
+      var on=opsTypeFilter===t[0];var col=t[0]?TYPE_COLOR[t[0]]:'var(--aor1)';
+      return '<div class="filter-chip'+(on?' on':'')+'" style="'+(on?('background:'+col+';border-color:'+col+';color:#fff'):'')+'" onclick="setOpsFilter(\''+t[0]+'\')">'+t[1]+'</div>';
+    }).join('');
+  }
+  /* filtre recherche (nom / lieu) + type */
+  var sEl=document.getElementById('ops-search');
+  var q=sEl?sEl.value.trim().toLowerCase():'';
+  var list=all.filter(function(o){
+    if(opsTypeFilter&&o.evtype!==opsTypeFilter)return false;
+    if(!q)return true;
+    return [o.name,o.lieu].filter(Boolean).join(' ').toLowerCase().indexOf(q)>-1;
+  });
+  if(!all.length){box.innerHTML='<div class="empty"><div class="big">&#128506;</div>AUCUNE OPÉRATION.<br>Tape <b>+ Opération</b> pour en créer une.</div>';return;}
+  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128269;</div>AUCUN R&Eacute;SULTAT.<br>Essaie un autre terme ou change de filtre.</div>';return;}
   var ro=!canEditOps();                       /* compte en lecture seule */
   box.innerHTML=list.map(function(o){
     var col=TYPE_COLOR[o.evtype]||'var(--aor1)';
@@ -3872,8 +4010,21 @@ function goDrill(){
   showView('view-drill');renderCours();
 }
 function renderCours(){
-  var list=coursOf();var box=document.getElementById('cours-list');if(!box)return;
-  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#127891;</div>AUCUN COURS.<br>Tape <b>+ Cours</b> pour créer une fiche d\'instruction.</div>';return;}
+  var all=coursOf();var box=document.getElementById('cours-list');if(!box)return;
+  var kpiBox=document.getElementById('cours-kpis');
+  if(kpiBox){
+    var cats={};all.forEach(function(c){if(c.cat)cats[c.cat]=1;});
+    kpiBox.innerHTML=
+      '<div class="mem-kpi"><span class="v">'+all.length+'</span><span class="l">Cours</span></div>'+
+      '<div class="mem-kpi"><span class="v" style="color:var(--aor1)">'+Object.keys(cats).length+'</span><span class="l">Cat&eacute;gories</span></div>';
+  }
+  var sEl=document.getElementById('cours-search');
+  var q=sEl?sEl.value.trim().toLowerCase():'';
+  var list=!q?all:all.filter(function(c){
+    return [c.title,c.cat,c.instr].filter(Boolean).join(' ').toLowerCase().indexOf(q)>-1;
+  });
+  if(!all.length){box.innerHTML='<div class="empty"><div class="big">&#127891;</div>AUCUN COURS.<br>Tape <b>+ Cours</b> pour créer une fiche d\'instruction.</div>';return;}
+  if(!list.length){box.innerHTML='<div class="empty"><div class="big">&#128269;</div>AUCUN R&Eacute;SULTAT.<br>Essaie un autre terme de recherche.</div>';return;}
   box.innerHTML=list.map(function(c){
     var nbT=(c.blocks||[]).filter(function(b){return b.type==='text';}).length;
     var nbI=(c.blocks||[]).filter(function(b){return b.type==='img';}).length;
