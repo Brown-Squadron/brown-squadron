@@ -2409,7 +2409,12 @@ function openMembre3D(id){
   },80);
 }
 function renderAll(){renderMembres();renderOps();renderCours();renderCalendar();renderDashboard();renderDirDocs();
-  try{var ev=document.getElementById('view-equip');if(ev&&ev.classList.contains('active')&&window.enterEquip)window.enterEquip();}catch(e){}}
+  try{var ev=document.getElementById('view-equip');if(ev&&ev.classList.contains('active')&&window.enterEquip)window.enterEquip();}catch(e){}
+  /* la synchro cloud (cloudRefresh) est paginée et peut se terminer APRÈS que l'onglet Map
+     ait déjà été ouvert : sans ceci, la carte restait bloquée sur un mapWorld vide/partiel
+     chargé trop tôt, et les tracés semblaient avoir disparu alors qu'ils étaient bien en base. */
+  try{if(map&&mapReady&&db[MAP_WORLD_KEY])applyRemoteWorld((db[MAP_WORLD_KEY]&&db[MAP_WORLD_KEY].data)||db[MAP_WORLD_KEY]);}catch(e){}
+}
 
 /* ============ DIRECTION (documents internes par thème) ============ */
 var DIR_THEMES=['Direction','Compta','Social','Doc technique','Doc Commerciale'];
@@ -3990,7 +3995,14 @@ function goMap(){
 }
 function initMap(){
   fillMapOpSelect();
-  if(map){setTimeout(function(){map.resize();redrawMap();renderMapLegend();},120);return;}
+  if(map){
+    setTimeout(function(){map.resize();redrawMap();renderMapLegend();},120);
+    /* on réinterroge tout de suite le cloud (pas d'attente du polling 8s) :
+       si la couche carte a changé pendant qu'on était sur un autre onglet, elle
+       doit réapparaître dès qu'on rouvre l'onglet Map. */
+    refreshMapWorld();
+    return;
+  }
   if(!window.maplibregl){document.getElementById('map-canvas').innerHTML='<div style="padding:30px;color:#9aa6b4;font-family:monospace;text-align:center">Carte indisponible (connexion internet requise pour charger MapLibre + tuiles satellite).</div>';return;}
   loadMapWorld();
   map=new maplibregl.Map({
@@ -4041,9 +4053,19 @@ function setBasemap(mode){
   try{localStorage.setItem('bs_map_basemap',mode);}catch(e){}
   updateBasemapUI();
   map.once('style.load',function(){
-    /* le changement de style efface les sources/calques custom : on les reconstruit,
-       les markers (pings, autocollants, GPS) sont eux des éléments DOM et survivent tels quels */
-    addMapLayers();redrawMap();updateDraft();ensureTerrain();ensureBuildings();updateStreetUI();
+    /* le changement de style efface les sources/calques custom : on les reconstruit
+       TOUJOURS depuis mapWorld (qui, lui, n'est jamais effacé par le changement de fond) —
+       c'est ce qui garantit que les tracés d'une texture (HD/IGN/Topo) réapparaissent sur les autres.
+       Le tout est protégé par un try/catch : si une étape échoue (ex: terrain 3D indisponible
+       sur ce fond), les tracés sont déjà restaurés avant qu'elle ne s'exécute. */
+    try{
+      addMapLayers();
+      redrawMap();
+      updateDraft();
+    }catch(e){console.error('[map] restauration des tracés après changement de fond a échoué :',e);}
+    try{ensureTerrain();}catch(e){}
+    try{ensureBuildings();}catch(e){}
+    try{updateStreetUI();}catch(e){}
   });
   map.setStyle(basemapStyle(mode));
 }
@@ -4051,27 +4073,36 @@ function updateBasemapUI(){
   document.querySelectorAll('.basemap-btn[data-basemap]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-basemap')===mapBasemap);});
 }
 function addMapLayers(){
-  map.addSource('shapes',{type:'geojson',data:emptyFC()});
-  map.addLayer({id:'shape-fill',type:'fill',source:'shapes',filter:['==',['get','t'],'zone'],
-    paint:{'fill-color':['get','color'],'fill-opacity':0.3}});
-  map.addLayer({id:'shape-zone-line',type:'line',source:'shapes',filter:['==',['get','t'],'zone'],
-    paint:{'line-color':['get','color'],'line-width':3.5}});
-  /* chemins à pied : ligne pleine */
-  map.addLayer({id:'shape-line',type:'line',source:'shapes',filter:['==',['get','t'],'foot'],
-    paint:{'line-color':['get','color'],'line-width':3}});
-  /* mesures figées : pointillés */
-  map.addLayer({id:'shape-dash',type:'line',source:'shapes',filter:['==',['get','t'],'measure'],
-    paint:{'line-color':['get','color'],'line-width':2,'line-dasharray':[2,2]}});
-
-  map.addSource('draft',{type:'geojson',data:emptyFC()});
-  /* trait plein en cours (zone / pied) */
-  map.addLayer({id:'draft-line',type:'line',source:'draft',filter:['==',['get','t'],'solid'],
-    paint:{'line-color':['get','color'],'line-width':3}});
-  /* règle en cours : pointillés jaunes bien visibles */
-  map.addLayer({id:'draft-dash',type:'line',source:'draft',filter:['==',['get','t'],'dash'],
-    paint:{'line-color':['get','color'],'line-width':2,'line-dasharray':[2,2]}});
-  map.addLayer({id:'draft-pts',type:'circle',source:'draft',filter:['==',['get','t'],'pt'],
-    paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-width':2,'circle-stroke-color':'#fff'}});
+  /* idempotent : si les sources existent déjà (ex: 'style.load' redéclenché, ou appel
+     redondant) on ne refait rien — sinon map.addSource('shapes',...) sur une source déjà
+     existante LÈVE UNE EXCEPTION, qui coupait net la restauration des tracés après un
+     changement de fond de carte (HD/IGN/Topo) : c'était la cause du bug "les tracés
+     n'apparaissent plus". */
+  if(map.getSource('shapes')&&map.getSource('draft'))return;
+  if(!map.getSource('shapes')){
+    map.addSource('shapes',{type:'geojson',data:emptyFC()});
+    map.addLayer({id:'shape-fill',type:'fill',source:'shapes',filter:['==',['get','t'],'zone'],
+      paint:{'fill-color':['get','color'],'fill-opacity':0.3}});
+    map.addLayer({id:'shape-zone-line',type:'line',source:'shapes',filter:['==',['get','t'],'zone'],
+      paint:{'line-color':['get','color'],'line-width':3.5}});
+    /* chemins à pied : ligne pleine */
+    map.addLayer({id:'shape-line',type:'line',source:'shapes',filter:['==',['get','t'],'foot'],
+      paint:{'line-color':['get','color'],'line-width':3}});
+    /* mesures figées : pointillés */
+    map.addLayer({id:'shape-dash',type:'line',source:'shapes',filter:['==',['get','t'],'measure'],
+      paint:{'line-color':['get','color'],'line-width':2,'line-dasharray':[2,2]}});
+  }
+  if(!map.getSource('draft')){
+    map.addSource('draft',{type:'geojson',data:emptyFC()});
+    /* trait plein en cours (zone / pied) */
+    map.addLayer({id:'draft-line',type:'line',source:'draft',filter:['==',['get','t'],'solid'],
+      paint:{'line-color':['get','color'],'line-width':3}});
+    /* règle en cours : pointillés jaunes bien visibles */
+    map.addLayer({id:'draft-dash',type:'line',source:'draft',filter:['==',['get','t'],'dash'],
+      paint:{'line-color':['get','color'],'line-width':2,'line-dasharray':[2,2]}});
+    map.addLayer({id:'draft-pts',type:'circle',source:'draft',filter:['==',['get','t'],'pt'],
+      paint:{'circle-radius':5,'circle-color':['get','color'],'circle-stroke-width':2,'circle-stroke-color':'#fff'}});
+  }
 }
 function emptyFC(){return {type:'FeatureCollection',features:[]};}
 function curColor(){return document.getElementById('map-color').value;}
@@ -5188,6 +5219,9 @@ function subscribeMapWorld(){
   }
   /* secours : recharge le monde-carte depuis le cloud toutes les 8s */
   if(!mapWorldPoll)mapWorldPoll=setInterval(refreshMapWorld,8000);
+  /* + 1 contrôle immédiat : sans ça on attend jusqu'à 8s avant de voir apparaître
+     des tracés déjà enregistrés si le chargement initial (loadMapWorld) était arrivé trop tôt. */
+  refreshMapWorld();
 }
 function refreshMapWorld(){
   if(!sb||!map||!mapReady)return;
