@@ -32,7 +32,8 @@
     --accent:#b8a06a;        /* tan = primary accent */
     --amber:#d8a23a;         /* readout amber */
     --op:#c0392b; --drill:#3d7ab5; --domi:#2f9e8f; --reu:#9b7bbf;
-    --r:4px; --r-lg:6px;
+    /* rayons adoucis (V3 boutons) : moins "carré", plus accueillant, sans perdre le style tactique */
+    --r:11px; --r-lg:16px; --r-pill:999px;
     --mono:'SFMono-Regular',ui-monospace,'Roboto Mono','DejaVu Sans Mono',Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -1246,6 +1247,79 @@
     .deployed-panel::before{animation:none!important;opacity:.08;}
     .bs-ripple{display:none!important;}
   }
+
+  /* ============================================================
+     ===== BOUTONS V3 — refonte visuelle (moins carré, moins
+     chargé, mieux rangé sur mobile). Couche additive posée en fin
+     de feuille de style : ne touche à aucun id/attribut/onclick,
+     uniquement à l'apparence et à l'agencement.
+     ============================================================ */
+
+  /* -- base commune à tous les boutons : cible tactile confortable,
+     coins adoucis (héritent déjà de --r/--r-lg relevés plus haut),
+     une légère profondeur au lieu du plat "carré rempli" -- */
+  button{-webkit-tap-highlight-color:transparent;}
+  .icon-btn,.add-btn,.gps-btn,.mtool,.basemap-btn,.tabbar button,
+  .map-search button,.map-pdf-btn,.sp-upload,button.primary,button.ghost,button.pdf,
+  .comms-send,.tchat-new{
+    box-shadow:0 1px 2px rgba(0,0,0,.25);
+    transition:transform .12s var(--ease-tactical,ease),filter .15s,box-shadow .15s,border-color .15s,background .15s;
+  }
+  .icon-btn:active,.add-btn:active,.gps-btn:active,.mtool:active,.basemap-btn:active,
+  .map-search button:active,.map-pdf-btn:active,.sp-upload:active,
+  button.primary:active,button.ghost:active,button.pdf:active,.comms-send:active,.tchat-new:active{
+    transform:scale(.96);box-shadow:0 1px 1px rgba(0,0,0,.2);
+  }
+
+  /* -- outils de carte : ronds/pilules façon appli mobile, plus aérés,
+     44px = cible tactile confortable au lieu du bloc carré 42px collé -- */
+  .mtool{
+    min-width:44px;min-height:44px;border-radius:var(--r-pill);
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    padding:9px 14px;font-size:16px;
+  }
+  .mtool.icon-btn{padding:9px 12px;}
+  .mtool.on{box-shadow:0 3px 10px rgba(184,160,106,.4);}
+  .basemap-btn{box-shadow:0 1px 3px rgba(0,0,0,.3);}
+
+  /* -- la barre d'outils carte : d'une seule masse compacte à des
+     groupes clairement séparés, avec une respiration entre chaque -- */
+  .map-toolbar{
+    flex-direction:column;align-items:stretch;gap:12px;
+    background:transparent;border:none;padding:0;box-shadow:none;
+  }
+  .mtool-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+    padding:9px 10px;}
+  .mtool-row-label{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:2px;text-transform:uppercase;
+    color:var(--dim);flex:0 0 100%;margin:-2px 0 1px 2px;
+  }
+  .map-toolbar select{flex:1 1 180px;}
+  .map-toolbar input[type=color]{border-radius:10px;}
+  .map-sep{display:none;}  /* remplacé par le découpage en .mtool-row */
+
+  /* -- boutons GPS / plein écran / blackout : même respiration -- */
+  .gps-bar{border-radius:var(--r-lg);gap:10px;}
+  .gps-btn{border-radius:var(--r-pill);padding:11px 18px;}
+
+  /* -- tabbar bas : un peu plus d'air par bouton, coins doux -- */
+  .tabbar button{padding:11px 4px;}
+
+  @media (max-width:760px){
+    /* sur mobile la densité est le principal problème : on agrandit
+       les cibles tactiles et on augmente l'espace entre groupes plutôt
+       qu'entre boutons individuels, pour que l'œil perçoive des
+       "sections" au lieu d'un mur de carrés. */
+    .basemap-switch,.map-toolbar,.gps-bar,.map-search{margin-bottom:10px;}
+    .mtool-row{gap:9px;padding:10px 9px;}
+    .mtool{min-width:46px;min-height:46px;padding:10px 13px;}
+    .mtool.icon-btn{padding:10px 12px;}
+    .basemap-btn{padding:13px 8px;}
+    .gps-bar{flex-direction:column;align-items:stretch;}
+    .gps-bar .gps-btn,.gps-bar .geoloc-btn{width:100%;justify-content:center;}
+    .gps-bar input[type=text],.gps-bar input[type=color]{width:100%;}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1847,29 +1921,36 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <button class="basemap-btn" data-tool="street" onclick="setMapTool('street')" title="Street View : active l'outil puis clique un point de la carte pour ouvrir la vue au sol à cet endroit">&#128065; STREET VIEW</button>
     </div>
     <div class="map-toolbar">
-      <select id="map-op-select" onchange="mapFocusOp(this.value)" title="Centrer sur un point d'opération">
-        <option value="">— Points d'opération —</option>
-      </select>
-      <span class="map-sep"></span>
-      <button class="mtool" data-tool="ping" onclick="setMapTool('ping')" title="Ping">&#128205;</button>
-      <button class="mtool" data-tool="zone" onclick="setMapTool('zone')" title="Délimiter une zone">&#11036;</button>
-      <button class="mtool" data-tool="foot" onclick="setMapTool('foot')" title="Chemin à pied (feutre)">&#128099;</button>
-      <button class="mtool" data-tool="measure" onclick="setMapTool('measure')" title="Règle / mesure">&#128207;</button>
-      <button class="mtool" data-tool="erase" onclick="setMapTool('erase')" title="Gomme : clique sur un élément de la carte pour le supprimer">&#129529;</button>
-      <span class="map-sep"></span>
-      <button class="mtool icon-btn" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Autocollant véhicule"><span class="ic-veh"></span></button>
-      <button class="mtool icon-btn" data-tool="bs-sticker" onclick="setMapTool('bs-sticker')" title="Autocollant BS (membre)"><span class="ic-bs"></span>BS</button>
-      <button class="mtool" onclick="startColonne()" title="Rendez-vous → Stationnement colonne">&#128652;RDV</button>
-      <span class="map-sep"></span>
-      <input type="color" id="map-color" value="#ffd24a" title="Couleur du tracé / ping">
-      <button class="mtool ok" onclick="finishMapShape()" id="map-finish" title="Valider le tracé" style="display:none">&#10003; Valider</button>
-      <button class="mtool" onclick="cancelMapShape()" id="map-cancel" title="Annuler le tracé en cours" style="display:none">&#10005;</button>
-      <span class="map-sep"></span>
-      <button class="mtool undo" onclick="mapUndo()" id="map-undo-main" title="Annuler la dernière action" style="display:none">&#8634; Annuler</button>
-      <span class="map-sep"></span>
-      <button class="mtool" onclick="exportKML()" title="Exporter les tracés en KML (pour Ares Alpha)">&#8681; KML</button>
-      <button class="mtool" onclick="document.getElementById('kml-import-input').click()" title="Importer un KML/KMZ (depuis Ares Alpha)">&#8679; KML/KMZ</button>
-      <input type="file" id="kml-import-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" style="display:none" onchange="importKMLFile(this.files[0]);this.value='';">
+      <div class="mtool-row">
+        <span class="mtool-row-label">Aller à</span>
+        <select id="map-op-select" onchange="mapFocusOp(this.value)" title="Centrer sur un point d'opération">
+          <option value="">— Points d'opération —</option>
+        </select>
+        <input type="color" id="map-color" value="#ffd24a" title="Couleur du tracé / ping">
+      </div>
+      <div class="mtool-row">
+        <span class="mtool-row-label">Outils de tracé</span>
+        <button class="mtool" data-tool="ping" onclick="setMapTool('ping')" title="Ping">&#128205;</button>
+        <button class="mtool" data-tool="zone" onclick="setMapTool('zone')" title="Délimiter une zone">&#11036;</button>
+        <button class="mtool" data-tool="foot" onclick="setMapTool('foot')" title="Chemin à pied (feutre)">&#128099;</button>
+        <button class="mtool" data-tool="measure" onclick="setMapTool('measure')" title="Règle / mesure">&#128207;</button>
+        <button class="mtool" data-tool="erase" onclick="setMapTool('erase')" title="Gomme : clique sur un élément de la carte pour le supprimer">&#129529;</button>
+        <button class="mtool ok" onclick="finishMapShape()" id="map-finish" title="Valider le tracé" style="display:none">&#10003; Valider</button>
+        <button class="mtool" onclick="cancelMapShape()" id="map-cancel" title="Annuler le tracé en cours" style="display:none">&#10005;</button>
+        <button class="mtool undo" onclick="mapUndo()" id="map-undo-main" title="Annuler la dernière action" style="display:none">&#8634; Annuler</button>
+      </div>
+      <div class="mtool-row">
+        <span class="mtool-row-label">Autocollants</span>
+        <button class="mtool icon-btn" data-tool="veh-sticker" onclick="setMapTool('veh-sticker')" title="Autocollant véhicule"><span class="ic-veh"></span></button>
+        <button class="mtool icon-btn" data-tool="bs-sticker" onclick="setMapTool('bs-sticker')" title="Autocollant BS (membre)"><span class="ic-bs"></span>BS</button>
+        <button class="mtool" onclick="startColonne()" title="Rendez-vous → Stationnement colonne">&#128652;RDV</button>
+      </div>
+      <div class="mtool-row">
+        <span class="mtool-row-label">Échange Ares Alpha</span>
+        <button class="mtool" onclick="exportKML()" title="Exporter les tracés en KML (pour Ares Alpha)">&#8681; KML</button>
+        <button class="mtool" onclick="document.getElementById('kml-import-input').click()" title="Importer un KML/KMZ (depuis Ares Alpha)">&#8679; KML/KMZ</button>
+        <input type="file" id="kml-import-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" style="display:none" onchange="importKMLFile(this.files[0]);this.value='';">
+      </div>
     </div>
     <div class="map-hint2">Chemin à pied : <b>maintiens le clic</b> et dessine. Zone / règle : <b>clic gauche</b> = poser, <b>clic droit</b> = valider.</div>
 
@@ -4067,7 +4148,14 @@ function setBasemap(mode){
     try{ensureBuildings();}catch(e){}
     try{updateStreetUI();}catch(e){}
   });
-  map.setStyle(basemapStyle(mode));
+  /* diff:false = LA vraie cause du bug. Par défaut, setStyle() essaie de "differ"
+     l'ancien style et le nouveau au lieu de recharger à neuf — et quand ce diff réussit
+     (ce qui est le cas ici, satellite/plan/topo étant tous des styles raster valides),
+     MapLibre ne redéclenche JAMAIS l'évènement 'style.load' : le code au-dessus qui
+     remet les tracés en place ne s'exécutait donc simplement jamais après un changement
+     de texture. diff:false force un rechargement complet du style à chaque changement
+     de fond, qui déclenche 'style.load' à coup sûr. */
+  map.setStyle(basemapStyle(mode),{diff:false});
 }
 function updateBasemapUI(){
   document.querySelectorAll('.basemap-btn[data-basemap]').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-basemap')===mapBasemap);});
