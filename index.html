@@ -358,7 +358,7 @@
   .view.active{display:block;animation:fade .18s ease;}
   @keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
 
-  h2{font-size:19px;font-weight:800;margin:0 0 2px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
+  h2{font-size:21px;font-weight:800;margin:0 0 3px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
   .view-sub{font-size:11px;color:var(--amber);margin:0 0 16px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
   .view-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;position:relative;z-index:50;}
 
@@ -492,8 +492,8 @@
   .savebtn:hover{background:var(--aor2b);}
   .savebtn:active{transform:scale(.98);}
   .backbtn:hover{color:var(--aor1);}
-  section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px;margin-bottom:13px;position:relative;overflow:hidden;}
-  section h3{font-size:13px;font-weight:800;margin:-16px -18px 14px;padding:11px 18px;display:flex;align-items:center;gap:9px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--txt);
+  section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:13px;position:relative;overflow:hidden;}
+  section h3{font-size:13px;font-weight:800;margin:-18px -20px 14px;padding:12px 20px;display:flex;align-items:center;gap:9px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;color:var(--txt);
     background-image:linear-gradient(rgba(11,14,10,.72),rgba(11,14,10,.82));background-size:cover;border-bottom:1px solid var(--line2);}
   section h3 .d{width:9px;height:9px;background:var(--aor1);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);}
   section h3 .sub{font-weight:400;color:var(--dim);font-size:10px;letter-spacing:1px;}
@@ -910,19 +910,6 @@
   .gps-bar-bs{border-color:var(--aor2);}
   @keyframes gpspulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,.5);}50%{box-shadow:0 0 0 6px rgba(192,57,43,0);}}
   .gps-status{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.5px;}
-  /* bouton MODE GÉOLOC (bascule Ares Alpha) */
-  .geoloc-btn{display:inline-flex;align-items:center;gap:9px;position:relative;
-    background:linear-gradient(135deg,#2e7d32,#1b5e20);border:1px solid #3a9a40;border-radius:11px;
-    color:#fff;font-family:var(--mono);font-weight:800;font-size:14px;letter-spacing:1.5px;
-    padding:13px 20px;cursor:pointer;text-transform:uppercase;
-    box-shadow:0 4px 16px rgba(46,125,50,.4),inset 0 1px 0 rgba(255,255,255,.15);
-    transition:transform .14s,filter .18s,box-shadow .2s;}
-  .geoloc-btn:hover{filter:brightness(1.1);box-shadow:0 6px 22px rgba(46,125,50,.6);transform:translateY(-1px);}
-  .geoloc-btn:active{transform:scale(.97);}
-  .geoloc-btn .geo-ic{font-size:18px;animation:geoPulse 2.2s ease-in-out infinite;}
-  @keyframes geoPulse{0%,100%{opacity:.7;}50%{opacity:1;}}
-  .geoloc-btn .geo-sub{position:absolute;bottom:-7px;right:12px;font-size:8px;letter-spacing:1px;
-    background:#0b0e0a;color:#8fbf6f;padding:1px 7px;border-radius:8px;border:1px solid #3a5a2a;}
   /* ===== Rôle LECTURE = rôle TERRAIN =====
      Map + outils : autorisés (c'est leur outil principal).
      Fiche membre : peut éditer Coordonnées + Infos op.
@@ -1109,9 +1096,11 @@
     .grid{grid-template-columns:1fr!important;}
     input,select,textarea,button{font-size:16px;}
     input,select{min-height:44px;}
-    .tabbar{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    .tabbar button{flex:0 0 auto;padding:10px 12px;}
-    .tabbar .lbl{font-size:11px;}
+    /* grille au lieu d'une bande qui défile à l'horizontale : on voit
+       TOUS les onglets d'un coup, rien de caché hors-écran à deviner */
+    .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;overflow:visible;}
+    .tabbar button{flex:none;padding:9px 4px;}
+    .tabbar .lbl{font-size:10px;}
     table{display:block;overflow-x:auto;white-space:nowrap;}
     .dash-grid,.dwidgets{grid-template-columns:1fr!important;}
   }
@@ -1317,9 +1306,46 @@
     .mtool.icon-btn{padding:10px 12px;}
     .basemap-btn{padding:13px 8px;}
     .gps-bar{flex-direction:column;align-items:stretch;}
-    .gps-bar .gps-btn,.gps-bar .geoloc-btn{width:100%;justify-content:center;}
+    .gps-bar .gps-btn{width:100%;justify-content:center;}
     .gps-bar input[type=text],.gps-bar input[type=color]{width:100%;}
   }
+
+  /* ============================================================
+     ===== REFONTE V4 — respiration générale + hiérarchie boutons
+     couche additive, posée après tout le reste : aucun id/onclick
+     touché, uniquement espacement, formes et lisibilité.
+     ============================================================ */
+
+  /* -- rythme d'espacement : les blocs respirent plus, l'app fait
+     moins "rempli à ras bord" -- */
+  section{margin-bottom:16px;}
+  .cards{gap:14px;}
+  .dash-grid{gap:16px;}
+  .view-head{margin-bottom:18px;}
+
+  /* -- hiérarchie des boutons : les actions principales (CTA) en
+     pilule pleine et bien visible, les boutons utilitaires restent
+     en coin doux (--r) pour ne pas tout transformer en bulles -- */
+  .add-btn,.login-btn,.gps-btn,button.primary,.sp-upload,.comms-send,.tchat-new,
+  .savebtn,.op-day-btn{
+    border-radius:var(--r-pill);
+  }
+  .add-btn{padding:12px 20px;}
+  .icon-btn,button.ghost,button.pdf,.map-pdf-btn,.backbtn{border-radius:var(--r);}
+
+  /* -- derniers îlots "carrés à angle vif" (rayons codés en dur à
+     3-4px, donc pas touchés par le relevé de --r plus haut) :
+     cases à cocher plus douces, badges/étiquettes en pastille -- */
+  .kititem .cb,.drow .dcb,.pmember .pcb{border-radius:8px;}
+  .ev-item .type-tag,.opcard .otype,.ccard .ctag,.rep-photo .delimg,
+  .doc-tile .dx,.cblock .bctrl button{border-radius:var(--r-pill);}
+  .doc-tile .dx,.rep-photo .delimg{border-radius:9px;}  /* petit bouton "×" : pastille trop ronde = illisible en 22px, on garde un carré doux */
+  .day{border-radius:8px;}
+  .day .ev{border-radius:8px;}
+
+  /* le tabbar mobile est en grille (voir règle plus haut dans
+     OPTIMISATION MOBILE) : tous les onglets tiennent sans défiler,
+     rien à cacher ni à faire deviner. */
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -1463,7 +1489,6 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
 <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';}</script>
 </head>
 <body>
@@ -1945,12 +1970,6 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
         <button class="mtool icon-btn" data-tool="bs-sticker" onclick="setMapTool('bs-sticker')" title="Autocollant BS (membre)"><span class="ic-bs"></span>BS</button>
         <button class="mtool" onclick="startColonne()" title="Rendez-vous → Stationnement colonne">&#128652;RDV</button>
       </div>
-      <div class="mtool-row">
-        <span class="mtool-row-label">Échange Ares Alpha</span>
-        <button class="mtool" onclick="exportKML()" title="Exporter les tracés en KML (pour Ares Alpha)">&#8681; KML</button>
-        <button class="mtool" onclick="document.getElementById('kml-import-input').click()" title="Importer un KML/KMZ (depuis Ares Alpha)">&#8679; KML/KMZ</button>
-        <input type="file" id="kml-import-input" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz" style="display:none" onchange="importKMLFile(this.files[0]);this.value='';">
-      </div>
     </div>
     <div class="map-hint2">Chemin à pied : <b>maintiens le clic</b> et dessine. Zone / règle : <b>clic gauche</b> = poser, <b>clic droit</b> = valider.</div>
 
@@ -1969,10 +1988,6 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
     <div class="gps-bar">
       <button id="mapfs-btn" class="gps-btn" onclick="enterMapFullscreen()" title="Carte en mode tactique plein écran">&#9974; MODE TACTIQUE</button>
       <button class="gps-btn blackout-toggle" onclick="enterBlackout()" title="Voile noir total (op de nuit) — 5 taps pour sortir">&#9899; BLACKOUT</button>
-      <button id="geoloc-btn" class="geoloc-btn" onclick="openGeoloc()" title="Quitte l'appli et ouvre Ares Alpha (application externe)">
-        <span class="geo-ic">&#8599;</span> APP EXTERNE
-        <span class="geo-sub">Ares Alpha</span>
-      </button>
     </div>
 
     <div class="map-hint" id="map-hint">Choisis un outil puis clique sur la carte. Pour un tracé : pose des points, puis clique sur le dernier point (ou « Valider ») pour terminer.</div>
@@ -2674,12 +2689,19 @@ function wireTabDrag(){
   var dragEl=null,touchClone=null,pressTimer=null;
   function startDrag(btn){dragEl=btn;btn.classList.add('tabdrag');}
   function endDrag(){if(dragEl){dragEl.classList.remove('tabdrag');dragEl=null;saveTabOrder();}}
-  function afterEl(x){
+  function afterEl(x,y){
+    /* distance 2D (et non plus seulement horizontale) : nécessaire depuis que le
+       tabbar mobile est une grille sur plusieurs lignes et non une seule bande. */
     var els=[].slice.call(bar.querySelectorAll('button[data-view]:not(.tabdrag)'));
-    var closest=null,cdist=-Infinity;
-    els.forEach(function(el){var b=el.getBoundingClientRect();var off=x-(b.left+b.width/2);
-      if(off<0&&off>cdist){cdist=off;closest=el;}});
-    return closest;
+    var closest=null,cdist=Infinity,insertAfter=false;
+    els.forEach(function(el){
+      var b=el.getBoundingClientRect();var cx=b.left+b.width/2,cy=b.top+b.height/2;
+      var dx=x-cx,dy=(typeof y==='number'?y-cy:0),d=dx*dx+dy*dy;
+      if(d<cdist){cdist=d;closest=el;
+        insertAfter=(typeof y==='number')?(y>cy+2||(Math.abs(y-cy)<=2&&x>cx)):(x>cx);}
+    });
+    if(!closest)return null;
+    return insertAfter?closest.nextElementSibling:closest;
   }
   bar.querySelectorAll('button[data-view]').forEach(function(btn){
     btn.setAttribute('draggable','true');
@@ -2691,13 +2713,13 @@ function wireTabDrag(){
     btn.addEventListener('touchend',function(){clearTimeout(pressTimer);endDrag();});
     btn.addEventListener('touchmove',function(e){
       if(!dragEl)return;e.preventDefault();
-      var t=e.touches[0];var after=afterEl(t.clientX);
+      var t=e.touches[0];var after=afterEl(t.clientX,t.clientY);
       if(after==null)bar.appendChild(dragEl);else bar.insertBefore(dragEl,after);
     },{passive:false});
   });
   bar.addEventListener('dragover',function(e){
     e.preventDefault();if(!dragEl)return;
-    var after=afterEl(e.clientX);
+    var after=afterEl(e.clientX,e.clientY);
     if(after==null)bar.appendChild(dragEl);else bar.insertBefore(dragEl,after);
   });
 }
@@ -4338,141 +4360,6 @@ function finishMapShape(){
 }
 function cancelMapShape(){mapDraftPts=[];clearDistLabels();updateDraft();document.getElementById('map-readout').textContent='// tracé annulé';}
 
-/* ============ EXPORT / IMPORT KML ↔ KMZ (échange avec Ares Alpha) ============
-   Ares Alpha : "Import from KML/KMZ" et "Export to KMZ".
-   - Export : on génère un .kml (Ares l'importe directement).
-   - Import : on accepte .kml (texte) ET .kmz (zip -> on lit le doc.kml via fflate). */
-function kmlColor(hex){
-  /* KML = AABBGGRR ; hex CSS = #RRGGBB */
-  hex=(hex||'#ffd24a').replace('#','');
-  if(hex.length===3)hex=hex.split('').map(function(c){return c+c;}).join('');
-  var r=hex.substr(0,2),g=hex.substr(2,2),b=hex.substr(4,2);
-  return 'ff'+b+g+r;
-}
-function xmlEsc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function buildKML(){
-  var styles='';var placemarks='';var seen={};
-  function styleFor(hex,poly){
-    var id=(poly?'poly_':'line_')+hex.replace('#','');
-    if(!seen[id]){seen[id]=true;
-      var kc=kmlColor(hex);
-      styles+='<Style id="'+id+'">'+
-        '<LineStyle><color>'+kc+'</color><width>3</width></LineStyle>'+
-        (poly?'<PolyStyle><color>'+kmlColor(hex).replace(/^ff/,'66')+'</color></PolyStyle>':'')+
-        '</Style>';
-    }
-    return id;
-  }
-  /* tracés (shapes) */
-  (mapWorld.shapes||[]).forEach(function(s){
-    var coords=(s.coords||[]).map(function(c){return c[0]+','+c[1]+',0';}).join(' ');
-    if(!coords)return;
-    if(s.kind==='zone'){
-      var sid=styleFor(s.color||'#ffd24a',true);
-      /* fermer le polygone */
-      var ring=coords+' '+(s.coords[0][0]+','+s.coords[0][1]+',0');
-      placemarks+='<Placemark><name>Zone</name><styleUrl>#'+sid+'</styleUrl>'+
-        '<Polygon><outerBoundaryIs><LinearRing><coordinates>'+ring+'</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>';
-    }else{
-      var lid=styleFor(s.color||'#ffd24a',false);
-      var nm=(s.kind==='measure')?'Mesure':'Chemin';
-      placemarks+='<Placemark><name>'+nm+'</name><styleUrl>#'+lid+'</styleUrl>'+
-        '<LineString><tessellate>1</tessellate><coordinates>'+coords+'</coordinates></LineString></Placemark>';
-    }
-  });
-  /* pings */
-  (mapWorld.pings||[]).forEach(function(p){
-    if(p.lat==null||p.lon==null)return;
-    placemarks+='<Placemark><name>'+xmlEsc(p.note||'Ping')+'</name>'+
-      '<Point><coordinates>'+p.lon+','+p.lat+',0</coordinates></Point></Placemark>';
-  });
-  /* stickers (véhicules / BS) */
-  (mapWorld.stickers||[]).forEach(function(s){
-    if(s.lat==null||s.lon==null)return;
-    var nm=s.kind==='veh'?'Véhicule':('BS'+(s.num?(' '+s.num):''));
-    placemarks+='<Placemark><name>'+xmlEsc(nm)+'</name>'+
-      '<Point><coordinates>'+s.lon+','+s.lat+',0</coordinates></Point></Placemark>';
-  });
-  return '<?xml version="1.0" encoding="UTF-8"?>'+
-    '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'+
-    '<name>Brown Squadron — étude topographique</name>'+
-    styles+placemarks+
-    '</Document></kml>';
-}
-function exportKML(){
-  var total=(mapWorld.shapes||[]).length+(mapWorld.pings||[]).length+(mapWorld.stickers||[]).length;
-  if(!total){alert('Aucun tracé à exporter. Dessine une zone, un chemin ou pose un ping d\'abord.');return;}
-  var kml=buildKML();
-  var blob=new Blob([kml],{type:'application/vnd.google-earth.kml+xml'});
-  var url=URL.createObjectURL(blob);
-  var a=document.createElement('a');
-  a.href=url;a.download='brown-squadron-'+new Date().toISOString().slice(0,10)+'.kml';
-  document.body.appendChild(a);a.click();
-  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},400);
-  document.getElementById('map-readout').textContent='// KML exporté ('+total+' éléments) — importe-le dans Ares Alpha';
-}
-function importKMLFile(file){
-  if(!file)return;
-  var name=(file.name||'').toLowerCase();
-  if(name.slice(-4)==='.kmz'){
-    /* KMZ = ZIP : on extrait le premier .kml via fflate */
-    var fr=new FileReader();
-    fr.onload=function(e){
-      try{
-        var data=new Uint8Array(e.target.result);
-        if(!window.fflate){alert('Décompression KMZ indisponible (fflate non chargé). Utilise un .kml.');return;}
-        var files=fflate.unzipSync(data);
-        var kmlName=Object.keys(files).find(function(k){return k.toLowerCase().slice(-4)==='.kml';});
-        if(!kmlName){alert('Aucun .kml trouvé dans le KMZ.');return;}
-        var txt=fflate.strFromU8(files[kmlName]);
-        parseKMLtext(txt);
-      }catch(err){alert('Erreur lecture KMZ : '+(err.message||err));}
-    };
-    fr.readAsArrayBuffer(file);
-  }else{
-    var fr2=new FileReader();
-    fr2.onload=function(e){parseKMLtext(e.target.result);};
-    fr2.readAsText(file);
-  }
-}
-function parseCoordStr(str){
-  return (str||'').trim().split(/\s+/).map(function(tok){
-    var p=tok.split(',');return [parseFloat(p[0]),parseFloat(p[1])];
-  }).filter(function(c){return !isNaN(c[0])&&!isNaN(c[1]);});
-}
-function parseKMLtext(txt){
-  try{
-    var doc=new DOMParser().parseFromString(txt,'text/xml');
-    if(doc.getElementsByTagName('parsererror').length){alert('KML invalide.');return;}
-    var pms=doc.getElementsByTagName('Placemark');
-    var addedShapes=0,addedPts=0;
-    for(var i=0;i<pms.length;i++){
-      var pm=pms[i];
-      var nameEl=pm.getElementsByTagName('name')[0];
-      var nm=nameEl?nameEl.textContent:'';
-      var poly=pm.getElementsByTagName('Polygon')[0];
-      var line=pm.getElementsByTagName('LineString')[0];
-      var point=pm.getElementsByTagName('Point')[0];
-      if(poly){
-        var cEl=poly.getElementsByTagName('coordinates')[0];
-        var coords=parseCoordStr(cEl&&cEl.textContent);
-        if(coords.length>=3){mapWorld.shapes.push({id:uid(),color:'#ffd24a',coords:coords,kind:'zone',op:mapCurrentOp()});addedShapes++;}
-      }else if(line){
-        var cEl2=line.getElementsByTagName('coordinates')[0];
-        var coords2=parseCoordStr(cEl2&&cEl2.textContent);
-        if(coords2.length>=2){mapWorld.shapes.push({id:uid(),color:'#46b29d',coords:coords2,kind:'foot',op:mapCurrentOp()});addedShapes++;}
-      }else if(point){
-        var cEl3=point.getElementsByTagName('coordinates')[0];
-        var pc=parseCoordStr(cEl3&&cEl3.textContent);
-        if(pc.length){mapWorld.pings.push({id:uid(),lat:pc[0][1],lon:pc[0][0],color:'#d8a23a',note:nm||'Import KML',op:mapCurrentOp()});addedPts++;}
-      }
-    }
-    if(!addedShapes&&!addedPts){alert('Aucun tracé exploitable trouvé dans le fichier.');return;}
-    saveMapWorld();redrawMap();renderMapLegend();
-    document.getElementById('map-readout').textContent='// Import KML ✓ : '+addedShapes+' tracé(s), '+addedPts+' point(s)';
-    alert('Import réussi ✓\n'+addedShapes+' tracé(s) et '+addedPts+' point(s) ajoutés à la carte.');
-  }catch(err){alert('Erreur import KML : '+(err.message||err));}
-}
 function showMeasureTotal(ptsOpt){
   var pts=ptsOpt||mapDraftPts;var tot=0;
   for(var i=1;i<pts.length;i++)tot+=haversine(pts[i-1],pts[i]);
@@ -5481,45 +5368,6 @@ async function cloudSave(id){
     if(res.error)throw res.error;return true;}catch(err){collabStatus('// ECHEC CLOUD : '+(err.message||err));return false;}
 }
 async function cloudDelete(id){if(!sb)return;try{await sb.from('entries').delete().eq('id',id);}catch(err){}}
-
-/* ============ MODE GÉOLOC — bascule vers Ares Alpha ============ */
-function openGeoloc(){
-  var ua=navigator.userAgent||'';
-  var isAndroid=/android/i.test(ua);
-  var isIOS=/iphone|ipad|ipod/i.test(ua);
-  var pkg='com.aresalpha.ares';
-  if(isAndroid){
-    /* Ares n'expose PAS de deep-link (scheme/host) : impossible de le viser par URL.
-       La seule voie web fiable = intent LAUNCHER du package, déclenché par un CLIC
-       réel sur un <a> (et non location.href différé, souvent bloqué -> Play Store).
-       On ne redirige jamais automatiquement vers le store : on propose seulement. */
-    var left=false;
-    var mark=function(){left=true;};
-    document.addEventListener('visibilitychange',function h(){if(document.hidden)mark();document.removeEventListener('visibilitychange',h);});
-    window.addEventListener('blur',function b(){mark();window.removeEventListener('blur',b);});
-    window.addEventListener('pagehide',mark,{once:true});
-    /* on construit un lien intent et on le "clique" dans le geste utilisateur courant */
-    var href='intent://ares#Intent;scheme=aresalpha;package='+pkg+
-      ';action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
-    var a=document.createElement('a');
-    a.setAttribute('href',href);a.style.display='none';
-    document.body.appendChild(a);
-    try{a.click();}catch(e){try{window.location.href=href;}catch(_){}}
-    setTimeout(function(){if(a.parentNode)a.parentNode.removeChild(a);},50);
-    /* si rien ne s'est passé (app absente) : proposer le store, sans forcer */
-    setTimeout(function(){
-      if(!left&&!document.hidden){
-        if(confirm('Ares Alpha n\'a pas pu être ouvert.\n\nSi tu l\'as bien installé : ouvre-le manuellement une première fois, puis reviens.\n\nSinon, ouvrir le Play Store pour l\'installer ?')){
-          window.location.href='https://play.google.com/store/apps/details?id='+pkg;
-        }
-      }
-    },1800);
-  }else if(isIOS){
-    window.location.href='https://apps.apple.com/app/ares-alpha/id1467152818';
-  }else{
-    window.open('https://www.ares-alpha.com/','_blank');
-  }
-}
 
 /* ============ MODE TACTIQUE (plein écran carte) ============ */
 var mapIsFs=false;
