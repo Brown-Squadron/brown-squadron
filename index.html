@@ -156,7 +156,13 @@
   .camo-strip{height:10px;border-radius:3px;margin-bottom:12px;background-size:auto;image-rendering:pixelated;
     box-shadow:inset 0 0 0 1px var(--line2);}
   .login-card .camo-top{position:absolute;top:0;left:0;right:0;height:8px;border-radius:6px 6px 0 0;image-rendering:pixelated;}
-  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;border-bottom:2px solid var(--aor2);padding-bottom:12px;position:relative;}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;border-bottom:2px solid var(--aor2);padding-bottom:12px;position:relative;flex-wrap:wrap;}
+  /* le titre n'a pas de largeur minimum : sur un écran étroit, flex le
+     réduisait de force jusqu'à faire tenir "BROWN SQUADRON" et le sous-titre
+     à côté des boutons ronds + badge de rôle, d'où un mot par ligne. On lui
+     donne une largeur mini confortable et on laisse le reste (spacer +
+     boutons + badge) passer à la ligne plutôt que d'écraser le titre. */
+  .topbar>div:nth-child(2){min-width:170px;flex:1 1 auto;}
   .topbar:after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--aor2);}
   .topbar .badge{width:48px;height:48px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
     background:var(--surface2);border:1px solid var(--line2);overflow:hidden;}
@@ -360,7 +366,7 @@
 
   h2{font-size:21px;font-weight:800;margin:0 0 3px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
   .view-sub{font-size:11px;color:var(--amber);margin:0 0 16px;font-family:var(--mono);letter-spacing:2px;text-transform:uppercase;}
-  .view-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;position:relative;z-index:50;}
+  .view-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;position:relative;z-index:50;flex-wrap:wrap;}
 
   .add-btn{background:var(--aor1);border:none;border-radius:var(--r);color:#1a1605;font-weight:800;font-size:13px;letter-spacing:1px;font-family:var(--mono);
     padding:11px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;white-space:nowrap;text-transform:uppercase;}
@@ -423,6 +429,14 @@
   .op-day-btn:active{transform:scale(.98);}
   .op-day-btn .odb-i{font-size:15px;}
   .op-day-btn .odb-date{font-size:11px;opacity:.75;letter-spacing:1px;padding-left:2px;}
+  /* mobile : le libellé complet + la date ne tiennent plus sur une ligne dans
+     la pilule (largeur trop étroite) et se retrouvaient coupés mot par mot,
+     empilés n'importe comment. On structure proprement en colonne, pilule
+     pleine largeur, au lieu de laisser le texte se casser tout seul. */
+  @media(max-width:560px){
+    .op-day-btn{width:100%;flex-direction:column;gap:2px;padding:12px 16px;text-align:center;}
+    .op-day-btn .odb-date{padding-left:0;}
+  }
   /* pastilles PAM (Personnel / Armement / Matériel) sur les cartes */
   .pam-dots{position:absolute;top:12px;right:83px;display:flex;flex-direction:column;gap:5px;z-index:3;}
   .pam-dots .pd{width:16px;height:16px;border-radius:50%;border:1.5px solid rgba(255,255,255,.22);cursor:pointer;
@@ -614,7 +628,12 @@
   .eval-sub-hd{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--aor1);margin:14px 0 8px;padding-top:8px;border-top:1px dashed var(--line2);}
   .eval-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   @media(max-width:620px){.eval-grid2{grid-template-columns:1fr;}}
-  .eval-tbl{width:100%;border-collapse:collapse;margin-top:6px;}
+  /* 4 colonnes (Étape / Critères / Valid. / Date) ne tiennent pas dans une
+     largeur mobile de ~320-360px sans écraser le texte : au lieu de laisser
+     le texte se faire couper/chevaucher, on rend le tableau défilable
+     horizontalement et on lui garde une largeur confortable. */
+  .eval-tbl-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:6px;}
+  .eval-tbl{width:100%;min-width:540px;border-collapse:collapse;margin-top:0;}
   .eval-tbl th,.eval-tbl td{border:1px solid var(--line2);padding:8px 9px;text-align:left;font-size:12.5px;vertical-align:middle;}
   .eval-tbl th{background:var(--surface2);font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--aor1);}
   .eval-tbl td.et{font-weight:700;font-family:var(--mono);font-size:11.5px;white-space:nowrap;}
@@ -1370,6 +1389,11 @@
   .mem-kpi .l{font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-top:4px;}
   @media(max-width:520px){
     .mem-toolbar{flex-direction:column;align-items:stretch;}
+    /* le flex-basis:220px de .mem-search visait une LARGEUR en ligne (desktop) ;
+       en colonne (mobile) le même flex-basis devient une HAUTEUR de 220px,
+       d'où la barre de recherche transformée en gros ovale. On repasse
+       la base à "auto" ici pour que la hauteur reste pilotée par le contenu. */
+    .mem-search{flex:0 0 auto;}
     .mem-kpis{justify-content:stretch;}
     .mem-kpi{flex:1;min-width:0;padding:8px 6px;}
   }
@@ -2161,8 +2185,8 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
   <div class="view" id="view-eval">
     <div class="view-head flex items-center justify-between rounded-xl border border-line2 bg-surface/70 px-5 py-4 mb-4 shadow-tac">
       <div><h2 class="text-tan tracking-widest">Fiche d'&eacute;valuation</h2><p class="view-sub">// Protocole &laquo; Bull &raquo; &mdash; pages 25-26-27</p></div>
-      <div style="display:flex;gap:8px">
-        <select id="eval-select" onchange="loadEval(this.value)" style="min-width:150px"></select>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;max-width:100%">
+        <select id="eval-select" onchange="loadEval(this.value)" style="min-width:150px;max-width:100%;flex:1 1 150px"></select>
         <button class="add-btn" onclick="newEval()"><span class="plus">+</span> Nouvelle</button>
       </div>
     </div>
@@ -2181,7 +2205,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <div class="eval-phase p1">
         <div class="eval-ph-hd"><span class="dot"></span>PHASE 1 : PROSPECT (&laquo; Prosp&eacute; &raquo;)</div>
         <div class="eval-ph-obj">Objectif : Curiosit&eacute;, recherche et motivation initiale.</div>
-        <table class="eval-tbl" id="ev_p1_tbl"></table>
+        <div class="eval-tbl-wrap"><table class="eval-tbl" id="ev_p1_tbl"></table></div>
         <div class="eval-sub-hd">&#9873; S&eacute;lection Interm&eacute;diaire</div>
         <div class="eval-grid2">
           <div class="field"><label>&Eacute;preuve : Marche 10 km &mdash; Performance</label>
@@ -2195,7 +2219,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <div class="eval-phase p2">
         <div class="eval-ph-hd"><span class="dot"></span>PHASE 2 : RECRUE</div>
         <div class="eval-ph-obj">Objectif : Technique et coh&eacute;sion (D&eacute;lai : 6 mois).</div>
-        <table class="eval-tbl" id="ev_p2_tbl"></table>
+        <div class="eval-tbl-wrap"><table class="eval-tbl" id="ev_p2_tbl"></table></div>
         <div class="eval-sub-hd">&#9873; S&eacute;lection Confirmation</div>
         <div class="eval-grid2">
           <div class="field"><label>&Eacute;preuve : Marche 15 km &mdash; &Eacute;tat physique &agrave; l'arriv&eacute;e</label><input id="ev_p2_etat" oninput="markEvalDirty()"></div>
@@ -2207,7 +2231,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
       <div class="eval-phase p3">
         <div class="eval-ph-hd"><span class="dot"></span>PHASE 3 : CONFIRM&Eacute;</div>
         <div class="eval-ph-obj">Objectif : R&eacute;silience et investissement mat&eacute;riel.</div>
-        <table class="eval-tbl" id="ev_p3_tbl"></table>
+        <div class="eval-tbl-wrap"><table class="eval-tbl" id="ev_p3_tbl"></table></div>
       </div>
 
       <!-- ADMISSION FINALE -->
