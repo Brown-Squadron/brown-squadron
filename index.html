@@ -156,36 +156,57 @@
   .camo-strip{height:10px;border-radius:3px;margin-bottom:12px;background-size:auto;image-rendering:pixelated;
     box-shadow:inset 0 0 0 1px var(--line2);}
   .login-card .camo-top{position:absolute;top:0;left:0;right:0;height:8px;border-radius:6px 6px 0 0;image-rendering:pixelated;}
-  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;border-bottom:2px solid var(--aor2);padding-bottom:12px;position:relative;flex-wrap:wrap;}
+  /* ============================================================
+     ===== REFONTE MENU — header (logo+titre+actions) et bande
+     d'onglets fusionnés en une seule carte, au lieu de deux blocs
+     encadrés empilés (effet "pavé"). Voir .app-header plus bas. */
+  .app-header{background:var(--surface);border:1px solid var(--line2);border-radius:var(--r-lg);
+    box-shadow:0 8px 22px rgba(0,0,0,.35);margin-bottom:16px;overflow:hidden;}
+  .topbar{display:flex;align-items:center;gap:12px;padding:12px 14px;position:relative;flex-wrap:wrap;}
   /* le titre n'a pas de largeur minimum : sur un écran étroit, flex le
      réduisait de force jusqu'à faire tenir "BROWN SQUADRON" et le sous-titre
      à côté des boutons ronds + badge de rôle, d'où un mot par ligne. On lui
      donne une largeur mini confortable et on laisse le reste (spacer +
      boutons + badge) passer à la ligne plutôt que d'écraser le titre. */
   .topbar>div:nth-child(2){min-width:170px;flex:1 1 auto;}
-  .topbar:after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;background:var(--aor2);}
-  .topbar .badge{width:48px;height:48px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  .topbar:after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;background:var(--line2);}
+  .topbar .badge{width:40px;height:40px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
     background:var(--surface2);border:1px solid var(--line2);overflow:hidden;}
   .topbar .badge img{width:84%;height:84%;object-fit:contain;}
-  .topbar .ttl{font-size:17px;font-weight:800;line-height:1.1;letter-spacing:2px;font-family:var(--mono);}
+  .topbar .ttl{font-size:16px;font-weight:800;line-height:1.1;letter-spacing:2px;font-family:var(--mono);}
   .topbar .sub{font-size:10px;color:var(--amber);text-transform:uppercase;letter-spacing:3px;font-family:var(--mono);}
   .topbar .sp{flex:1;}
   .icon-btn{background:var(--surface2);border:1px solid var(--line2);border-radius:var(--r);color:var(--muted);font-size:15px;padding:9px 12px;cursor:pointer;font-family:var(--mono);}
   .icon-btn:active{transform:scale(.97);}
 
-  /* ===== TABS ===== */
-  .tabbar{display:flex;gap:5px;margin-bottom:14px;}
-  .tabbar button{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:var(--muted);padding:10px 3px;cursor:pointer;font-family:var(--mono);
-    display:flex;flex-direction:column;align-items:center;gap:4px;transition:.12s;text-transform:uppercase;letter-spacing:.5px;}
-  .tabbar button .ico{font-size:18px;line-height:1;transition:color .18s,filter .18s;
+  /* ===== TABS : bande d'onglets sur une seule ligne, défilante =====
+     Tous les onglets restent accessibles (glisser / molette) : rien n'est
+     replié dans un sous-menu caché. Un dégradé sur les bords (.tabbar-scroll)
+     signale qu'il y a plus d'onglets quand ça ne tient pas sur l'écran. */
+  .tabbar-scroll{position:relative;}
+  .tabbar-scroll:before,.tabbar-scroll:after{content:"";position:absolute;top:0;bottom:0;width:22px;pointer-events:none;z-index:2;}
+  .tabbar-scroll:before{left:0;background:linear-gradient(90deg,var(--surface),transparent);}
+  .tabbar-scroll:after{right:0;background:linear-gradient(270deg,var(--surface),transparent);}
+  .tabbar{display:flex;flex-wrap:nowrap;gap:4px;overflow-x:auto;scrollbar-width:none;
+    padding:8px 10px;-webkit-overflow-scrolling:touch;margin-bottom:0;}
+  .tabbar::-webkit-scrollbar{display:none;}
+  .tabbar button{flex:0 0 auto;min-width:0;background:transparent;border:1px solid transparent;border-radius:var(--r-pill);color:var(--muted);padding:9px 14px;cursor:pointer;font-family:var(--mono);
+    display:flex;flex-direction:row;align-items:center;gap:7px;transition:.12s;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;}
+  .tabbar button .ico{width:15px;height:15px;flex:none;display:inline-flex;line-height:1;transition:color .18s,filter .18s;
     color:var(--muted);-webkit-text-fill-color:var(--muted);}
+  .tabbar button .ico svg{width:100%;height:100%;display:block;}
   .tabbar button:hover .ico{color:var(--tanl,#d8c089);-webkit-text-fill-color:var(--tanl,#d8c089);}
   .tabbar button.on .ico{color:#1a1605;-webkit-text-fill-color:#1a1605;}
   /* Membres : logo Brown Squadron en blanc, contour visible */
-  .ico-bslogo{display:inline-block;width:20px;height:20px;background:var(--bs-logo) center/contain no-repeat;
+  .ico-bslogo{display:inline-block;width:15px;height:15px;background:var(--bs-logo) center/contain no-repeat;
     filter:brightness(0) invert(1);opacity:1;}
   .tabbar button:hover .ico-bslogo{opacity:1;}
   .tabbar button.on .ico-bslogo{filter:brightness(0);opacity:1;}
+  /* Direction / Éval. Bull (admin) : séparées visuellement du reste par un
+     trait fin, comme deux groupes plutôt qu'une rangée uniforme de 10 cases. */
+  .tabbar button[data-admin="1"]{margin-left:2px;}
+  .tabbar button[data-view="view-direction"]{position:relative;padding-left:16px;}
+  .tabbar button[data-view="view-direction"]:before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:var(--line2);}
   /* ===== COMMS (chat type Teams/WhatsApp, vertical, mobile-first) ===== */
   .tchat{display:flex;gap:12px;height:74vh;}
   .tchat-side{flex:0 0 290px;display:flex;flex-direction:column;background:var(--surface);
@@ -292,10 +313,10 @@
   @keyframes pwspin{to{transform:rotate(360deg);}}
   #pdf-wait .pw-txt{font-family:var(--mono);font-size:14px;letter-spacing:2px;color:var(--aor1);font-weight:800;}
   #pdf-wait .pw-sub{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:1px;}
-  .tabbar button .lbl{font-size:10.5px;font-weight:600;white-space:nowrap;}
+  .tabbar button .lbl{font-size:11px;font-weight:600;white-space:nowrap;}
   .tabbar button.on{background:var(--aor1);border-color:var(--aor1b);color:#1a1605;}
   .tabbar button.on .lbl{font-weight:800;}
-  @media(max-width:480px){.tabbar button{letter-spacing:0;}.tabbar button .lbl{font-size:9.5px;}.tabbar button .ico{font-size:18px;}}
+  @media(max-width:480px){.tabbar button{letter-spacing:0;padding:8px 11px;}.tabbar button .lbl{font-size:10px;}}
 
   .collab{font-size:10.5px;color:var(--dim);min-height:15px;margin-bottom:12px;font-family:var(--mono);letter-spacing:.5px;}
   /* ===== DASHBOARD ACCUEIL ===== */
@@ -1039,13 +1060,12 @@
   .view-sub:after{content:"";position:absolute;left:0;bottom:0;width:46px;height:2px;
     background:linear-gradient(90deg,var(--aor1),transparent);border-radius:2px;}
 
-  /* barre d'onglets : pilule moderne, onglet actif en relief */
-  .tabbar{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:5px;gap:4px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);}
-  .tabbar button{border:1px solid transparent;border-radius:9px;transition:background .18s,color .18s,transform .12s,border-color .18s;background:transparent;}
+  /* barre d'onglets : pilule moderne, onglet actif en relief
+     (mise en carte + mise en ligne défilante déplacées dans REFONTE MENU
+     plus haut ; on ne garde ici que l'état actif/hover des pilules) */
   .tabbar button:hover{background:var(--surface2);color:var(--txt);}
   .tabbar button.on{background:linear-gradient(180deg,var(--aor1),var(--aor1b));border-color:var(--aor1b);
-    color:#1a1605;box-shadow:0 3px 12px rgba(184,160,106,.3);transform:translateY(-1px);}
+    color:#1a1605;box-shadow:0 3px 12px rgba(184,160,106,.3);}
 
   /* sections (panneaux) : profondeur douce + en-tête à liseré sable */
   section{box-shadow:0 2px 14px rgba(0,0,0,.28);transition:border-color .18s,box-shadow .18s;}
@@ -1102,7 +1122,7 @@
   /* ===================== OPTIMISATION MOBILE ===================== */
   @media (max-width:760px){
     body{font-size:15px;}
-    .view, section, header, .tabbar{padding-left:10px;padding-right:10px;}
+    .view, section, header{padding-left:10px;padding-right:10px;}
     section{margin-bottom:12px;}
     #map-canvas{height:68vh;min-height:0;border-radius:10px;}
     .map-wrap{margin-left:-2px;margin-right:-2px;}
@@ -1115,10 +1135,11 @@
     .grid{grid-template-columns:1fr!important;}
     input,select,textarea,button{font-size:16px;}
     input,select{min-height:44px;}
-    /* grille au lieu d'une bande qui défile à l'horizontale : on voit
-       TOUS les onglets d'un coup, rien de caché hors-écran à deviner */
-    .tabbar{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;overflow:visible;}
-    .tabbar button{flex:none;padding:9px 4px;}
+    /* bande d'onglets à une ligne, défilante horizontalement (rien n'est
+       masqué : on glisse pour voir la suite, avec un dégradé de bord en
+       indice — cf. .tabbar-scroll). Remplace l'ancienne grille 4 colonnes. */
+    .tabbar{padding:8px;}
+    .tabbar button{padding:8px 12px;}
     .tabbar .lbl{font-size:10px;}
     table{display:block;overflow-x:auto;white-space:nowrap;}
     .dash-grid,.dwidgets{grid-template-columns:1fr!important;}
@@ -1311,8 +1332,8 @@
   .gps-bar{border-radius:var(--r-lg);gap:10px;}
   .gps-btn{border-radius:var(--r-pill);padding:11px 18px;}
 
-  /* -- tabbar bas : un peu plus d'air par bouton, coins doux -- */
-  .tabbar button{padding:11px 4px;}
+  /* -- tabbar bas : un peu plus d'air par bouton (pilules, cf. REFONTE MENU) -- */
+  .tabbar button{padding:9px 15px;}
 
   @media (max-width:760px){
     /* sur mobile la densité est le principal problème : on agrandit
@@ -1362,9 +1383,9 @@
   .day{border-radius:8px;}
   .day .ev{border-radius:8px;}
 
-  /* le tabbar mobile est en grille (voir règle plus haut dans
-     OPTIMISATION MOBILE) : tous les onglets tiennent sans défiler,
-     rien à cacher ni à faire deviner. */
+  /* le tabbar est une bande à une ligne, défilante (voir REFONTE MENU
+     plus haut) : tous les onglets restent accessibles par glissement,
+     avec un dégradé de bord comme indice qu'il y en a d'autres. */
 
   /* ============================================================
      ===== REFONTE V5 — nouveaux blocs d'info + carte des bases
@@ -1617,6 +1638,7 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
   <div class="camo-strip" id="camo-strip"></div>
 
 
+  <div class="app-header">
   <div class="topbar">
     <div class="badge" id="top-badge"></div>
     <div>
@@ -1628,17 +1650,20 @@ window.bsGLTF=function(){try{var gl=new THREE.GLTFLoader();if(THREE.DRACOLoader)
     <button class="icon-btn" onclick="logout()" title="D&eacute;connexion">&#9211;</button>
   </div>
 
+  <div class="tabbar-scroll">
   <div class="tabbar" id="tabbar">
-    <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Accueil</span></button>
+    <button class="on" data-view="view-home" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></svg></span><span class="lbl">Accueil</span></button>
     <button data-view="view-membres" onclick="switchTab(this)"><span class="ico ico-bslogo"></span><span class="lbl">Membres</span></button>
-    <button data-view="view-equip" onclick="switchTab(this)"><span class="ico">&#9881;</span><span class="lbl">Loadout</span></button>
-    <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico">&#9636;</span><span class="lbl">Calendrier</span></button>
-    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico">&#9678;</span><span class="lbl">Op&eacute;rations</span></button>
-    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico">&#9783;</span><span class="lbl">Drill</span></button>
-    <button data-view="view-map" onclick="switchTab(this)"><span class="ico">&#9737;</span><span class="lbl">Map</span></button>
-    <button data-view="view-comms" onclick="switchTab(this)"><span class="ico">&#9993;</span><span class="lbl">Comms</span></button>
-    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico">&#9707;</span><span class="lbl">Direction</span></button>
-    <button data-view="view-eval" data-admin="1" onclick="switchTab(this)"><span class="ico">&#9873;</span><span class="lbl">&Eacute;val. Bull</span></button>
+    <button data-view="view-equip" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7 12 12 3.5 7"/><path d="M12 12v9"/><path d="M20.5 7 12 3 3.5 7l8.5 4.5L20.5 7z"/></svg></span><span class="lbl">Loadout</span></button>
+    <button data-view="view-calendrier" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span class="lbl">Calendrier</span></button>
+    <button data-view="view-operations" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/></svg></span><span class="lbl">Op&eacute;rations</span></button>
+    <button data-view="view-drill" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7v5c0 5 4 8 9 9 5-1 9-4 9-9V7l-9-4z"/><path d="M9 12l2 2 4-4"/></svg></span><span class="lbl">Drill</span></button>
+    <button data-view="view-map" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.6 7-11.5A7 7 0 0 0 5 9.5C5 14.4 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/></svg></span><span class="lbl">Map</span></button>
+    <button data-view="view-comms" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H7l-3 3V4z"/></svg></span><span class="lbl">Comms</span></button>
+    <button data-view="view-direction" data-admin="1" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg></span><span class="lbl">Direction</span></button>
+    <button data-view="view-eval" data-admin="1" onclick="switchTab(this)"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6.5 7 1-5.2 4.8L18 21l-6-3.4L6 21l1.2-6.7L2 9.5l7-1L12 2z"/></svg></span><span class="lbl">&Eacute;val. Bull</span></button>
+  </div>
+  </div>
   </div>
 
   <div class="collab" id="collab-status"></div>
@@ -2515,6 +2540,7 @@ function startApp(){
   applyRole();
   restoreTabOrder();
   wireTabDrag();
+  wireTabWheelScroll();
   db=loadCache();renderAll();applyBranding();cloudRefresh(true);
   /* AUTO-SYNC : l'app ne se synchronisait qu'à l'ouverture et au clic -> "parfois pas à jour".
      Maintenant : incrémental léger toutes les 25 s (ne récupère que les changements),
@@ -2782,6 +2808,18 @@ function saveTabOrder(){
   try{var bar=document.getElementById('tabbar');
     var ids=[].slice.call(bar.querySelectorAll('button[data-view]')).map(function(b){return b.getAttribute('data-view');});
     localStorage.setItem(TAB_ORDER_KEY,JSON.stringify(ids));}catch(e){}
+}
+/* la bande d'onglets défile à l'horizontale ; au clavier/trackpad c'est
+   naturel, mais à la molette (souris desktop) le réflexe est vertical.
+   On convertit le défilement vertical en horizontal quand la souris est
+   sur la bande, seulement si elle dépasse réellement la largeur visible. */
+function wireTabWheelScroll(){
+  var bar=document.getElementById('tabbar');if(!bar||bar._tabWheelWired)return;bar._tabWheelWired=true;
+  bar.addEventListener('wheel',function(e){
+    if(bar.scrollWidth<=bar.clientWidth)return;
+    if(Math.abs(e.deltaY)<=Math.abs(e.deltaX))return;
+    bar.scrollLeft+=e.deltaY;e.preventDefault();
+  },{passive:false});
 }
 function wireTabDrag(){
   var bar=document.getElementById('tabbar');if(!bar||bar._tabDragWired)return;bar._tabDragWired=true;
