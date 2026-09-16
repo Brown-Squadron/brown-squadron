@@ -2469,10 +2469,45 @@ function compressImage(file,cb,maxDim,quality){
 }
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function nl2br(s){return esc(s).replace(/\n/g,'<br>');}
-var APP_VERSION='v21-07';   /* marqueur de version : visible dans la barre de statut */
-function collabStatus(m){var e=document.getElementById('collab-status');if(e)e.textContent=m+'  \u00b7  '+APP_VERSION;}
+var APP_VERSION='v21-08';   /* marqueur de version : visible dans la barre de statut */
+function collabStatus(m){
+  var e=document.getElementById('collab-status');if(!e)return;
+  var n=pendingList().length;
+  var suf=n?('  \u26a0 '+n+' modif. NON synchronis\u00e9e(s) \u2014 en attente de r\u00e9seau'):'';
+  e.textContent=m+suf+'  \u00b7  '+APP_VERSION;
+}
 function cacheLocal(){try{localStorage.setItem(DB_KEY,JSON.stringify(db));}catch(e){}}
 function loadCache(){try{return JSON.parse(localStorage.getItem(DB_KEY))||{};}catch(e){return {};}}
+
+/* ============ FILE D'ATTENTE DE SYNCHRO (corrige les op\u00e9rations "perdues") ============
+   AVANT : si cloudSave() \u00e9chouait (r\u00e9seau coup\u00e9, timeout...), l'app affichait quand m\u00eame
+   "ENREGISTR\u00c9 (local)" et n'essayait plus JAMAIS de renvoyer cette fiche vers le cloud.
+   R\u00e9sultat : l'op\u00e9ration restait visible UNIQUEMENT sur l'appareil qui l'avait cr\u00e9\u00e9e
+   (dans son localStorage), et n'apparaissait donc jamais pour les autres comptes/appareils
+   (PC, mobile, lecture seule) -> impression qu'elle "dispara\u00eet" ou n'est "pas visible".
+   Ici : tout id qui \u00e9choue est m\u00e9moris\u00e9 dans une file locale et renvoy\u00e9 automatiquement
+   \u00e0 chaque cycle de synchro (25 s), au retour de connexion, et au retour sur l'onglet. */
+var PENDING_KEY='bs_pending_push';
+function pendingList(){try{return JSON.parse(localStorage.getItem(PENDING_KEY))||[];}catch(e){return [];}}
+function pendingAdd(id){
+  try{var p=pendingList();if(p.indexOf(id)<0){p.push(id);localStorage.setItem(PENDING_KEY,JSON.stringify(p));}}catch(e){}
+}
+function pendingRemove(id){
+  try{var p=pendingList();var i=p.indexOf(id);if(i>=0){p.splice(i,1);localStorage.setItem(PENDING_KEY,JSON.stringify(p));}}catch(e){}
+}
+var _flushBusy=false;
+async function flushPending(){
+  if(!sb||_flushBusy)return;
+  var ids=pendingList();if(!ids.length)return;
+  _flushBusy=true;
+  try{
+    for(var i=0;i<ids.length;i++){
+      var id=ids[i];
+      if(!db[id]){pendingRemove(id);continue;}  /* fiche supprim\u00e9e depuis -> on abandonne son envoi */
+      await cloudSave(id);
+    }
+  }finally{_flushBusy=false;}
+}
 function val(id){return document.getElementById(id).value.trim();}
 
 /* ============ LOGIN ============ */
@@ -2554,6 +2589,14 @@ function startApp(){
   },25000);
   /* retour sur l'app (onglet ré-affiché) -> resync immédiate */
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&sb)cloudRefresh(false);});
+  /* retour de connexion réseau (wifi/4G qui revient) -> on renvoie tout de suite ce qui
+     était resté bloqué en attente au lieu d'attendre jusqu'à 25 s */
+  window.addEventListener('online',function(){if(sb)cloudRefresh(false);});
+  /* si des modifs n'ont pas encore atteint le cloud, on prévient avant de fermer l'onglet
+     plutôt que de laisser croire que tout est enregistré */
+  window.addEventListener('beforeunload',function(e){
+    if(pendingList().length){e.preventDefault();e.returnValue='';}
+  });
   if(sb){pullPam();subscribePam();}
   /* restaurer le dernier onglet ouvert (sauf si pas trouvé) */
   try{
@@ -3356,8 +3399,8 @@ function saveEval(){
   if(!currentEvalId){newEval();}
   readEvalForm();cacheLocal();
   var st=document.getElementById('eval-status');st.textContent='// transmission...';
-  if(sb)cloudSave(currentEvalId).then(function(ok){st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// ENREGISTRÉ (local) ✓';});
-  else st.textContent='// ENREGISTRÉ (local) ✓';
+  if(sb)cloudSave(currentEvalId).then(function(ok){st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// enregistré localement — en attente de synchro ⏳';});
+  else st.textContent='// enregistré localement — en attente de synchro ⏳';
   refreshEvalSelect();evalDirty=false;
 }
 function delEval(){
@@ -3490,7 +3533,7 @@ function saveMembre(){
   readForm();cacheLocal();
   var st=document.getElementById('fiche-status');st.textContent='// transmission...';
   cloudSave(currentId).then(function(ok){
-    st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// ENREGISTRÉ (local) ✓';
+    st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// enregistré localement — en attente de synchro ⏳';
     renderMembres();setTimeout(function(){st.textContent='';},2500);
   });
 }
@@ -3944,7 +3987,7 @@ function saveOp(){
     cacheLocal();
     if(st)st.textContent='// transmission...';
     cloudSave(currentOpId).then(function(ok){
-      if(st){st.textContent=ok?'// PR\u00c9SENCES ENREGISTR\u00c9ES \u2713':'// ENREGISTR\u00c9 (local) \u2713';
+      if(st){st.textContent=ok?'// PR\u00c9SENCES ENREGISTR\u00c9ES \u2713':'// enregistr\u00e9 localement \u2014 en attente de synchro \u23f3';
         setTimeout(function(){st.textContent='';},2500);}
       renderOps();renderCalendar();
     });
@@ -3955,7 +3998,7 @@ function saveOp(){
   cacheLocal();
   st.textContent='// transmission...';
   cloudSave(currentOpId).then(function(ok){
-    st.textContent=ok?'// ENREGISTR\u00c9 (cloud) \u2713':'// ENREGISTR\u00c9 (local) \u2713';
+    st.textContent=ok?'// ENREGISTR\u00c9 (cloud) \u2713':'// enregistr\u00e9 localement \u2014 en attente de synchro \u23f3';
     renderOps();renderCalendar();setTimeout(function(){st.textContent='';},2500);
   });
 }
@@ -4179,7 +4222,7 @@ function saveCours(){
   if(!c.title){document.getElementById('cours-status').textContent='// titre requis';return;}
   cacheLocal();var st=document.getElementById('cours-status');st.textContent='// transmission...';
   cloudSave(currentCoursId).then(function(ok){
-    st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// ENREGISTRÉ (local) ✓';
+    st.textContent=ok?'// ENREGISTRÉ (cloud) ✓':'// enregistré localement — en attente de synchro ⏳';
     renderCours();setTimeout(function(){st.textContent='';},2500);
   });
 }
@@ -5520,6 +5563,10 @@ async function cloudRefresh(force){
   if(!sb){collabStatus('// MODE LOCAL \u2014 '+Object.keys(db).length+' \u00e9l\u00e9ment(s)');return;}
   if(_syncBusy)return;                               /* anti-chevauchement : une sync a la fois */
   _syncBusy=true;
+  /* on ENVOIE D'ABORD ce qui attend localement (cr\u00e9ations/modifs pas encore sur le cloud
+     suite \u00e0 un \u00e9chec r\u00e9seau pr\u00e9c\u00e9dent) avant d'aller lire -> sinon une op\u00e9ration cr\u00e9\u00e9e
+     hors-ligne reste invisible pour les autres ind\u00e9finiment. */
+  try{await flushPending();}catch(e){}
   var incremental=(_lastSyncAt&&!force);
   collabStatus(incremental?'// synchro...':'// synchronisation...');
   /* SYNC PAR PAQUETS : au lieu de tout demander d'un coup (echec total si le reseau
@@ -5536,9 +5583,15 @@ async function cloudRefresh(force){
       try{
         /* on demande TOUJOURS les 12 plus anciens éléments non encore reçus :
            le curseur avance à chaque paquet, donc rien n'est sauté ni redemandé. */
+        /* gte (et non gt) : deux fiches enregistrées à la même milliseconde partagent parfois
+           le même "updated_at". Avec gt strict, dès que ce timestamp devenait le curseur, la
+           fiche restante avec le MÊME timestamp était exclue à vie des synchros suivantes ->
+           une opération pouvait ainsi ne plus jamais réapparaître pour personne. Le gte relit
+           au pire 1 ligne déjà connue (inoffensif, l'écriture est idempotente), mais n'en perd
+           plus aucune. */
         var q=sb.from('entries').select('id,type,data,updated_at')
                .order('updated_at',{ascending:true}).limit(PAGE);
-        if(cursor)q=q.gt('updated_at',cursor);
+        if(cursor)q=q.gte('updated_at',cursor);
         if(ctrl&&q.abortSignal)q=q.abortSignal(ctrl.signal);
         var res=await q;
         clearTimeout(killer);
@@ -5557,6 +5610,12 @@ async function cloudRefresh(force){
         partial=true;done=true;               /* on s'arrete mais on GARDE tout le recu */
       }
     }
+    /* Le plafond de 40 paquets (480 fiches) protège contre une boucle infinie, mais AVANT
+       cette correction, l'atteindre arrêtait la boucle sans jamais passer "partial" à true :
+       la synchro s'affichait comme réussie ("SYNC ✓") alors qu'il restait potentiellement
+       des fiches plus récentes jamais récupérées. On le traite maintenant comme une synchro
+       partielle normale -> la reprise auto (8 s) continue depuis le curseur déjà atteint. */
+    if(!done&&page>=40){partial=true;if(!errMsg)errMsg='beaucoup de changements — synchro par lots';}
     /* On mémorise la progression MÊME en cas de coupure : les éléments déjà reçus
        ne seront pas redemandés à la reprise -> chaque tentative fait avancer, et
        un réseau très faible finit par tout récupérer au bout de quelques passages. */
@@ -5576,9 +5635,18 @@ async function cloudRefresh(force){
   }finally{_syncBusy=false;}
 }
 async function cloudSave(id){
-  if(!sb)return false;
+  if(!sb){pendingAdd(id);return false;}
   try{var d=db[id]||{};var res=await sb.from('entries').upsert({id:id,type:d.type||'',data:d,updated_at:new Date().toISOString()});
-    if(res.error)throw res.error;return true;}catch(err){collabStatus('// ECHEC CLOUD : '+(err.message||err));return false;}
+    if(res.error)throw res.error;
+    pendingRemove(id);
+    return true;
+  }catch(err){
+    /* échec réseau/cloud : on NE PERD PLUS la fiche -> elle est reprogrammée pour renvoi
+       automatique (voir flushPending), au lieu de rester bloquée en local seulement. */
+    pendingAdd(id);
+    collabStatus('// ECHEC CLOUD : '+(err.message||err));
+    return false;
+  }
 }
 async function cloudDelete(id){if(!sb)return;try{await sb.from('entries').delete().eq('id',id);}catch(err){}}
 
