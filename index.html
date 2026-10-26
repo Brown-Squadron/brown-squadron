@@ -284,7 +284,7 @@ main{padding:16px 16px calc(var(--nav-h) + 96px + var(--safe-b));max-width:1120p
 .fiche-head{display:flex;align-items:center;gap:14px;margin:4px 0 16px;}
 .fiche-head .avatar{width:58px;height:58px;font-size:20px;border-radius:18px;}
 .fiche-head .cs{font-stretch:125%;font-weight:800;font-size:24px;line-height:1.05;text-transform:uppercase;word-break:break-word;}
-.score{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.score{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-bottom:14px;}
 .score .stat .v{color:var(--phos);}
 .drill-admin{display:flex;align-items:center;gap:10px;margin-top:10px;}
 .drill-admin input{width:96px;height:44px;border-radius:12px;border:1px solid var(--hair3);background:var(--ground);text-align:center;font-size:18px;font-weight:800;}
@@ -607,6 +607,8 @@ body[data-view=chat] #toasts{bottom:calc(var(--nav-h) + 90px + var(--safe-b));}
 @media (min-width:960px){body[data-view=chat] main{padding-bottom:0;}}
 a.btn{text-decoration:none;color:inherit;}
 .sheet:not(.on){visibility:hidden;transition:transform .26s cubic-bezier(.2,.8,.2,1),visibility 0s .26s;}
+.pdf-pages .pdf-page{display:block;width:100%;border-radius:10px;margin:0 0 10px;background:#fff;}
+.score .chips{flex-wrap:wrap;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -1032,6 +1034,7 @@ async function cloudRefresh(){
     if(changed)renderSoon();
     if(failed){setSync('warn',failed+' fiche(s) non reçue(s)');clearTimeout(window._retryT);window._retryT=setTimeout(cloudRefresh,10000);}
     else setSync('ok','À jour');
+    try{migrateKitModel();}catch(e){}
   }catch(err){
     setSync('warn','Hors ligne');
   }finally{
@@ -1303,12 +1306,14 @@ function upcomingOps(){var t=todayISO();
 
 /* ---------- kit-list : modèle global + étoiles (obligatoire) ---------- */
 var KIT_DOC_KEY='__kitlist__';
-var KIT_AOR2_DEF=[{name:'Combat Shirt AOR2'},{name:'Combat Pant AOR2'},{name:'Pantalon coupe "field" AOR2'},{name:'Bob / Bonnie hat AOR2'},{name:'Slick AOR2'},
-  {name:'Chest Rig AOR2',sub:[{name:'Chargeurs'},{name:'Grenades frag'},{name:'Fumigènes'},{name:'Flashbangs'},{name:'Radio PRC152 OD'},{name:'PTT noir'},{name:'Déport d\'antenne'},{name:'Antenne fouet'},{name:'CAT noir'}]},
+var KIT_AOR2_DEF=[{name:'Combat Shirt AOR2'},{name:'Combat Pant et/ou coupe field AOR2'},{name:'Bob / Bonnie hat AOR2'},{name:'Slick AOR2'},
+  {name:'Chest Rig AOR2',sub:[{name:'Chargeurs'},{name:'Grenades frag'},{name:'Fumigènes'},{name:'Flashbangs'},{name:'Radio PMR (PRC148 / PRC152 / Baofeng)'},{name:'PTT noir'},{name:'Déport d\'antenne'},{name:'Antenne fouet'},{name:'CAT noir'}]},
+  {name:'Système headset associé à la radio'},
   {name:'Rigger Belt (OD / SAND / BLACK)'},{name:'Casque TC2001 / MICH2001'},{name:'Shroud L2G05'},{name:'Chaussures'},{name:'Gloves'},{name:'Équipements IR'},{name:'Medic Pouch (Blow out / Ifak)'},
   {name:'Sac BTAP AOR2',sub:[{name:'Grenades frag'},{name:'Fumigènes'},{name:'Flashbangs'},{name:'Torche rouge'},{name:'Chargeur'},{name:'Camelbak 2 litres d\'eau'},{name:'Nourriture'},{name:'Tube de maquillage noir/vert'},{name:'Carnet de notes'}]}];
 var KIT_AOR1_DEF=[{name:'Combat Shirt AOR1 Navy Custom (Gen2)'},{name:'Combat Pant AOR1 Navy Custom (Gen2)'},
-  {name:'Plate Carrier / Chest + Slick ou PACA ou Chicken',sub:[{name:'Chargeurs'},{name:'Grenade M67'},{name:'Flashbang'},{name:'Fumigène'}]},
+  {name:'Plate Carrier / Chest + Slick ou PACA ou Chicken',sub:[{name:'Chargeurs'},{name:'Grenade M67'},{name:'Flashbang'},{name:'Fumigène'},{name:'Radio PMR (PRC148 / PRC152 / Baofeng)'},{name:'PTT noir'}]},
+  {name:'Système headset Comtac II ou III (OD ou TAN) ou similaire (MSA)'},
   {name:'Rigger Belt (OD / SAND / BLACK / AOR1)'},{name:'Casque MARITIME type "OpsCore" AOR1'},{name:'Shroud L4G24 Silver ou L4G19 Gold'},{name:'Manta Strobe'},{name:'Chaussures'},{name:'Gloves'},{name:'Medic Pouch (Blow out)'}];
 var KIT_ANNEXE_DEF=[{name:'Veste Goretex AOR2 - AOR1 NWU Type III'},{name:'Beyond Cold Fusion AOR1 - AOR2'},{name:'Patagonia lvl 3 / 3a / 5 AOR1 ou AOR2'},{name:'Arcteryx Minotaur Half Shell'},
   {name:'LBT 2595G Backpack',sub:[{name:'Chargeurs'},{name:'Grenade M67'},{name:'Flashbang'},{name:'Fumigène'},{name:'Nourriture'}]},{name:'Handwarmer AOR1 / AOR2'}];
@@ -1325,7 +1330,41 @@ function requiredKeys(){var m=kitModel(),keys=[];
     if(it.req)keys.push(s[0]+'::'+it.name);
     (it.sub||[]).forEach(function(su){if(su.req)keys.push(s[0]+'::'+it.name+'::'+su.name);});});});
   return keys;}
-function memberKitState(m){var o={};(m.kit||[]).forEach(function(k){o[(k.sec||'aor2')+'::'+k.name]={qty:k.qty||0,has:!!k.has};});return o;}
+/* anciens noms d'items -> nouveaux (les cases déjà cochées sont conservées sans réécrire les fiches) */
+var KIT_ALIASES={
+  'aor2::Combat Pant et/ou coupe field AOR2':['aor2::Combat Pant AOR2','aor2::Pantalon coupe "field" AOR2'],
+  'aor2::Chest Rig AOR2::Radio PMR (PRC148 / PRC152 / Baofeng)':['aor2::Chest Rig AOR2::Radio PRC152 OD']
+};
+function memberKitState(m){var o={};(m.kit||[]).forEach(function(k){o[(k.sec||'aor2')+'::'+k.name]={qty:k.qty||0,has:!!k.has};});
+  Object.keys(KIT_ALIASES).forEach(function(nk){if(o[nk]&&o[nk].has)return;KIT_ALIASES[nk].forEach(function(ok){var s=o[ok];if(s&&s.has&&!(o[nk]&&o[nk].has))o[nk]={qty:s.qty,has:true};});});
+  return o;}
+/* mise à jour unique de la kit-list en ligne (demandée par BS-01, oct. 2026) — étoiles conservées */
+var KIT_VERSION=2;
+function migrateKitModel(){
+  if(!canAdmin())return;var d=db[KIT_DOC_KEY];
+  if(!d||!d.aor2||(d.kv||1)>=KIT_VERSION)return;
+  cloudMutate(KIT_DOC_KEY,function(x){
+    if(!x.aor2||(x.kv||1)>=KIT_VERSION)return;
+    var m={aor2:hydrateSub(x.aor2),aor1:hydrateSub(x.aor1),annexe:hydrateSub(x.annexe)};
+    function find(arr,n){for(var i=0;i<arr.length;i++)if(arr[i].name===n)return i;return -1;}
+    var a2=m.aor2,i1=find(a2,'Combat Pant AOR2'),i2=find(a2,'Pantalon coupe "field" AOR2');
+    if(i1>=0||i2>=0){var req=(i1>=0&&a2[i1].req)||(i2>=0&&a2[i2].req);var at=i1>=0?i1:i2;
+      a2[at]={name:'Combat Pant et/ou coupe field AOR2',req:!!req};if(i1>=0&&i2>=0)a2.splice(i2,1);}
+    var ci=find(a2,'Chest Rig AOR2');
+    if(ci>=0){var it=a2[ci]=clone(a2[ci]);var sub=it.sub=(it.sub||[]);var ri=find(sub,'Radio PRC152 OD');
+      if(ri>=0)sub[ri]={name:'Radio PMR (PRC148 / PRC152 / Baofeng)',req:!!sub[ri].req};
+      if(find(a2,'Système headset associé à la radio')<0)a2.splice(ci+1,0,{name:'Système headset associé à la radio'});}
+    else if(find(a2,'Système headset associé à la radio')<0)a2.push({name:'Système headset associé à la radio'});
+    var a1=m.aor1,pi=find(a1,'Plate Carrier / Chest + Slick ou PACA ou Chicken');
+    if(pi>=0){var pc=a1[pi]=clone(a1[pi]);var ps=pc.sub=(pc.sub||[]);
+      if(find(ps,'Radio PMR (PRC148 / PRC152 / Baofeng)')<0)ps.push({name:'Radio PMR (PRC148 / PRC152 / Baofeng)'});
+      if(find(ps,'PTT noir')<0)ps.push({name:'PTT noir'});}
+    var hn='Système headset Comtac II ou III (OD ou TAN) ou similaire (MSA)';
+    if(find(a1,hn)<0){if(pi>=0)a1.splice(pi+1,0,{name:hn});else a1.push({name:hn});}
+    x.aor2=m.aor2;x.aor1=m.aor1;x.annexe=m.annexe;x.kv=KIT_VERSION;x.type='kitlist';
+  },'kitlist').then(function(ok){if(ok){toast('Kit-list mise à jour : radio PMR, headset, combat pant');if(curView==='fiche')renderFiche();}});
+}
+
 function kitPct(m,req){req=req||requiredKeys();if(!req.length)return null;var st=memberKitState(m);
   var n=req.filter(function(k){return st[k]&&st[k].has;}).length;return Math.round(n/req.length*100);}
 function drillPct(m){var v=m&&m.drill_pct;return (typeof v==='number'&&!isNaN(v))?Math.max(0,Math.min(100,Math.round(v))):null;}
@@ -1475,9 +1514,11 @@ function renderFiche(){
   var html='<div class="fiche-head"><div class="avatar'+(canAdmin()?' editable':'')+'" '+(canAdmin()?'onclick="editBadge(\''+currentId+'\')" title="Modifier le badge"':'')+'>'+esc(memBadge(Object.assign({},m,draft)))+'</div><div style="flex:1;min-width:0"><div class="cs" id="fiche-cs">'+esc(draft.pseudo||'Nouvelle fiche')+'</div>'+
     '<div class="sub">'+esc(draft.role||'Rôle non renseigné')+'</div></div>'+pamHTML(currentId)+'</div>'+
     '<div class="score"><div class="stat"><div class="v" id="kit-pct-v">'+pctTxt(k)+'</div><div class="l">Kit-list</div><div class="bar phos"><i id="kit-pct-b" style="width:'+(k||0)+'%"></i></div></div>'+
-      '<div class="stat"><div class="v" style="color:var(--tan2)">'+pctTxt(d)+'</div><div class="l">Progression drills</div><div class="bar"><i style="width:'+(d||0)+'%"></i></div>'+
-      (canAdmin()?'<div class="drill-admin"><input type="number" min="0" max="100" inputmode="numeric" value="'+(d==null?'':d)+'" placeholder="—" onchange="setDrillPct(this.value)" aria-label="Pourcentage drill"><span class="tiny">%<br>fixé par le master</span></div>':'')+
-    '</div></div>'+
+      '<div class="stat"><div class="v" style="color:var(--tan2)">'+pctTxt(d)+'</div><div class="l">Progression drills</div><div class="bar"><i style="width:'+(d||0)+'%"></i></div></div>'+
+      (canAdmin()?'<div class="stat" style="grid-column:1/-1"><div class="l" style="margin:0">Progression drill du membre — réglée par le master</div><div class="drill-admin"><input type="number" min="0" max="100" inputmode="numeric" value="'+(d==null?'':d)+'" placeholder="—" onchange="setDrillPct(this.value)" aria-label="Pourcentage drill"><span class="tiny">%<br>fixé par le master</span></div>'+
+        '<div class="chips" style="margin-top:10px">'+[['35','Acte 1 confirmé'],['70','Actes 1 et 2 confirmés'],['100','Acte 3 confirmé']].map(function(x){
+          return '<button class="chip'+(String(d)===x[0]?' on':'')+'" onclick="setDrillPct(\''+x[0]+'\')">'+x[1]+' · '+x[0]+' %</button>';}).join('')+'</div></div>':'')+
+    '</div>'+
     '<div class="tabs"><div class="seg">'+[['profil','Profil'],['kit','Kit-list'],['arme','Armement']].map(function(t){
       return '<button class="'+(ficheTab===t[0]?'on':'')+'" onclick="ficheTab=\''+t[0]+'\';renderFiche()">'+t[1]+'</button>';}).join('')+'</div></div>';
   if(ficheTab==='profil'){
@@ -1574,7 +1615,7 @@ function delKitLine(sec,i,j){if(!canAdmin())return;var it=kitModel()[sec][i];if(
     else m[sec]=m[sec].filter(function(a){return a.name!==name;});});renderKitBox();}
 function reseedKitModel(){if(!canAdmin())return;
   if(!confirm('Restaurer la kit-list officielle pour tous les comptes ?\nLes étoiles et les items ajoutés seront perdus. Les cases cochées des membres sont conservées.'))return;
-  db[KIT_DOC_KEY]=Object.assign({type:'kitlist'},defaultKitModel());cloudSave(KIT_DOC_KEY);renderKitBox();}
+  db[KIT_DOC_KEY]=Object.assign({type:'kitlist',kv:KIT_VERSION},defaultKitModel());cloudSave(KIT_DOC_KEY);renderKitBox();}
 /* réordonner (admin) */
 var kitDrag=null;
 function kitDragStart(ev,i){
@@ -1857,13 +1898,38 @@ function renderCoursView(id){
     if(b.type==='text')return '<div class="prose" style="margin:14px 0">'+esc(b.text)+'</div>';
     if(b.type==='img')return '<figure><img src="'+b.data+'" alt="">'+(b.cap?'<figcaption>'+esc(b.cap)+'</figcaption>':'')+'</figure>';
     if(b.type==='video'){var e=videoEmbedUrl(b.url);return e?'<div class="video"><iframe src="'+e+'" allowfullscreen loading="lazy"></iframe></div>':(b.url?'<p><a href="'+esc(b.url)+'" target="_blank" rel="noopener">'+esc(b.url)+'</a></p>':'');}
-    if(b.type==='pdf')return '<div class="pdf" onclick="viewDoc(db[currentCoursId].blocks['+i+'])">'+I.file+'<div><b>'+esc(b.name||'Document PDF')+'</b><div class="tiny">Ouvrir le PDF</div></div></div>';
+    if(b.type==='pdf')return '<div class="pdf" onclick="viewDoc(db[currentCoursId].blocks['+i+'])">'+I.file+'<div><b>'+esc(b.name||'Document PDF')+'</b><div class="tiny">Ouvrir le fichier d\'origine</div></div></div>'+
+      '<div class="pdf-pages" data-blk="'+i+'"><div class="tiny" style="padding:10px 0">Chargement des pages…</div></div>';
     return '';}).join('')||'<div class="tiny">Ce cours est vide.</div>';
   $('view-cours').innerHTML='<div class="reader">'+(c.cat?'<span class="tag">'+esc(c.cat)+'</span>':'')+'<div class="h">'+esc(c.title||'Sans titre')+'</div>'+
     (c.instr?'<div class="sub">Instructeur : '+esc(c.instr)+'</div>':'')+
     '<div class="op-actions"><button class="btn sm" onclick="genCoursPDF()">'+I.print+'PDF imprimable</button>'+(canEditOps()?'<button class="btn sm primary" onclick="go(\'cours-edit\',\''+id+'\')">'+I.edit+'Modifier</button>':'')+'</div>'+
     '<div class="divider"></div>'+body+'</div>';
+  renderInlinePdfs(id);
 }
+/* affiche TOUTES les pages des PDF directement dans le cours (sur iPhone, l'aperçu PDF natif n'affiche souvent que la 1re page) */
+function renderInlinePdfs(id){
+  var boxes=[].slice.call(document.querySelectorAll('#view-cours .pdf-pages'));if(!boxes.length)return;
+  ensurePdfJs().then(function(){
+    boxes.reduce(function(chain,box){return chain.then(function(){
+      if(curView!=='cours'||currentCoursId!==id)return;
+      var b=(db[id].blocks||[])[+box.getAttribute('data-blk')];if(!b||!b.data)return;
+      var bin=atob(b.data.split(',')[1]);var arr=new Uint8Array(bin.length);for(var k=0;k<bin.length;k++)arr[k]=bin.charCodeAt(k);
+      return pdfjsLib.getDocument({data:arr}).promise.then(function(pdf){
+        box.innerHTML='<div class="tiny" style="padding:6px 0">'+pdf.numPages+' page'+(pdf.numPages>1?'s':'')+'</div>';
+        var seq=Promise.resolve();var w=Math.min(box.clientWidth||700,900)*(window.devicePixelRatio>1?2:1.4);
+        for(var p=1;p<=pdf.numPages;p++){(function(no){seq=seq.then(function(){
+          if(curView!=='cours'||currentCoursId!==id)return;
+          return pdf.getPage(no).then(function(page){var v0=page.getViewport({scale:1});var vp=page.getViewport({scale:w/v0.width});
+            var cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+            return page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){
+              var img=new Image();img.src=cv.toDataURL('image/jpeg',0.82);img.alt='Page '+no;img.className='pdf-page';box.appendChild(img);});});});})(p);}
+        return seq;
+      }).catch(function(){box.innerHTML='<div class="tiny">Impossible d\'afficher les pages ici : ouvre le fichier d\'origine.</div>';});
+    });},Promise.resolve());
+  },function(){boxes.forEach(function(b){b.innerHTML='<div class="tiny">Aperçu indisponible hors ligne : ouvre le fichier d\'origine.</div>';});});
+}
+
 function newCours(){if(!canEditOps()){toast('Ton compte est en lecture seule.',true);return;}
   var id=uid();db[id]={type:'cours',created:Date.now(),blocks:[]};window._newDraftId=id;go('cours-edit',id);}
 function renderCoursEdit(id){
@@ -2099,7 +2165,7 @@ function showPdfWait(on){var el=$('pdf-wait');if(!el){el=document.createElement(
 function renderPdfToImages(dataUrl){
   return ensurePdfJs().then(function(){
     var b64=dataUrl.split(',')[1];var bin=atob(b64);var arr=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
-    return pdfjsLib.getDocument({data:arr}).promise.then(function(pdf){var imgs=[];var n=Math.min(pdf.numPages,30);var seq=Promise.resolve();
+    return pdfjsLib.getDocument({data:arr}).promise.then(function(pdf){var imgs=[];var n=Math.min(pdf.numPages,400);var seq=Promise.resolve();
       for(var p=1;p<=n;p++){(function(no){seq=seq.then(function(){return pdf.getPage(no);}).then(function(page){var vp=page.getViewport({scale:1.6});
         var cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;return page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){imgs.push(cv.toDataURL('image/jpeg',0.8));});});})(p);}
       return seq.then(function(){return imgs;});});
@@ -2109,7 +2175,7 @@ function docsToPagesAsync(docs){
   if(!docs||!docs.length)return Promise.resolve('');
   return Promise.all(docs.map(function(d,i){var name=esc(d.name||('Document '+(i+1)));var t=d.type||'';
     if(t.indexOf('image')===0)return Promise.resolve('<div class="docpage"><h3>'+name+'</h3><img src="'+d.data+'"></div>');
-    if(t.indexOf('pdf')>=0)return Promise.race([renderPdfToImages(d.data),new Promise(function(r,j){setTimeout(function(){j();},15000);})]).then(function(imgs){
+    if(t.indexOf('pdf')>=0)return Promise.race([renderPdfToImages(d.data),new Promise(function(r,j){setTimeout(function(){j();},180000);})]).then(function(imgs){
       return imgs.map(function(im,pi){return '<div class="docpage"><h3>'+name+(imgs.length>1?' — page '+(pi+1)+'/'+imgs.length:'')+'</h3><img src="'+im+'"></div>';}).join('');},
       function(){return '<div class="docpage"><h3>'+name+'</h3><p class="nofile">PDF non intégré (délai dépassé). Il reste consultable dans l\'appli.</p></div>';});
     return Promise.resolve('<div class="docpage"><h3>'+name+'</h3><p class="nofile">Fichier joint non affichable ici.</p></div>');})).then(function(p){return p.join('');});
