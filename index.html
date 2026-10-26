@@ -257,8 +257,15 @@ main{padding:16px 16px calc(var(--nav-h) + 96px + var(--safe-b));max-width:1120p
 /* =====================================================================
    MEMBRES
    ===================================================================== */
-.mem{display:flex;align-items:center;gap:13px;padding:12px 6px;border-bottom:1px solid var(--hair);cursor:pointer;}
-.mem:last-child{border-bottom:0;}
+.mem{display:flex;align-items:center;gap:13px;padding:12px 12px;cursor:pointer;background:var(--panel);border:1px solid var(--hair2);border-radius:16px;margin-bottom:10px;transition:border-color .15s,background .15s;}
+.mem:hover{border-color:var(--hair3);background:#1c2219;}
+#view-membres .mem{position:relative;}
+#view-membres .mem:before{content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--tan);opacity:.55;}
+.sheet .mem{background:transparent;border:0;border-bottom:1px solid var(--hair);border-radius:0;margin:0;padding:12px 4px;}
+.sheet .mem:before{display:none;}
+.avatar.editable{cursor:pointer;position:relative;}
+.avatar.editable:hover{border-color:var(--tan);}
+.avatar.editable:after{content:"";position:absolute;right:-3px;bottom:-3px;width:10px;height:10px;border-radius:50%;background:var(--tan);border:2px solid var(--panel);}
 .mem .info{flex:1;min-width:0;}
 .mem .cs{font-stretch:118%;font-weight:800;font-size:16px;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .mem .nm{font-size:13px;color:var(--bone2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -271,7 +278,7 @@ main{padding:16px 16px calc(var(--nav-h) + 96px + var(--safe-b));max-width:1120p
 .pam button.y{background:#7a6418;border-color:#c09c2a;color:#fff6d6;}
 .pam button.r{background:#7a2a20;border-color:#c24a37;color:#ffe3de;}
 .mem-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
-@media (min-width:960px){.mem-cols{display:grid;grid-template-columns:1fr 1fr;column-gap:28px;}}
+@media (min-width:960px){.mem-cols{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;}}
 
 /* fiche */
 .fiche-head{display:flex;align-items:center;gap:14px;margin:4px 0 16px;}
@@ -1261,6 +1268,21 @@ function entriesOf(type){return Object.keys(db).filter(function(k){return db[k]&
 function membresOf(){return entriesOf('membre').sort(function(a,b){return (a.pseudo||'').localeCompare(b.pseudo||'','fr');});}
 function operationsOf(){return entriesOf('operation');}
 function coursOf(){return entriesOf('cours');}
+function memBadge(m){return (m&&m.badge)?m.badge:initials(m&&(m.pseudo||m.prenom));}
+/* badge du membre (case carrée) : modifiable par le master uniquement */
+function editBadge(id){
+  if(!canAdmin()||!db[id])return;var m=db[id];
+  openSheet('<h3>Badge de '+esc(m.pseudo||'ce membre')+'</h3><div class="sub">Lettres et chiffres, 4 caractères maximum (ex. B0, B1, TL, M2). Laisse vide pour revenir aux initiales.</div>'+
+    '<div class="field" style="margin:14px 0"><input id="badge-inp" maxlength="4" autocapitalize="characters" value="'+esc(m.badge||'')+'" placeholder="'+esc(initials(m.pseudo||m.prenom))+'" style="text-align:center;font-size:22px;font-weight:800;letter-spacing:.08em;text-transform:uppercase" onkeydown="if(event.key===\'Enter\')$(\'badge-ok\').click()"></div>'+
+    '<button class="btn primary block" id="badge-ok">Enregistrer le badge</button>');
+  setTimeout(function(){var i=$('badge-inp');if(i){i.focus();i.select();}},200);
+  $('badge-ok').onclick=function(){
+    var v=($('badge-inp').value||'').toUpperCase().replace(/[^A-Z0-9À-Ý]/g,'').slice(0,4);
+    if(window._ficheDraft&&currentId===id){if(v)window._ficheDraft.badge=v;else delete window._ficheDraft.badge;}
+    cloudMutate(id,function(x){x.type='membre';if(v)x.badge=v;else delete x.badge;},'membre').then(function(ok){toast(ok?'Badge enregistré':'Enregistré sur cet appareil',!ok);});
+    closeSheet();if(curView==='fiche')renderFiche();else renderMembres();
+  };
+}
 function memName(m){return m?(m.pseudo||[m.prenom,m.nom].filter(Boolean).join(' ')||'Sans indicatif'):'';}
 function dateRangeList(start,end,includeEnd){
   var out=[start];if(!end||end<=start)return out;
@@ -1420,7 +1442,7 @@ function renderMembres(){
   if(!list.length){box.innerHTML='<div class="empty"><b>Aucun résultat</b>Essaie un autre indicatif ou un autre nom.</div>';return;}
   box.innerHTML=list.map(function(m){
     var k=kitPct(m,req),d=drillPct(m);
-    return '<div class="mem" onclick="go(\'fiche\',\''+m._id+'\')"><div class="avatar">'+esc(initials(m.pseudo||m.prenom))+'</div>'+
+    return '<div class="mem" onclick="go(\'fiche\',\''+m._id+'\')"><div class="avatar'+(canAdmin()?' editable':'')+'" '+(canAdmin()?'onclick="event.stopPropagation();editBadge(\''+m._id+'\')" title="Modifier le badge"':'')+'>'+esc(memBadge(m))+'</div>'+
       '<div class="info"><div class="cs">'+esc(m.pseudo||'Sans indicatif')+'</div><div class="nm">'+esc([m.role,[m.prenom,m.nom].filter(Boolean).join(' ')].filter(Boolean).join(' · ')||'—')+'</div>'+
       '<div class="bars"><span>Kit</span><div class="bar phos"><i style="width:'+(k||0)+'%"></i></div><b>'+(k==null?'—':k+'%')+'</b>'+
         '<span>Drill</span><div class="bar"><i style="width:'+(d||0)+'%"></i></div><b>'+(d==null?'—':d+'%')+'</b></div></div>'+
@@ -1450,7 +1472,7 @@ function fld(label,key,type,ph,full){
 function renderFiche(){
   var m=db[currentId];if(!m)return;var draft=window._ficheDraft;
   var k=kitPct(Object.assign({},m,{kit:kitArrFromState()})),d=drillPct(m);
-  var html='<div class="fiche-head"><div class="avatar">'+esc(initials(draft.pseudo||draft.prenom))+'</div><div style="flex:1;min-width:0"><div class="cs" id="fiche-cs">'+esc(draft.pseudo||'Nouvelle fiche')+'</div>'+
+  var html='<div class="fiche-head"><div class="avatar'+(canAdmin()?' editable':'')+'" '+(canAdmin()?'onclick="editBadge(\''+currentId+'\')" title="Modifier le badge"':'')+'>'+esc(memBadge(Object.assign({},m,draft)))+'</div><div style="flex:1;min-width:0"><div class="cs" id="fiche-cs">'+esc(draft.pseudo||'Nouvelle fiche')+'</div>'+
     '<div class="sub">'+esc(draft.role||'Rôle non renseigné')+'</div></div>'+pamHTML(currentId)+'</div>'+
     '<div class="score"><div class="stat"><div class="v" id="kit-pct-v">'+pctTxt(k)+'</div><div class="l">Kit-list</div><div class="bar phos"><i id="kit-pct-b" style="width:'+(k||0)+'%"></i></div></div>'+
       '<div class="stat"><div class="v" style="color:var(--tan2)">'+pctTxt(d)+'</div><div class="l">Progression drills</div><div class="bar"><i style="width:'+(d||0)+'%"></i></div>'+
@@ -1635,7 +1657,7 @@ var opsFilter='';
 function setOpsFilter(t){opsFilter=t;renderOps();}
 function faces(ids){
   var ms=(ids||[]).map(function(id){return db[id];}).filter(Boolean);if(!ms.length)return '';
-  return '<div class="faces">'+ms.slice(0,4).map(function(m){return '<span>'+esc(initials(m.pseudo||m.prenom))+'</span>';}).join('')+(ms.length>4?'<span class="more">+'+(ms.length-4)+'</span>':'')+'</div>';
+  return '<div class="faces">'+ms.slice(0,4).map(function(m){return '<span>'+esc(memBadge(m))+'</span>';}).join('')+(ms.length>4?'<span class="more">+'+(ms.length-4)+'</span>':'')+'</div>';
 }
 function opDateTxt(o){
   if(!o.date)return 'Date à définir';
@@ -1704,7 +1726,7 @@ function presenceHTML(o){
   if(!ms.length)return head+'<div class="tiny">Aucun membre dans l\'effectif.</div>';
   var sorted=ms.slice().sort(function(a,b){var pa=pres.indexOf(a._id)>=0,pb=pres.indexOf(b._id)>=0;return (pb-pa)||memName(a).localeCompare(memName(b),'fr');});
   return head+sorted.map(function(m){var on=pres.indexOf(m._id)>=0;
-    return '<div class="pres'+(on?' on':'')+'" onclick="togglePresence(\''+m._id+'\')"><div class="avatar">'+(on?I.check.replace('<svg','<svg width="18" height="18"'):esc(initials(m.pseudo||m.prenom)))+'</div>'+
+    return '<div class="pres'+(on?' on':'')+'" onclick="togglePresence(\''+m._id+'\')"><div class="avatar">'+(on?I.check.replace('<svg','<svg width="18" height="18"'):esc(memBadge(m)))+'</div>'+
       '<div class="info"><b>'+esc(memName(m))+'</b><span>'+esc(m.role||'')+'</span></div><span class="tiny">'+(on?'Présent':'')+'</span></div>';}).join('');
 }
 function togglePresence(mid){
