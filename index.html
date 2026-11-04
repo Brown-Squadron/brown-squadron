@@ -595,6 +595,23 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 .mp.drawing .maplibregl-marker{pointer-events:none;}
 .mp-tool{flex:1 1 0;min-width:46px;padding:0 2px;font-size:10.5px;}
 @media (min-width:420px){.mp-tool{font-size:11.5px;}}
+/* étiquettes de distance / surface */
+.mk-dist{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px 0 0;border-radius:9px;background:rgba(13,16,12,.92);border:1px solid rgba(232,224,204,.22);color:#fff;cursor:pointer;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,.45);overflow:hidden;}
+.mk-dist i{align-self:stretch;width:5px;flex:none;}
+.mk-dist svg{width:15px;height:15px;color:var(--bone2);flex:none;margin-left:3px;}
+.mk-dist b{font-size:13.5px;font-weight:800;letter-spacing:.01em;}
+.mk-dist small{font-size:11px;color:var(--bone3);font-weight:600;padding-left:6px;border-left:1px solid var(--hair2);}
+.mk-dist.live{background:rgba(232,224,204,.97);color:var(--night);border-color:transparent;pointer-events:none;}
+.mk-dist.live svg,.mk-dist.live small{color:#4a4a3e;}
+.mk-dist.live small{border-left-color:rgba(0,0,0,.15);}
+.mk-sym .s{position:relative;}
+.mk-sym .s em{position:absolute;left:24px;top:-6px;font-style:normal;font-size:10px;font-weight:800;background:rgba(13,16,12,.92);color:#fff;border-radius:6px;padding:1px 5px;border:1px solid var(--hair2);white-space:nowrap;}
+.mp-fromme{margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--ground);border:1px solid var(--hair2);font-size:14px;}
+.mp-fromme b{font-size:16px;}
+.mp-coord{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:10px;height:44px;padding:0 12px;border-radius:12px;border:1px dashed var(--hair3);background:transparent;font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;}
+.mp-coord span{font-size:12px;color:var(--tan2);font-weight:700;}
+#blackout-veil .pk{position:absolute;left:0;right:0;bottom:22%;display:flex;flex-direction:column;align-items:center;gap:6px;color:#2a2a2a;font-size:12px;text-align:center;padding:0 30px;pointer-events:none;}
+#blackout-veil .pk b{font-size:14px;color:#333;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2300,6 +2317,7 @@ function fmtDist(m){return m<1000?Math.round(m)+' m':(m/1000).toFixed(2).replace
 function areaM2(c){if(c.length<3)return 0;var R=6378137,r=Math.PI/180,s=0;
   for(var i=0;i<c.length;i++){var p1=c[i],p2=c[(i+1)%c.length];s+=(p2[0]-p1[0])*r*(2+Math.sin(p1[1]*r)+Math.sin(p2[1]*r));}return Math.abs(s*R*R/2);}
 function fmtArea(a){return a<10000?Math.round(a)+' m²':(a/10000).toFixed(2).replace('.',',')+' ha';}
+function shortAge(ts){var m=Math.max(0,Math.round((Date.now()-ts)/60000));return m<60?m+' min':Math.floor(m/60)+' h';}
 function ago(ts){if(!ts)return '';var m=Math.round((Date.now()-ts)/60000);if(m<1)return 'à l\'instant';if(m<60)return 'il y a '+m+' min';var h=Math.round(m/60);return h<24?'il y a '+h+' h':'le '+new Date(ts).toLocaleDateString('fr-FR');}
 
 /* ---------- interface ---------- */
@@ -2307,6 +2325,8 @@ var I_MAP={
   gps:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 1.5V5M12 19v3.5M1.5 12H5M19 12h3.5"/></svg>',
   full:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
   unfull:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
+  pocket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/></svg>',
+  stop:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
   more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
   undo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
   layers:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3 2 8.5l10 5.5 10-5.5z"/><path d="M2 13.5 12 19l10-5.5"/></svg>'
@@ -2412,14 +2432,14 @@ function redrawMap(){
   var want={};
   w.pings.forEach(function(p){want['p_'+p.id]={item:p,c:'pings'};});
   w.stickers.forEach(function(s){want['s_'+s.id]={item:s,c:'stickers'};});
-  w.shapes.forEach(function(s){if(s.kind==='measure'&&s.coords&&s.coords.length>1)want['l_'+s.id]={item:s,c:'label'};});
+  w.shapes.forEach(function(s){if(s.coords&&s.coords.length>1&&(s.kind!=='zone'||s.coords.length>=3))want['l_'+s.id]={item:s,c:'label'};});
   operationsOf().forEach(function(o){if(o.gps&&typeof o.gps.lat==='number')want['o_'+o._id]={item:o,c:'op'};});
   Object.keys(mapMarkers).forEach(function(k){if(!want[k]){mapMarkers[k].m.remove();delete mapMarkers[k];}});
   Object.keys(want).forEach(function(k){
     var w2=want[k],it=w2.item;var sig=JSON.stringify([it.lat,it.lon,it.color,it.note,it.kind,it.num,it.name,it.gps,it.coords&&it.coords.length,it.coords&&it.coords[it.coords.length-1]]);
     var ex=mapMarkers[k];if(ex&&ex.sig===sig)return;if(ex)ex.m.remove();
     var el=markerEl(w2.c,it);var pos;
-    if(w2.c==='label'){pos=it.coords[it.coords.length-1];}
+    if(w2.c==='label'){pos=it.kind==='zone'?centroid(it.coords):it.coords[it.coords.length-1];}
     else if(w2.c==='op'){pos=[it.gps.lon,it.gps.lat];}else pos=[it.lon,it.lat];
     if(typeof pos[0]!=='number'||typeof pos[1]!=='number')return;
     var m=new maplibregl.Marker({element:el,anchor:w2.c==='pings'?'bottom':'center'}).setLngLat(pos).addTo(map);
@@ -2427,12 +2447,23 @@ function redrawMap(){
   });
 }
 /* un marqueur = UN seul élément (jamais de transform CSS sur la racine : MapLibre s'en sert pour le placer) */
+function centroid(c){var x=0,y=0;c.forEach(function(p){x+=p[0];y+=p[1];});return [x/c.length,y/c.length];}
+function distLabelHTML(kind,coords,color){
+  var ic=kind==='zone'?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 7l6-3 10 4-2 11-12-2z"/></svg>'
+    :(kind==='foot'?'<svg viewBox="0 0 24 24" fill="currentColor"><ellipse cx="8" cy="7" rx="3" ry="4.2"/><ellipse cx="16" cy="15" rx="3" ry="4.2"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 17 17 3l4 4L7 21z"/><path d="M8 12l2 2M11 9l2 2M14 6l2 2"/></svg>');
+  var v=kind==='zone'?fmtArea(areaM2(coords)):fmtDist(lineLen(coords));
+  var sub=kind==='zone'?'':'<small>'+walkTime(lineLen(coords))+'</small>';
+  return '<i style="background:'+esc(color||'#ffd24a')+'"></i>'+ic+'<b>'+v+'</b>'+sub;
+}
+/* temps de marche estimé (4 km/h, chargé, terrain varié) */
+function walkTime(m){var min=Math.round(m/4000*60);return min<1?'< 1 min':(min<60?min+' min':Math.floor(min/60)+' h '+String(min%60).padStart(2,'0'));}
 function markerEl(c,it){
   var el=document.createElement('div');
-  if(c==='label'){el.className='mk-lbl';el.textContent=fmtDist(lineLen(it.coords));el.onclick=function(e){e.stopPropagation();itemTap('shapes',it.id);};return el;}
+  if(c==='label'){el.className='mk-dist k-'+(it.kind||'measure');el.innerHTML=distLabelHTML(it.kind,it.coords,it.color);el.onclick=function(e){e.stopPropagation();itemTap('shapes',it.id);};return el;}
   if(c==='op'){el.className='mk-op';el.innerHTML='<i></i><span>'+esc(it.name||'Opération')+'</span>';el.onclick=function(e){e.stopPropagation();go('op',it._id);};return el;}
   if(c==='pings'){el.className='mk-ping';el.innerHTML=(it.note?'<span class="n">'+esc(it.note)+'</span>':'')+'<i style="background:'+esc(it.color||'#ffd24a')+'"></i>';}
-  else if(SYM[it.kind]){el.className='mk-sym k-'+it.kind;el.innerHTML='<span class="s">'+SYM[it.kind].svg+'</span>'+(it.note?'<span class="n">'+esc(it.note)+'</span>':'');}
+  else if(SYM[it.kind]){el.className='mk-sym k-'+it.kind;el.innerHTML='<span class="s">'+SYM[it.kind].svg+(it.ts&&it.kind!=='veh'?'<em data-ts="'+it.ts+'">'+shortAge(it.ts)+'</em>':'')+'</span>'+(it.note?'<span class="n">'+esc(it.note)+'</span>':'');}
   else if(it.kind==='bs'){el.className='mk-sym';el.innerHTML='<span class="s bs"><img src="'+LOGO_BONE+'" alt=""></span>'+(it.num?'<span class="n">BS-'+esc(it.num)+'</span>':'');}
   el.onclick=function(e){e.stopPropagation();itemTap(c,it.id);};
   return el;
@@ -2445,12 +2476,20 @@ function itemTap(c,id){
   if(c==='shapes'){title={zone:'Zone',foot:'Chemin',measure:'Tracé'}[it.kind]||'Tracé';
     info=it.kind==='zone'?'Surface : '+fmtArea(areaM2(it.coords))+' · périmètre '+fmtDist(lineLen(it.coords.concat([it.coords[0]]))):'Longueur : '+fmtDist(lineLen(it.coords));}
   else if(c==='pings')title='Ping';else title=(SYM[it.kind]||{l:'Repère'}).l;
+  var here=(gpsLast&&gpsOn)?[gpsLast.lon,gpsLast.lat]:null;var target=c==='shapes'?(it.kind==='zone'?centroid(it.coords):it.coords[it.coords.length-1]):[it.lon,it.lat];
+  var fromMe=here?'<div class="mp-fromme"><b>'+fmtDist(haversine(here,target))+'</b> de toi · azimut <b>'+bearingTo(here,target)+'°</b> '+cardinal(bearingTo(here,target))+'</div>':'';
+  var coordTxt=target[1].toFixed(5)+', '+target[0].toFixed(5);
   var meta=[it.by?'par '+esc(it.by):'',it.ts?ago(it.ts):'',it.op&&db[it.op]?'dossier '+esc(db[it.op].name||'op'):''].filter(Boolean).join(' · ');
-  openSheet('<h3>'+title+'</h3>'+(info?'<div class="sub">'+info+'</div>':'')+(meta?'<div class="tiny" style="margin-top:4px">'+meta+'</div>':'')+
+  openSheet('<h3>'+title+'</h3>'+(info?'<div class="sub">'+info+'</div>':'')+(meta?'<div class="tiny" style="margin-top:4px">'+meta+'</div>':'')+fromMe+
+    '<button class="mp-coord" onclick="copyTxt(\''+coordTxt+'\')">'+coordTxt+'<span>Copier</span></button>'+
     (c!=='shapes'?'<div class="field" style="margin-top:14px"><label>'+(it.kind==='medic'?'Qui est blessé, état, besoin':(it.kind==='danger'?'Nature du danger':'Note'))+'</label><input id="mk-note" maxlength="60" value="'+esc(it.note||'')+'" placeholder="'+(it.kind==='medic'?'BS-04, cheville, évac à pied':(it.kind==='danger'?'Sniper, piège, zone minée…':'Texte court'))+'"></div>':'')+
     '<div class="row" style="margin-top:14px">'+(c!=='shapes'?'<button class="btn primary" style="flex:1" onclick="patchItem(\''+c+'\',\''+id+'\',{note:$(\'mk-note\').value.trim()});closeSheet()">Enregistrer</button>':'')+
     '<button class="btn danger" style="flex:'+(c==='shapes'?'1':'0 0 auto')+'" onclick="delItem(\''+c+'\',\''+id+'\');closeSheet();toast(\'Effacé\')">'+(it.kind==='medic'?'Blessé pris en charge':'Effacer')+'</button></div>');
 }
+function bearingTo(a,b){var r=Math.PI/180;var y=Math.sin((b[0]-a[0])*r)*Math.cos(b[1]*r);var x=Math.cos(a[1]*r)*Math.sin(b[1]*r)-Math.sin(a[1]*r)*Math.cos(b[1]*r)*Math.cos((b[0]-a[0])*r);
+  return String(Math.round((Math.atan2(y,x)/r+360)%360)).padStart(3,'0');}
+function cardinal(d){return ['N','NE','E','SE','S','SO','O','NO'][Math.round((+d)/45)%8];}
+function copyTxt(t){try{navigator.clipboard.writeText(t).then(function(){toast('Coordonnées copiées');},function(){toast(t);});}catch(e){toast(t);}}
 function onMapClick(e){
   var ll=[e.lngLat.lng,e.lngLat.lat];
   if(mapTool==='street'){window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+ll[1].toFixed(6)+','+ll[0].toFixed(6),'_blank');setMapTool(null);return;}
@@ -2465,6 +2504,7 @@ function onMapClick(e){
     toast(SYM[k].l+' signalé');return;}
   if(mapTool==='zone'||mapTool==='measure'){mapDraft.push(ll);updateDraft();renderHint();}
 }
+var draftLbl=null;
 function updateDraft(){
   if(!map||!mapReady||!map.getSource('mw-draft'))return;
   var f=[];var c=mapColor;
@@ -2472,6 +2512,11 @@ function updateDraft(){
   if(mapDraft.length>=2)f.push({type:'Feature',properties:{t:'line',color:c},geometry:{type:'LineString',coordinates:mapTool==='zone'&&mapDraft.length>=3?mapDraft.concat([mapDraft[0]]):mapDraft}});
   if(mapTool!=='foot')mapDraft.forEach(function(p){f.push({type:'Feature',properties:{t:'pt',color:c},geometry:{type:'Point',coordinates:p}});});
   map.getSource('mw-draft').setData({type:'FeatureCollection',features:f});
+  var showL=mapDraft.length>=2&&(mapTool==='measure'||mapTool==='foot'||(mapTool==='zone'&&mapDraft.length>=3));
+  if(!showL){if(draftLbl){draftLbl.remove();draftLbl=null;}return;}
+  var el=draftLbl?draftLbl.getElement():document.createElement('div');el.className='mk-dist live k-'+mapTool;el.innerHTML=distLabelHTML(mapTool,mapDraft,mapColor);
+  var pos=mapTool==='zone'?centroid(mapDraft):mapDraft[mapDraft.length-1];
+  if(!draftLbl)draftLbl=new maplibregl.Marker({element:el,anchor:'bottom',offset:[0,-14]}).setLngLat(pos).addTo(map);else draftLbl.setLngLat(pos);
 }
 function finishShape(){
   var k=mapTool;var min=k==='zone'?3:2;if(mapDraft.length<min)return;
@@ -2553,7 +2598,8 @@ function openMapMore(){
       '<button class="menu-item" onclick="apply3D(!mapIs3D);closeSheet()">'+I_MAP.layers+'Relief 3D<span class="r">'+(mapIs3D?'activé':'désactivé')+'</span></button>'+
       '<button class="menu-item" onclick="closeSheet();setMapTool(\'street\')">'+I.route+'Street View<span class="r">vue au sol</span></button>'+
       '<button class="menu-item" onclick="closeSheet();genMapPDF()">'+I.print+'Exporter en PDF</button>'+
-      '<button class="menu-item" onclick="closeSheet();enterBlackout()">'+I_MAP.gps+'Blackout<span class="r">écran noir, GPS actif</span></button>'+
+      '<button class="menu-item" onclick="closeSheet();enterPocket()">'+I_MAP.pocket+'Mode poche<span class="r">GPS actif, écran noir</span></button>'+
+      '<button class="menu-item" onclick="closeSheet();showBgGpsHelp()">'+I.shield+'GPS écran verrouillé<span class="r">appli Traccar</span></button>'+
     '</div>'+
     '<div class="grp-title">Équipe sur le terrain ('+team.length+')</div>'+(team.length?team.map(function(k){var p=gpsData[k];
       return '<div class="mp-row"><button class="mp-row-main" onclick="closeSheet();map.flyTo({center:['+p.lon+','+p.lat+'],zoom:17})"><i style="background:'+esc(p.color||'#46b29d')+'"></i><span>'+esc(k)+'</span><small>'+ago(new Date(p.updated_at).getTime())+'</small></button></div>';}).join(''):'<div class="tiny" style="padding:4px">Personne ne partage sa position.</div>')+
@@ -2574,7 +2620,11 @@ function gpsFresh(p){return p&&(Date.now()-new Date(p.updated_at).getTime())<120
 function gpsViewers(){return Object.keys(gpsData).length>0;}
 function updateGpsBtn(){var b=$('mp-gps');if(b)b.classList.toggle('live',gpsOn);}
 function toggleGps(){
-  if(gpsOn){stopGps();return;}
+  if(gpsOn){openSheet('<h3>Position partagée</h3><div class="sub">Tu apparais en <b>'+esc(myCallsign())+'</b>'+(gpsLast?' · précision ± '+Math.round(gpsLast.acc)+' m':'')+'.</div>'+
+    '<div class="menu-list" style="margin-top:8px"><button class="menu-item" onclick="closeSheet();if(gpsLast)map.flyTo({center:[gpsLast.lon,gpsLast.lat],zoom:Math.max(map.getZoom(),16)})">'+I_MAP.gps+'Me centrer sur la carte</button>'+
+    '<button class="menu-item" onclick="closeSheet();enterPocket()">'+I_MAP.pocket+'Mode poche<span class="r">téléphone rangé</span></button>'+
+    '<button class="menu-item" onclick="closeSheet();showBgGpsHelp()">'+I.shield+'Écran verrouillé ?<span class="r">solutions</span></button>'+
+    '<button class="menu-item" onclick="closeSheet();stopGps()" style="color:var(--signal)">'+I_MAP.stop+'Arrêter le partage</button></div>');return;}
   if(!sb){toast('Pas de connexion : le partage de position est impossible.',true);return;}
   var call=myCallsign();var col=lsGet('bs_gps_color','#46b29d');
   openSheet('<h3>Partager ma position</h3><div class="sub">L\'équipe te voit en direct sur la carte tant que le partage est actif.</div>'+
@@ -2595,6 +2645,7 @@ function startGpsFromSheet(){
   subscribePositions();startMapPoll();
 }
 function stopGps(){
+  if(pocketOn)exitPocket();
   gpsOn=false;updateGpsBtn();if(gpsWatch!=null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
   try{if(gpsWake){gpsWake.release();gpsWake=null;}}catch(e){}
   var me=myCallsign();if(sb&&me)sb.from('positions').delete().eq('pseudo',me).then(function(){},function(){});
@@ -2662,10 +2713,54 @@ function renderGps(){
 }
 
 /* ---------- blackout (op de nuit) ---------- */
-var _boTaps=0,_boT=null;
-function enterBlackout(){var v=$('blackout-veil');if(!v)return;v.style.display='block';GPS_MS=20000;_boTaps=0;
-  v.onclick=function(){_boTaps++;clearTimeout(_boT);_boT=setTimeout(function(){_boTaps=0;},3000);if(_boTaps>=5)exitBlackout();};}
-function exitBlackout(){var v=$('blackout-veil');if(v){v.style.display='none';v.onclick=null;}GPS_MS=3000;}
+/* ---------- mode poche : l'écran reste allumé (noir) pour que le GPS continue ----------
+   Un site web ne peut PAS lire le GPS quand le téléphone est verrouillé (règle iOS/Android).
+   Le mode poche empêche la mise en veille : Wake Lock + vidéo muette en boucle en secours,
+   écran noir, touches bloquées. Pour un suivi écran verrouillé : appli Traccar Client. */
+var _boTaps=0,_boT=null,pocketOn=false,_nsVid=null;
+var NOSLEEP_MP4='data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMpbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlN0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHLbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABdm1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAATZzdGJsAAAAtnN0c2QAAAAAAAAAAQAAAKZhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAALGF2Y0MBQsAK/+EAFWdCwAraewEQAAADABAAAAMAIPEiagEABGjOD8gAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKOAAACjgAAAAYc3R0cwAAAAAAAAABAAAAAgAAQAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAAAgAAAAEAAAAcc3RzegAAAAAAAAAAAAAAAgAAAoUAAAAJAAAAFHN0Y28AAAAAAAAAAQAAA1kAAABidWR0YQAAAFptZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAAC1pbHN0AAAAJal0b28AAAAdZGF0YQAAAAEAAAAATGF2ZjYwLjE2LjEwMAAAAAhmcmVlAAAClm1kYXQAAAJvBgX//2vcRem95tlIt5Ys2CDZI+7veDI2NCAtIGNvcmUgMTY0IHIzMTA4IDMxZTE5ZjkgLSBILjI2NC9NUEVHLTQgQVZDIGNvZGVjIC0gQ29weWxlZnQgMjAwMy0yMDIzIC0gaHR0cDovL3d3dy52aWRlb2xhbi5vcmcveDI2NC5odG1sIC0gb3B0aW9uczogY2FiYWM9MCByZWY9MSBkZWJsb2NrPTE6MDowIGFuYWx5c2U9MHgxOjB4MTExIG1lPWhleCBzdWJtZT0yIHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTAgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0wIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PTAgdGhyZWFkcz0xIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBrZXlpbnRfbWluPTEgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD0xMCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAAOZYiEBb///w9FAAFPf4AAAAAFQZogFfU=';
+function keepAwake(on){
+  if(on){
+    try{if('wakeLock' in navigator&&!gpsWake)navigator.wakeLock.request('screen').then(function(w){gpsWake=w;w.addEventListener('release',function(){gpsWake=null;});}).catch(function(){});}catch(e){}
+    if(!_nsVid){_nsVid=document.createElement('video');_nsVid.setAttribute('playsinline','');_nsVid.setAttribute('muted','');_nsVid.muted=true;_nsVid.loop=true;
+      _nsVid.style.cssText='position:fixed;width:1px;height:1px;opacity:.01;left:0;top:0;pointer-events:none;';_nsVid.src=NOSLEEP_MP4;document.body.appendChild(_nsVid);}
+    try{var pr=_nsVid.play();if(pr&&pr.catch)pr.catch(function(){});}catch(e){}
+  }else{
+    try{if(_nsVid)_nsVid.pause();}catch(e){}
+    if(!gpsOn){try{if(gpsWake){gpsWake.release();gpsWake=null;}}catch(e){}}
+  }
+}
+function enterPocket(){
+  if(!gpsOn){toast('Active d\'abord le partage de position.',true);toggleGps();return;}
+  var v=$('blackout-veil');if(!v)return;pocketOn=true;keepAwake(true);GPS_MS=10000;_boTaps=0;
+  v.innerHTML='<div class="pk"><b>Mode poche</b><span>Position envoyée toutes les 10 s</span><span>Ne verrouille pas le téléphone : range-le écran allumé.</span><span>Touche 5 fois pour sortir</span></div>';
+  v.style.display='block';
+  v.onclick=function(){_boTaps++;clearTimeout(_boT);_boT=setTimeout(function(){_boTaps=0;},3000);if(_boTaps>=5)exitPocket();};
+}
+function exitPocket(){var v=$('blackout-veil');if(v){v.style.display='none';v.onclick=null;}pocketOn=false;GPS_MS=3000;keepAwake(false);}
+function enterBlackout(){enterPocket();}
+function exitBlackout(){exitPocket();}
+/* retour au premier plan : on relance le GPS (le navigateur a pu le couper) et on prévient si la position a été interrompue */
+var _hiddenAt=0;
+document.addEventListener('visibilitychange',function(){
+  if(!gpsOn)return;
+  if(document.hidden){_hiddenAt=Date.now();return;}
+  var gone=_hiddenAt?Date.now()-_hiddenAt:0;_hiddenAt=0;
+  keepAwake(pocketOn);
+  try{if('wakeLock' in navigator&&!gpsWake)navigator.wakeLock.request('screen').then(function(w){gpsWake=w;}).catch(function(){});}catch(e){}
+  try{if(gpsWatch!=null)navigator.geolocation.clearWatch(gpsWatch);}catch(e){}
+  gpsWatch=navigator.geolocation.watchPosition(onGpsPos,function(){},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  gpsSentAt=0;
+  if(gone>45000)toast('Écran verrouillé '+Math.round(gone/60000)+' min : position non transmise pendant ce temps.',true);
+});
+function showBgGpsHelp(){
+  openSheet('<h3>GPS téléphone verrouillé</h3>'+
+    '<div class="sub" style="margin-top:6px">Une appli web ne peut pas lire le GPS quand l\'écran est verrouillé. Deux solutions :</div>'+
+    '<div class="panel" style="margin-top:12px"><b>1. Mode poche — rien à installer</b><div class="tiny" style="margin-top:6px;line-height:1.55">L\'écran reste allumé mais noir et les touches sont bloquées. N\'appuie pas sur le bouton de verrouillage. Consomme un peu plus de batterie.</div>'+
+      '<button class="btn sm" style="margin-top:10px" onclick="closeSheet();enterPocket()">Lancer le mode poche</button></div>'+
+    '<div class="panel" style="margin-top:10px"><b>2. Appli Traccar Client — vrai suivi en arrière-plan</b><div class="tiny" style="margin-top:6px;line-height:1.6">Gratuite sur l\'App Store et le Play Store. Dans ses réglages :<br>'+
+      '• Identifiant de l\'appareil : <b>ton indicatif</b> (ex. BS-02)<br>• Adresse du serveur : celle donnée par le master<br>• Précision : haute · Fréquence : 10 s<br>Tu apparais sur la carte même téléphone verrouillé.</div></div>');
+}
 
 /* ---------- export PDF ---------- */
 function genMapPDF(){
@@ -2706,6 +2801,9 @@ function openMapForOp(){
       toast('Point de l\'opération placé au centre de la carte. Modifie les coordonnées GPS dans la fiche pour l\'ajuster.');}
   }
 }
+
+/* l'âge des repères tactiques se met à jour chaque minute */
+setInterval(function(){document.querySelectorAll('.mk-sym em[data-ts]').forEach(function(e){e.textContent=shortAge(+e.getAttribute('data-ts'));});},60000);
 </script>
 <script>
 /* =====================================================================
