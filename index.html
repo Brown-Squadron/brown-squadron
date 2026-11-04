@@ -2365,7 +2365,7 @@ function pickMapColor(){
 }
 function setMapTool(t){
   if(t&&!canWrite())return;
-  mapTool=(mapTool===t)?null:t;mapDraft=[];updateDraft();
+  mapTool=(mapTool===t)?null:t;mapDraft=[];updateDraft();if(draftLbl&&!mapTool){draftLbl.remove();draftLbl=null;}
   if(map){var cv=map.getCanvas();cv.style.touchAction=mapTool==='foot'?'none':'';map.getCanvas().style.cursor=mapTool?'crosshair':'';
     if(mapTool==='foot')map.dragPan.disable();else map.dragPan.enable();}
   var mp=$('mp');if(mp)mp.classList.toggle('drawing',!!mapTool&&mapTool!=='erase');
@@ -2514,7 +2514,9 @@ function updateDraft(){
   map.getSource('mw-draft').setData({type:'FeatureCollection',features:f});
   var showL=mapDraft.length>=2&&(mapTool==='measure'||mapTool==='foot'||(mapTool==='zone'&&mapDraft.length>=3));
   if(!showL){if(draftLbl){draftLbl.remove();draftLbl=null;}return;}
-  var el=draftLbl?draftLbl.getElement():document.createElement('div');el.className='mk-dist live k-'+mapTool;el.innerHTML=distLabelHTML(mapTool,mapDraft,mapColor);
+  /* ne JAMAIS réécrire className sur un marqueur existant : MapLibre y range ses propres classes de positionnement */
+  var el;if(draftLbl){el=draftLbl.getElement();}else{el=document.createElement('div');el.className='mk-dist live';}
+  el.innerHTML=distLabelHTML(mapTool,mapDraft,mapColor);
   var pos=mapTool==='zone'?centroid(mapDraft):mapDraft[mapDraft.length-1];
   if(!draftLbl)draftLbl=new maplibregl.Marker({element:el,anchor:'bottom',offset:[0,-14]}).setLngLat(pos).addTo(map);else draftLbl.setLngLat(pos);
 }
