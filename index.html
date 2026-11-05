@@ -613,6 +613,12 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 #blackout-veil .pk{position:absolute;left:0;right:0;bottom:22%;display:flex;flex-direction:column;align-items:center;gap:6px;color:#2a2a2a;font-size:12px;text-align:center;padding:0 30px;pointer-events:none;}
 #blackout-veil .pk b{font-size:14px;color:#333;}
 .mp-fab.bg{border-color:var(--phos);color:var(--phos);box-shadow:0 0 0 2px rgba(168,239,192,.25);}
+.mp-status{margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--hair2);background:var(--ground);display:flex;flex-direction:column;gap:4px;}
+.mp-status b{font-size:15px;}
+.mp-status span{font-size:13px;color:var(--bone2);}
+.mp-status .btn{align-self:flex-start;margin-top:6px;}
+.mp-status.ok{border-color:var(--phos);}
+.mp-status.ok b{color:var(--phos);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2629,19 +2635,33 @@ function toggleGps(){
     '<button class="menu-item" onclick="closeSheet();enterPocket()">'+I_MAP.pocket+'Mode poche<span class="r">téléphone rangé</span></button>'+
     '<button class="menu-item" onclick="closeSheet();showBgGpsHelp()">'+I.shield+'Écran verrouillé ?<span class="r">solutions</span></button>'+
     '<button class="menu-item" onclick="closeSheet();stopGps()" style="color:var(--signal)">'+I_MAP.stop+'Arrêter le partage</button></div>');return;}
-  if(!sb){toast('Pas de connexion : le partage de position est impossible.',true);return;}
   var call=myCallsign();var col=lsGet('bs_gps_color','#46b29d');var bg=myBgRow();
-  openSheet('<h3>Partager ma position</h3><div class="sub">L\'équipe te voit en direct sur la carte tant que le partage est actif.</div>'+
-    (bg?'<div class="mp-fromme" style="border-color:var(--phos)"><b style="color:var(--phos)">Traccar fonctionne</b> · position de '+esc(bg.pseudo)+' reçue '+ago(new Date(bg.updated_at).getTime())+'. Inutile d\'activer le partage ici.</div>':
-      (call?'<div class="tiny" style="margin-top:8px">Aucune position récente pour '+esc(call)+' via Traccar.</div>':''))+
-    '<div class="grid2" style="margin-top:14px"><div class="field"><label>Indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02"></div>'+
-    '<div class="field"><label>Couleur</label><div class="mp-colors sm">'+['#46b29d','#ffd24a','#6ea7d6','#e2563f','#b07cff','#ffffff'].map(function(c){
+  var status=bg?'<div class="mp-status ok"><b>Traccar fonctionne</b><span>Position de '+esc(bg.pseudo)+' reçue '+ago(new Date(bg.updated_at).getTime())+'. Rien d\'autre à faire ici.</span>'+
+      '<button class="btn sm" onclick="closeSheet();map.flyTo({center:['+bg.lon+','+bg.lat+'],zoom:Math.max(map.getZoom(),16)})">Me centrer</button></div>'
+    :(call?'<div class="mp-status"><b>Aucune position reçue pour '+esc(call)+'</b><span>Si Traccar est installé, vérifie qu\'il est activé avec l\'identifiant '+esc(call)+'.</span></div>':'');
+  openSheet('<h3>Ma position</h3>'+status+
+    '<div class="grid2" style="margin-top:14px"><div class="field"><label>Mon indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02" autocapitalize="characters"></div>'+
+    '<div class="field"><label>Couleur sur la carte</label><div class="mp-colors sm">'+['#46b29d','#ffd24a','#6ea7d6','#e2563f','#b07cff','#ffffff'].map(function(c){
       return '<button style="background:'+c+'" class="'+(c===col?'on':'')+'" onclick="lsSet(\'bs_gps_color\',\''+c+'\');this.parentNode.querySelectorAll(\'button\').forEach(function(b){b.classList.remove(\'on\')});this.classList.add(\'on\')"></button>';}).join('')+'</div></div></div>'+
-    '<button class="btn primary block" style="margin-top:16px" onclick="startGpsFromSheet()">Activer le partage</button>');
+    '<button class="btn primary block" style="margin-top:14px" onclick="saveMyCall()">Enregistrer</button>'+
+    '<div class="tiny" style="margin-top:6px">Enregistre seulement ton indicatif et ta couleur, sans activer le partage.</div>'+
+    (bg?'':'<div class="divider"></div><div class="lbl">Pas de Traccar sur ce téléphone ?</div>'+
+      '<button class="btn block" style="margin-top:8px" onclick="startGpsFromSheet()">Partager depuis l\'appli</button>'+
+      '<div class="tiny" style="margin-top:6px">Fonctionne seulement appli ouverte et écran allumé (mode poche).</div>'));
+}
+/* indicatif et couleur : enregistrés sans démarrer le GPS de l'appli (utile avec Traccar) */
+function readCallForm(){var call=($('gps-call').value||'').trim().toUpperCase().slice(0,16);if(!call){toast('Entre ton indicatif.',true);return null;}
+  try{localStorage.setItem('bs_gps_call',call);localStorage.setItem('bs_comms_call',call);}catch(e){}return call;}
+function saveMyCall(){
+  var call=readCallForm();if(!call)return;closeSheet();
+  var col=lsGet('bs_gps_color','#46b29d');
+  if(sb)sb.from('positions').update({color:col}).eq('pseudo',call).then(function(){loadPositions();},function(){});
+  if(gpsData[call])gpsData[call].color=col;renderGps();updateGpsBtn();
+  toast('Indicatif '+call+' enregistré');
 }
 function startGpsFromSheet(){
-  var call=($('gps-call').value||'').trim().toUpperCase();if(!call){toast('Entre ton indicatif.',true);return;}
-  try{localStorage.setItem('bs_gps_call',call);}catch(e){}
+  if(!sb){toast('Pas de connexion : le partage de position est impossible.',true);return;}
+  var call=readCallForm();if(!call)return;
   closeSheet();
   if(!navigator.geolocation){toast('GPS non disponible sur cet appareil.',true);return;}
   gpsOn=true;updateGpsBtn();toast('Recherche du signal GPS…');
@@ -2704,7 +2724,7 @@ function renderGps(){
   groups.forEach(function(g){
     var el=document.createElement('div');var lon,lat;
     if(g.length===1){var p=g[0].p;lon=p.lon;lat=p.lat;var col=esc(p.color||'#46b29d');
-      el.className='mk-gps'+(p.me?' me':'');
+      el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'');
       el.innerHTML='<span class="arrow" style="border-bottom-color:'+col+(typeof p.heading==='number'?';transform:rotate('+(p.heading-map.getBearing())+'deg)':';display:none')+'"></span>'+
         '<span class="dot" style="background:'+col+';box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 14px '+col+'"></span><span class="n">'+esc(p.pseudo)+'</span>';
     }else{
