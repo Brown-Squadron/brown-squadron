@@ -612,6 +612,7 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 .mp-coord span{font-size:12px;color:var(--tan2);font-weight:700;}
 #blackout-veil .pk{position:absolute;left:0;right:0;bottom:22%;display:flex;flex-direction:column;align-items:center;gap:6px;color:#2a2a2a;font-size:12px;text-align:center;padding:0 30px;pointer-events:none;}
 #blackout-veil .pk b{font-size:14px;color:#333;}
+.mp-fab.bg{border-color:var(--phos);color:var(--phos);box-shadow:0 0 0 2px rgba(168,239,192,.25);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2620,7 +2621,8 @@ function mapSearch(){
 var gpsOn=false,gpsWatch=null,gpsLast=null,gpsHeading=null,gpsSentAt=0,GPS_MS=3000,gpsData={},gpsMk=[],gpsChan=null,gpsWake=null;
 function gpsFresh(p){return p&&(Date.now()-new Date(p.updated_at).getTime())<120000;}
 function gpsViewers(){return Object.keys(gpsData).length>0;}
-function updateGpsBtn(){var b=$('mp-gps');if(b)b.classList.toggle('live',gpsOn);}
+function myBgRow(){var p=gpsData[myCallsign()];return (!gpsOn&&p&&gpsFresh(p))?p:null;}
+function updateGpsBtn(){var b=$('mp-gps');if(!b)return;b.classList.toggle('live',gpsOn);b.classList.toggle('bg',!!myBgRow());}
 function toggleGps(){
   if(gpsOn){openSheet('<h3>Position partagée</h3><div class="sub">Tu apparais en <b>'+esc(myCallsign())+'</b>'+(gpsLast?' · précision ± '+Math.round(gpsLast.acc)+' m':'')+'.</div>'+
     '<div class="menu-list" style="margin-top:8px"><button class="menu-item" onclick="closeSheet();if(gpsLast)map.flyTo({center:[gpsLast.lon,gpsLast.lat],zoom:Math.max(map.getZoom(),16)})">'+I_MAP.gps+'Me centrer sur la carte</button>'+
@@ -2628,8 +2630,10 @@ function toggleGps(){
     '<button class="menu-item" onclick="closeSheet();showBgGpsHelp()">'+I.shield+'Écran verrouillé ?<span class="r">solutions</span></button>'+
     '<button class="menu-item" onclick="closeSheet();stopGps()" style="color:var(--signal)">'+I_MAP.stop+'Arrêter le partage</button></div>');return;}
   if(!sb){toast('Pas de connexion : le partage de position est impossible.',true);return;}
-  var call=myCallsign();var col=lsGet('bs_gps_color','#46b29d');
+  var call=myCallsign();var col=lsGet('bs_gps_color','#46b29d');var bg=myBgRow();
   openSheet('<h3>Partager ma position</h3><div class="sub">L\'équipe te voit en direct sur la carte tant que le partage est actif.</div>'+
+    (bg?'<div class="mp-fromme" style="border-color:var(--phos)"><b style="color:var(--phos)">Traccar fonctionne</b> · position de '+esc(bg.pseudo)+' reçue '+ago(new Date(bg.updated_at).getTime())+'. Inutile d\'activer le partage ici.</div>':
+      (call?'<div class="tiny" style="margin-top:8px">Aucune position récente pour '+esc(call)+' via Traccar.</div>':''))+
     '<div class="grid2" style="margin-top:14px"><div class="field"><label>Indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02"></div>'+
     '<div class="field"><label>Couleur</label><div class="mp-colors sm">'+['#46b29d','#ffd24a','#6ea7d6','#e2563f','#b07cff','#ffffff'].map(function(c){
       return '<button style="background:'+c+'" class="'+(c===col?'on':'')+'" onclick="lsSet(\'bs_gps_color\',\''+c+'\');this.parentNode.querySelectorAll(\'button\').forEach(function(b){b.classList.remove(\'on\')});this.classList.add(\'on\')"></button>';}).join('')+'</div></div></div>'+
@@ -2681,7 +2685,7 @@ function loadPositions(){
     if(!r||r.error)return;var me=myCallsign();var next={};
     (r.data||[]).forEach(function(p){if(typeof p.lat!=='number'||typeof p.lon!=='number')return;if(p.pseudo===me&&gpsOn)return;if(gpsFresh(p))next[p.pseudo]=p;});
     if(gpsOn&&gpsData[me])next[me]=gpsData[me];
-    gpsData=next;renderGps();
+    gpsData=next;renderGps();updateGpsBtn();
   },function(){});
 }
 function subscribePositions(){
