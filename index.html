@@ -2570,7 +2570,7 @@ function mapFocusOp(id){mapOpMode=id||null;var o=id&&db[id];
   if(o&&o.gps&&typeof o.gps.lat==='number'&&map)map.flyTo({center:[o.gps.lon,o.gps.lat],zoom:14});
   toast(id?'Dossier : '+(o&&o.name||'opération')+' — tes ajouts y seront rangés':'Dossier : sans opération');}
 function applyRemoteWorld(){redrawMap();}
-function startMapPoll(){if(mapPoll)return;mapPoll=setInterval(function(){if(curView==='map'&&!document.hidden){refreshWorld();if(gpsOn||gpsViewers())loadPositions();}},6000);loadPositions();}
+function startMapPoll(){subscribePositions();if(mapPoll)return;mapPoll=setInterval(function(){if(curView==='map'&&!document.hidden){refreshWorld();if(gpsOn||gpsViewers())loadPositions();}},6000);loadPositions();}
 var _rwBusy=false;
 function refreshWorld(){
   if(!sb||_rwBusy||pendingList().indexOf(MW_KEY)>=0)return;_rwBusy=true;
@@ -2713,9 +2713,11 @@ function startHeading(){
   function bind(){headOn=true;window.addEventListener('deviceorientationabsolute',onHead,true);window.addEventListener('deviceorientation',onHead,true);
     setTimeout(function(){if(headOn&&gpsHeading==null)toast('Boussole indisponible sur ce téléphone.',true);},4000);}
   try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function')
-      DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')bind();else toast('Boussole refusée : autorise « Mouvement et orientation » dans Réglages > Safari.',true);}).catch(function(){toast('Boussole : touche à nouveau le bouton pour l\'autoriser.',true);});
+      DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted'||!isIOS())bind();else toast('Boussole refusée : autorise « Mouvement et orientation » dans Réglages > Safari.',true);})
+        .catch(function(){if(!isIOS())bind();else toast('Boussole : touche à nouveau le bouton pour l\'autoriser.',true);});
     else bind();}catch(e){}
 }
+function isIOS(){return /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);}
 function stopHeading(){headOn=false;window.removeEventListener('deviceorientationabsolute',onHead,true);window.removeEventListener('deviceorientation',onHead,true);gpsHeading=null;_hSin=_hCos=null;}
 function tiltCompensated(alpha,beta,gamma){
   var r=Math.PI/180,x=beta*r,y=gamma*r,z=alpha*r;
@@ -2754,25 +2756,47 @@ function drawMyHeading(){
 }
 /* envoi de la direction à l'équipe : quand elle change de plus de 8° (max 1 fois / 1,5 s), et au moins toutes les 8 s */
 function pushHeading(){
-  if(!sb||gpsHeading==null)return;var now=Date.now();
+  if(!sb||gpsHeading==null)return;var now=Date.now();var me=myCallsign();if(!me)return;
   var diff=_hLastVal==null?999:Math.abs(((gpsHeading-_hLastVal+540)%360)-180);
-  if(!((diff>8&&now-_hLastSent>1500)||now-_hLastSent>8000))return;
-  _hLastSent=now;_hLastVal=gpsHeading;
+  /* diffusion directe : dès 4° de changement, jusqu'à 4 fois par seconde */
+  if(diff>4&&now-(window._hBcAt||0)>250){window._hBcAt=now;_hLastVal=gpsHeading;
+    try{if(headCh)headCh.send({type:'broadcast',event:'h',payload:{p:me,h:Math.round(gpsHeading)}});}catch(e){}}
+  /* sauvegarde en base toutes les 8 s (pour ceux qui ouvrent la carte plus tard) */
+  if(now-_hLastSent<8000)return;_hLastSent=now;
   if(gpsOn){if(gpsLast)sendMyPos();return;}
-  var me=myCallsign();if(me&&myBgRow())sb.from('positions').update({heading:Math.round(gpsHeading)}).eq('pseudo',me).then(function(){},function(){});
+  if(myBgRow())sb.from('positions').update({heading:Math.round(gpsHeading)}).eq('pseudo',me).then(function(){},function(){});
 }
 function loadPositions(){
   if(!sb)return;
   withTimeout(sb.from('positions').select('*'),12000).then(function(r){
     if(!r||r.error)return;var me=myCallsign();var next={};
-    (r.data||[]).forEach(function(p){if(typeof p.lat!=='number'||typeof p.lon!=='number')return;if(p.pseudo===me&&gpsOn)return;if(gpsFresh(p))next[p.pseudo]=p;});
+    (r.data||[]).forEach(function(p){if(typeof p.lat!=='number'||typeof p.lon!=='number')return;if(p.pseudo===me&&gpsOn)return;var prev=gpsData[p.pseudo];if(prev&&prev._hAt&&Date.now()-prev._hAt<10000){p.heading=prev.heading;p._hAt=prev._hAt;}if(gpsFresh(p))next[p.pseudo]=p;});
     if(gpsOn&&gpsData[me])next[me]=gpsData[me];
     gpsData=next;renderGps();updateGpsBtn();
   },function(){});
 }
+/* temps réel pour TOUS ceux qui regardent la carte (pas seulement ceux qui partagent) :
+   - positions : la ligne reçue est appliquée directement, sans relire toute la table ;
+   - direction : diffusée en « broadcast » (direct entre appareils, sans écriture en base),
+     donc la rotation du cône arrive en quelques dixièmes de seconde. */
+var headCh=null;
 function subscribePositions(){
-  if(!sb||gpsChan)return;
-  try{gpsChan=sb.channel('positions-v4').on('postgres_changes',{event:'*',schema:'public',table:'positions'},function(){clearTimeout(window._posT);window._posT=setTimeout(loadPositions,300);}).subscribe();}catch(e){}
+  if(!sb)return;
+  if(!gpsChan){try{gpsChan=sb.channel('positions-v4').on('postgres_changes',{event:'*',schema:'public',table:'positions'},function(pl){
+      var row=pl&&pl.new&&pl.new.pseudo?pl.new:null;var me=myCallsign();
+      if(pl&&pl.eventType==='DELETE'){var od=pl.old&&pl.old.pseudo;if(od&&od!==me){delete gpsData[od];renderGps();}else{clearTimeout(window._posT);window._posT=setTimeout(loadPositions,300);}return;}
+      if(!row||typeof row.lat!=='number'||typeof row.lon!=='number')return;
+      if(row.pseudo===me&&gpsOn)return;
+      var prev=gpsData[row.pseudo];if(prev&&prev._hAt&&Date.now()-prev._hAt<10000&&typeof prev.heading==='number')row.heading=prev.heading,row._hAt=prev._hAt;
+      gpsData[row.pseudo]=row;renderGps();updateGpsBtn();
+    }).subscribe();}catch(e){}}
+  if(!headCh){try{headCh=sb.channel('bs-heading',{config:{broadcast:{self:false}}}).on('broadcast',{event:'h'},function(msg){
+      var d=msg&&msg.payload;if(!d||!d.p||typeof d.h!=='number')return;applyRemoteHeading(d.p,d.h);}).subscribe();}catch(e){}}
+}
+function applyRemoteHeading(pseudo,h){
+  var p=gpsData[pseudo];if(!p)return;p.heading=h;p._hAt=Date.now();
+  var el=document.querySelector('.mk-gps[data-p="'+String(pseudo).replace(/"/g,'')+'"] .cone');
+  if(el&&map){el.style.display='';el.style.transform='rotate('+(h-map.getBearing())+'deg)';}else renderGps();
 }
 /* les membres proches à l'écran sont REGROUPÉS (pastille ×N) au lieu de s'empiler */
 function renderGps(){
@@ -2786,7 +2810,7 @@ function renderGps(){
   groups.forEach(function(g){
     var el=document.createElement('div');var lon,lat;
     if(g.length===1){var p=g[0].p;lon=p.lon;lat=p.lat;var col=esc(p.color||'#46b29d');
-      el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'');
+      el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'');el.setAttribute('data-p',p.pseudo);
       var hd=(p.me||p.pseudo===myCallsign())&&gpsHeading!=null?gpsHeading:p.heading;
       el.innerHTML='<svg class="cone" viewBox="-40 -40 80 80" style="'+(typeof hd==='number'?'transform:rotate('+(hd-map.getBearing())+'deg)':'display:none')+'"><defs><radialGradient id="cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+'" r="1" cx="0" cy="0" gradientUnits="userSpaceOnUse" gradientTransform="scale(40)"><stop offset=".2" stop-color="'+col+'" stop-opacity=".75"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></radialGradient></defs>'+
         '<path d="M0 0 L-17 -36 A40 40 0 0 1 17 -36 Z" fill="url(#cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+')"/></svg>'+
