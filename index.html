@@ -581,7 +581,9 @@ body.map-fs .mp-dock{bottom:calc(10px + var(--safe-b));}
 .mk-lbl{background:rgba(13,16,12,.9);border:1px solid var(--tan);color:var(--tan2);font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;cursor:pointer;}
 .mk-gps{position:relative;width:26px;height:26px;cursor:default;}
 .mk-gps .dot{position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;border:3px solid #fff;}
-.mk-gps .arrow{position:absolute;left:50%;top:-12px;margin-left:-7px;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:13px solid #46b29d;transform-origin:50% 25px;}
+.mk-gps .cone{position:absolute;left:-27px;top:-27px;width:80px;height:80px;pointer-events:none;transform-origin:50% 50%;transition:transform .12s linear;}
+.mk-gps .dot{z-index:1;}
+.mk-gps .n{z-index:2;}
 .mk-gps .n{position:absolute;left:50%;top:30px;translate:-50% 0;background:rgba(13,16,12,.92);color:#fff;font-size:11.5px;font-weight:800;padding:2px 7px;border-radius:6px;white-space:nowrap;line-height:1.35;text-align:center;border:1px solid var(--hair2);}
 .mk-gps.me .dot{border-color:var(--phos);}
 .mk-gps.grp{cursor:pointer;width:32px;height:32px;}
@@ -2404,7 +2406,7 @@ function initMap(){
   map.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');
   map.on('load',function(){mapReady=true;addMapLayers();redrawMap();fitMapToContent();startMapPoll();refreshWorld();});
   map.on('click',onMapClick);
-  map.on('zoomend',renderGps);map.on('rotateend',renderGps);
+  map.on('zoomend',renderGps);map.on('rotateend',renderGps);map.on('rotate',drawMyHeading);
   wireFootDrawing();
 }
 function setBasemap(mode){
@@ -2627,17 +2629,24 @@ function mapSearch(){
 var gpsOn=false,gpsWatch=null,gpsLast=null,gpsHeading=null,gpsSentAt=0,GPS_MS=3000,gpsData={},gpsMk=[],gpsChan=null,gpsWake=null;
 function gpsFresh(p){return p&&(Date.now()-new Date(p.updated_at).getTime())<120000;}
 function gpsViewers(){return Object.keys(gpsData).length>0;}
+function toggleHeading(){
+  if(headOn){stopHeading();toast('Boussole désactivée');renderGps();}
+  else{startHeading();toast('Boussole activée : tiens le téléphone devant toi, à plat ou incliné');}
+  closeSheet();
+}
 function myBgRow(){var p=gpsData[myCallsign()];return (!gpsOn&&p&&gpsFresh(p))?p:null;}
 function updateGpsBtn(){var b=$('mp-gps');if(!b)return;b.classList.toggle('live',gpsOn);b.classList.toggle('bg',!!myBgRow());}
 function toggleGps(){
   if(gpsOn){openSheet('<h3>Position partagée</h3><div class="sub">Tu apparais en <b>'+esc(myCallsign())+'</b>'+(gpsLast?' · précision ± '+Math.round(gpsLast.acc)+' m':'')+'.</div>'+
     '<div class="menu-list" style="margin-top:8px"><button class="menu-item" onclick="closeSheet();if(gpsLast)map.flyTo({center:[gpsLast.lon,gpsLast.lat],zoom:Math.max(map.getZoom(),16)})">'+I_MAP.gps+'Me centrer sur la carte</button>'+
+    '<button class="menu-item" onclick="toggleHeading()">'+I_MAP.gps+'Boussole<span class="r">'+(headOn?'active':'désactivée')+'</span></button>'+
     '<button class="menu-item" onclick="closeSheet();enterPocket()">'+I_MAP.pocket+'Mode poche<span class="r">téléphone rangé</span></button>'+
     '<button class="menu-item" onclick="closeSheet();showBgGpsHelp()">'+I.shield+'Écran verrouillé ?<span class="r">solutions</span></button>'+
     '<button class="menu-item" onclick="closeSheet();stopGps()" style="color:var(--signal)">'+I_MAP.stop+'Arrêter le partage</button></div>');return;}
   var call=myCallsign();var col=lsGet('bs_gps_color','#46b29d');var bg=myBgRow();
   var status=bg?'<div class="mp-status ok"><b>Traccar fonctionne</b><span>Position de '+esc(bg.pseudo)+' reçue '+ago(new Date(bg.updated_at).getTime())+'. Rien d\'autre à faire ici.</span>'+
-      '<button class="btn sm" onclick="closeSheet();map.flyTo({center:['+bg.lon+','+bg.lat+'],zoom:Math.max(map.getZoom(),16)})">Me centrer</button></div>'
+      '<div class="row" style="gap:8px;margin-top:6px"><button class="btn sm" onclick="closeSheet();map.flyTo({center:['+bg.lon+','+bg.lat+'],zoom:Math.max(map.getZoom(),16)})">Me centrer</button>'+
+      '<button class="btn sm'+(headOn?' primary':'')+'" onclick="toggleHeading()">'+(headOn?'Boussole active':'Activer la boussole')+'</button></div></div>'
     :(call?'<div class="mp-status"><b>Aucune position reçue pour '+esc(call)+'</b><span>Si Traccar est installé, vérifie qu\'il est activé avec l\'identifiant '+esc(call)+'.</span></div>':'');
   openSheet('<h3>Ma position</h3>'+status+
     '<div class="grid2" style="margin-top:14px"><div class="field"><label>Mon indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02" autocapitalize="characters"></div>'+
@@ -2672,6 +2681,7 @@ function startGpsFromSheet(){
 }
 function stopGps(){
   if(pocketOn)exitPocket();
+  if(!myBgRow())stopHeading();
   gpsOn=false;updateGpsBtn();if(gpsWatch!=null){navigator.geolocation.clearWatch(gpsWatch);gpsWatch=null;}
   try{if(gpsWake){gpsWake.release();gpsWake=null;}}catch(e){}
   var me=myCallsign();if(sb&&me)sb.from('positions').delete().eq('pseudo',me).then(function(){},function(){});
@@ -2693,12 +2703,64 @@ function sendMyPos(){
   if(gpsHeading!=null)row.heading=Math.round(gpsHeading);
   sb.from('positions').upsert(row).then(function(r){if(r&&r.error)toast('Position non envoyée : '+r.error.message,true);},function(){});
 }
+/* ---------- boussole : direction où pointe le téléphone ----------
+   iOS : webkitCompassHeading (déjà corrigé). Android : alpha/beta/gamma « absolus »
+   recalculés avec l'inclinaison du téléphone (formule W3C), corrigés de l'orientation
+   de l'écran, puis lissés pour supprimer les tremblements. */
+var headOn=false,_hSin=null,_hCos=null,_hLastSent=0,_hLastVal=null,_hRaf=0,_hAbsSeen=false,_hWarned=false;
 function startHeading(){
-  function bind(){window.addEventListener('deviceorientationabsolute',onHead,true);window.addEventListener('deviceorientation',onHead,true);}
-  try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function')DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')bind();}).catch(function(){});else bind();}catch(e){}
+  if(headOn)return;
+  function bind(){headOn=true;window.addEventListener('deviceorientationabsolute',onHead,true);window.addEventListener('deviceorientation',onHead,true);
+    setTimeout(function(){if(headOn&&gpsHeading==null)toast('Boussole indisponible sur ce téléphone.',true);},4000);}
+  try{if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function')
+      DeviceOrientationEvent.requestPermission().then(function(s){if(s==='granted')bind();else toast('Boussole refusée : autorise « Mouvement et orientation » dans Réglages > Safari.',true);}).catch(function(){toast('Boussole : touche à nouveau le bouton pour l\'autoriser.',true);});
+    else bind();}catch(e){}
 }
-function onHead(e){var h=null;if(typeof e.webkitCompassHeading==='number')h=e.webkitCompassHeading;else if(e.absolute&&typeof e.alpha==='number')h=360-e.alpha;
-  if(h==null)return;gpsHeading=h;var me=gpsData[myCallsign()];if(me){me.heading=h;var a=document.querySelector('.mk-gps.me .arrow');if(a&&map)a.style.transform='rotate('+(h-map.getBearing())+'deg)';}}
+function stopHeading(){headOn=false;window.removeEventListener('deviceorientationabsolute',onHead,true);window.removeEventListener('deviceorientation',onHead,true);gpsHeading=null;_hSin=_hCos=null;}
+function tiltCompensated(alpha,beta,gamma){
+  var r=Math.PI/180,x=beta*r,y=gamma*r,z=alpha*r;
+  var cX=Math.cos(x),cY=Math.cos(y),cZ=Math.cos(z),sX=Math.sin(x),sY=Math.sin(y),sZ=Math.sin(z);
+  var Vx=-cZ*sY-sZ*sX*cY,Vy=-sZ*sY+cZ*sX*cY;
+  var h=Math.atan(Vx/Vy);if(Vy<0)h+=Math.PI;else if(Vx<0)h+=2*Math.PI;
+  return h/r;
+}
+function screenAngle(){try{if(screen.orientation&&typeof screen.orientation.angle==='number')return screen.orientation.angle;}catch(e){}return typeof window.orientation==='number'?window.orientation:0;}
+function onHead(e){
+  var h=null;
+  if(typeof e.webkitCompassHeading==='number'&&e.webkitCompassHeading>=0){
+    h=e.webkitCompassHeading;
+    if(!_hWarned&&typeof e.webkitCompassAccuracy==='number'&&(e.webkitCompassAccuracy<0||e.webkitCompassAccuracy>35)){_hWarned=true;toast('Boussole imprécise : fais un grand 8 avec le téléphone pour la calibrer.',true);}
+  }else if(typeof e.alpha==='number'&&e.alpha!==null){
+    var abs=e.absolute===true||e.type==='deviceorientationabsolute';
+    if(abs)_hAbsSeen=true;
+    if(!abs){return;}                         /* orientation relative : sans le nord, inutilisable */
+    var be=e.beta||0,ga=e.gamma||0;
+    /* téléphone presque à plat : le haut de l'écran donne la direction ; sinon direction de l'appareil photo arrière (téléphone tenu debout) */
+    h=(Math.abs(be)<35&&Math.abs(ga)<35)?(360-e.alpha)%360:tiltCompensated(e.alpha,be,ga);
+  }
+  if(h==null||isNaN(h))return;
+  h=(h+screenAngle()+360)%360;
+  /* lissage circulaire (évite le saut 359° -> 0°) */
+  var r=Math.PI/180,s=Math.sin(h*r),c=Math.cos(h*r),k=0.22;
+  if(_hSin==null){_hSin=s;_hCos=c;}else{_hSin+=(s-_hSin)*k;_hCos+=(c-_hCos)*k;}
+  gpsHeading=(Math.atan2(_hSin,_hCos)/r+360)%360;
+  if(!_hRaf)_hRaf=requestAnimationFrame(function(){_hRaf=0;drawMyHeading();});
+  pushHeading();
+}
+function drawMyHeading(){
+  var me=gpsData[myCallsign()];if(me)me.heading=gpsHeading;
+  var a=document.querySelector('.mk-gps.me .cone');
+  if(a&&map&&gpsHeading!=null){a.style.display='';a.style.transform='rotate('+(gpsHeading-map.getBearing())+'deg)';}
+}
+/* envoi de la direction à l'équipe : quand elle change de plus de 8° (max 1 fois / 1,5 s), et au moins toutes les 8 s */
+function pushHeading(){
+  if(!sb||gpsHeading==null)return;var now=Date.now();
+  var diff=_hLastVal==null?999:Math.abs(((gpsHeading-_hLastVal+540)%360)-180);
+  if(!((diff>8&&now-_hLastSent>1500)||now-_hLastSent>8000))return;
+  _hLastSent=now;_hLastVal=gpsHeading;
+  if(gpsOn){if(gpsLast)sendMyPos();return;}
+  var me=myCallsign();if(me&&myBgRow())sb.from('positions').update({heading:Math.round(gpsHeading)}).eq('pseudo',me).then(function(){},function(){});
+}
 function loadPositions(){
   if(!sb)return;
   withTimeout(sb.from('positions').select('*'),12000).then(function(r){
@@ -2725,7 +2787,9 @@ function renderGps(){
     var el=document.createElement('div');var lon,lat;
     if(g.length===1){var p=g[0].p;lon=p.lon;lat=p.lat;var col=esc(p.color||'#46b29d');
       el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'');
-      el.innerHTML='<span class="arrow" style="border-bottom-color:'+col+(typeof p.heading==='number'?';transform:rotate('+(p.heading-map.getBearing())+'deg)':';display:none')+'"></span>'+
+      var hd=(p.me||p.pseudo===myCallsign())&&gpsHeading!=null?gpsHeading:p.heading;
+      el.innerHTML='<svg class="cone" viewBox="-40 -40 80 80" style="'+(typeof hd==='number'?'transform:rotate('+(hd-map.getBearing())+'deg)':'display:none')+'"><defs><radialGradient id="cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+'" r="1" cx="0" cy="0" gradientUnits="userSpaceOnUse" gradientTransform="scale(40)"><stop offset=".2" stop-color="'+col+'" stop-opacity=".75"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></radialGradient></defs>'+
+        '<path d="M0 0 L-17 -36 A40 40 0 0 1 17 -36 Z" fill="url(#cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+')"/></svg>'+
         '<span class="dot" style="background:'+col+';box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 14px '+col+'"></span><span class="n">'+esc(p.pseudo)+'</span>';
     }else{
       lon=g.reduce(function(s,x){return s+x.p.lon;},0)/g.length;lat=g.reduce(function(s,x){return s+x.p.lat;},0)/g.length;
@@ -2758,7 +2822,7 @@ function keepAwake(on){
 }
 function enterPocket(){
   if(!gpsOn){toast('Active d\'abord le partage de position.',true);toggleGps();return;}
-  var v=$('blackout-veil');if(!v)return;pocketOn=true;keepAwake(true);GPS_MS=10000;_boTaps=0;
+  var v=$('blackout-veil');if(!v)return;pocketOn=true;keepAwake(true);stopHeading();GPS_MS=10000;_boTaps=0;
   v.innerHTML='<div class="pk"><b>Mode poche</b><span>Position envoyée toutes les 10 s</span><span>Ne verrouille pas le téléphone : range-le écran allumé.</span><span>Touche 5 fois pour sortir</span></div>';
   v.style.display='block';
   v.onclick=function(){_boTaps++;clearTimeout(_boT);_boT=setTimeout(function(){_boTaps=0;},3000);if(_boTaps>=5)exitPocket();};
