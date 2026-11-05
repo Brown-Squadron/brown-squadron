@@ -621,6 +621,9 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 .mp-status .btn{align-self:flex-start;margin-top:6px;}
 .mp-status.ok{border-color:var(--phos);}
 .mp-status.ok b{color:var(--phos);}
+.mk-gps.stale .dot{background:#6b6b62!important;box-shadow:0 0 0 2px rgba(0,0,0,.45)!important;border-color:#aaa;}
+.mk-gps.stale .cone{display:none;}
+.mk-gps.stale .n{opacity:.75;border-style:dashed;}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2627,7 +2630,10 @@ function mapSearch(){
 
 /* ---------- GPS live ---------- */
 var gpsOn=false,gpsWatch=null,gpsLast=null,gpsHeading=null,gpsSentAt=0,GPS_MS=3000,gpsData={},gpsMk=[],gpsChan=null,gpsWake=null;
-function gpsFresh(p){return p&&(Date.now()-new Date(p.updated_at).getTime())<120000;}
+/* au-delà de 25 s sans nouvelle position : point grisé « perdu » ; au-delà de 60 s : retiré de la carte */
+var GPS_STALE=25000,GPS_GONE=60000;
+function gpsAge(p){return Date.now()-new Date(p.updated_at).getTime();}
+function gpsFresh(p){return p&&gpsAge(p)<GPS_GONE;}
 function gpsViewers(){return Object.keys(gpsData).length>0;}
 function toggleHeading(){
   if(headOn){stopHeading();toast('Boussole désactivée');renderGps();}
@@ -2810,11 +2816,12 @@ function renderGps(){
   groups.forEach(function(g){
     var el=document.createElement('div');var lon,lat;
     if(g.length===1){var p=g[0].p;lon=p.lon;lat=p.lat;var col=esc(p.color||'#46b29d');
-      el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'');el.setAttribute('data-p',p.pseudo);
+      var age=p.me?0:gpsAge(p);var stale=age>GPS_STALE;
+      el.className='mk-gps'+((p.me||p.pseudo===myCallsign())?' me':'')+(stale?' stale':'');el.setAttribute('data-p',p.pseudo);
       var hd=(p.me||p.pseudo===myCallsign())&&gpsHeading!=null?gpsHeading:p.heading;
       el.innerHTML='<svg class="cone" viewBox="-40 -40 80 80" style="'+(typeof hd==='number'?'transform:rotate('+(hd-map.getBearing())+'deg)':'display:none')+'"><defs><radialGradient id="cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+'" r="1" cx="0" cy="0" gradientUnits="userSpaceOnUse" gradientTransform="scale(40)"><stop offset=".2" stop-color="'+col+'" stop-opacity=".75"/><stop offset="1" stop-color="'+col+'" stop-opacity="0"/></radialGradient></defs>'+
         '<path d="M0 0 L-17 -36 A40 40 0 0 1 17 -36 Z" fill="url(#cg'+esc(p.pseudo).replace(/[^A-Za-z0-9]/g,'')+')"/></svg>'+
-        '<span class="dot" style="background:'+col+';box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 14px '+col+'"></span><span class="n">'+esc(p.pseudo)+'</span>';
+        '<span class="dot" style="background:'+col+';box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 14px '+col+'"></span><span class="n">'+esc(p.pseudo)+(stale?' · '+Math.round(age/1000)+' s':'')+'</span>';
     }else{
       lon=g.reduce(function(s,x){return s+x.p.lon;},0)/g.length;lat=g.reduce(function(s,x){return s+x.p.lat;},0)/g.length;
       el.className='mk-gps grp';
@@ -2918,6 +2925,15 @@ function openMapForOp(){
 
 /* l'âge des repères tactiques se met à jour chaque minute */
 setInterval(function(){document.querySelectorAll('.mk-sym em[data-ts]').forEach(function(e){e.textContent=shortAge(+e.getAttribute('data-ts'));});},60000);
+
+/* rafraîchit les points (grisé puis disparition) même sans nouvelle donnée */
+setInterval(function(){if(curView==='map'&&!document.hidden&&Object.keys(gpsData).length){
+  var me=myCallsign();Object.keys(gpsData).forEach(function(k){if(!gpsData[k].me&&!gpsFresh(gpsData[k]))delete gpsData[k];});renderGps();updateGpsBtn();}},5000);
+/* fermeture de l'appli pendant le partage : on tente de retirer sa position tout de suite */
+window.addEventListener('pagehide',function(){
+  if(!gpsOn)return;var me=myCallsign();if(!me)return;
+  try{fetch(SB_URL+'/rest/v1/positions?pseudo=eq.'+encodeURIComponent(me),{method:'DELETE',keepalive:true,headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});}catch(e){}
+});
 </script>
 <script>
 /* =====================================================================
