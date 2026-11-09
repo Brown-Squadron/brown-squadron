@@ -2471,9 +2471,17 @@ async function accApi(action,payload,retried){
   var body=Object.assign({action:action},payload||{});var sc=setupCode();if(sc)body.setup_code=sc;
   var r;try{r=await withTimeout(sb.functions.invoke('comptes',{body:body}),20000);}catch(e){throw new Error('Pas de réponse du serveur. Vérifie que la fonction « comptes » est déployée.');}
   var data=r&&r.data,err=r&&r.error;
+  var status=err&&err.context&&err.context.status;
   if(err&&!data){try{data=await err.context.json();}catch(e){data=null;}}
   if(data&&data.ok)return data;
-  var code=(data&&data.error)||(err&&err.message)||'erreur';
+  var code=data&&typeof data.error==='string'?data.error:'';
+  if(!code){
+    if(status===404)code='Supabase ne trouve pas la fonction « comptes ». Vérifie qu\'elle est déployée et nommée exactement comptes (en minuscules).';
+    else if(status===401||status===403)code='Supabase bloque l\'appel : désactive « Verify JWT » dans les réglages de la fonction « comptes », puis Save.';
+    else if(status>=500)code='La fonction « comptes » a planté (erreur '+status+'). Ouvre-la dans Supabase > Edge Functions > Logs et envoie une capture.';
+    else if(err&&/Failed to send|fetch/i.test(err.message||''))code='Impossible de joindre la fonction « comptes » : elle n\'est pas déployée, ou il n\'y a pas de réseau.';
+    else code=((data&&(data.message||data.msg))||(err&&err.message)||'Erreur inconnue')+(status?' (code '+status+')':'');
+  }
   if(code==='reserve_master'&&!retried&&canAdmin()){
     var v=prompt('Ton accès master n\'est pas encore un compte individuel.\nEntre le code de configuration (le même code secret que pour le GPS) :');
     if(v){try{sessionStorage.setItem('bs_setup',v.trim());}catch(e){}return accApi(action,payload,true);}
