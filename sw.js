@@ -3,7 +3,7 @@
    • les nouvelles versions publiées sur GitHub sont prises en priorité ;
    • les tuiles de carte déjà vues restent disponibles hors réseau (terrain sans 4G) ;
    • les données Supabase ne passent JAMAIS par ce cache (toujours en direct). */
-const APP_CACHE = 'bs-app-v4';
+const APP_CACHE = 'bs-app-v5';
 const TILE_CACHE = 'bs-tiles-v1';
 const TILE_MAX = 2500; // environ 50 à 80 Mo de tuiles au maximum
 
