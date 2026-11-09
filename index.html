@@ -682,7 +682,6 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
       </div>
       <button class="btn primary go" id="login-go" onclick="tryLogin()">Entrer</button>
       <p id="login-err"></p>
-      <button class="login-switch" id="login-switch" onclick="setLoginMode(!loginLegacy)">Utiliser le mot de passe de l'escouade</button>
       <p class="login-help">Mot de passe oublié : demande au master de le réinitialiser.</p>
     </div>
     <div id="login-newpwd" class="hidden">
@@ -798,15 +797,9 @@ var sb=null;
    admin = « master » : étoiles kit-list, pourcentage drill, Éval Bull, suppressions.
    membre : crée / modifie opérations et cours.
    lecture : consulte, s'inscrit aux opérations, modifie sa fiche. */
-var ROLE_HASHES={
-  admin  :'89a1f2e5ccf1f478d161801ea6d4599650030142eaa64627e5f2de6181993e24',
-  membre :'a38148bb19ae460342ad3087db58a0dd8b0452fc5ea8599e295b31f5d950412c',
-  lecture:'8e9088db9b04a996466692a63da028bd4980b2a09b176a0baf61a5187556adff'
-};
 var currentRole=null;
 /* comptes Supabase (un par rôle, même mot de passe que dans l'appli) : protègent les données
    une fois la sécurité RLS activée. Tant qu'ils n'existent pas, l'appli fonctionne comme avant. */
-var ROLE_EMAILS={admin:'admin@brownsquadron.app',membre:'membre@brownsquadron.app',lecture:'lecture@brownsquadron.app'};
 
 function canWrite(){return !!currentRole;}
 function canEditOps(){return currentRole==='admin'||currentRole==='membre';}
@@ -1085,9 +1078,6 @@ function renderSoon(now){clearTimeout(_renderT);_renderT=setTimeout(renderAll,no
    ===================================================================== */
 var AUTH_DOMAIN='brownsquadron.app';
 var me={id:null,callsign:'',member_id:null,personal:false};
-var legacyAllowed=true,loginLegacy=false;
-async function sha256hex(str){var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
-  return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');}
 function slugCall(c){return String(c||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);}
 function emailOfCall(c){return slugCall(c)+'@'+AUTH_DOMAIN;}
 function togglePwd(){var i=$('login-pwd');i.type=i.type==='password'?'text':'password';}
@@ -1097,64 +1087,31 @@ function ensureSb(){if(!sb&&window.supabase&&SB_URL&&SB_KEY){try{sb=window.supab
 /* rôle et identité à partir du compte connecté */
 function applySession(user){
   if(!user)return false;var am=user.app_metadata||{};var role=am.role;
-  if(!role){for(var r in ROLE_EMAILS){if(ROLE_EMAILS[r]===user.email)role=r;}}
-  if(!role)return false;
+  if(!am.callsign||['admin','membre','lecture'].indexOf(role)<0)return false; /* comptes individuels uniquement */
   currentRole=role;
-  me={id:user.id,callsign:am.callsign||'',member_id:am.member_id||null,personal:!!am.callsign,must:!!(am.callsign&&user.user_metadata&&user.user_metadata.must_change)};
-  if(me.personal){try{localStorage.setItem('bs_gps_call',me.callsign);localStorage.setItem('bs_comms_call',me.callsign);}catch(e){}}
+  me={id:user.id,callsign:am.callsign,member_id:am.member_id||null,personal:true,must:!!(user.user_metadata&&user.user_metadata.must_change)};
+  try{localStorage.setItem('bs_gps_call',me.callsign);localStorage.setItem('bs_comms_call',me.callsign);}catch(e){}
   setAuthMode('ok');try{localStorage.setItem('bs_role',role);}catch(e){}
   return true;
 }
 function loginMsg(t){$('login-err').textContent=t||'';}
-function setLoginMode(legacy){
-  loginLegacy=!!legacy;
-  $('login-call-wrap').classList.toggle('hidden',loginLegacy);
-  $('login-lead').textContent=loginLegacy?'Mot de passe de l\'escouade (ancien accès)':'Connecte-toi avec ton indicatif';
-  $('login-switch').textContent=loginLegacy?'Se connecter avec mon indicatif':'Utiliser le mot de passe de l\'escouade';
-  $('login-switch').classList.toggle('hidden',!legacyAllowed&&!loginLegacy);
-  loginMsg('');setTimeout(function(){var f=loginLegacy?$('login-pwd'):$('login-call');if(f&&window.innerWidth>760)f.focus();},50);
-}
 function showLogin(msg){
   currentRole=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');
   $('login-form').classList.remove('hidden');$('login-newpwd').classList.add('hidden');
-  setLoginMode(false);loginMsg(msg||'');
-  fetchAuthStatus().then(function(){setLoginMode(loginLegacy);if(msg)loginMsg(msg);});
-}
-async function fetchAuthStatus(){
-  if(!ensureSb()||!sb.functions)return legacyAllowed;
-  try{var r=await withTimeout(sb.functions.invoke('comptes',{body:{action:'status'}}),6000);
-    if(r&&r.data&&typeof r.data.legacy==='boolean')legacyAllowed=r.data.legacy;}catch(e){}
-  return legacyAllowed;
+  loginMsg(msg||'');setTimeout(function(){var f=$('login-call');if(f&&window.innerWidth>760)f.focus();},50);
 }
 async function tryLogin(){
-  var pwd=$('login-pwd').value;var btn=$('login-go');
+  var pwd=$('login-pwd').value;var btn=$('login-go');var call=($('login-call').value||'').trim();
+  if(!call){loginMsg('Entre ton indicatif.');return;}
   if(!pwd){loginMsg('Entre ton mot de passe.');return;}
+  if(!ensureSb()){loginMsg('Pas de connexion internet.');return;}
   btn.disabled=true;loginMsg('Connexion…');
   try{
-    if(!loginLegacy){
-      var call=($('login-call').value||'').trim();
-      if(!call){loginMsg('Entre ton indicatif.');return;}
-      if(!ensureSb()){loginMsg('Pas de connexion internet.');return;}
-      var r=await withTimeout(sb.auth.signInWithPassword({email:emailOfCall(call),password:pwd}),12000);
-      if(r.error||!r.data||!r.data.session){var em=(r.error&&r.error.message)||'';
-        loginMsg(/banned/i.test(em)?'Accès bloqué : contacte le master.':(/fetch|network/i.test(em)?'Pas de connexion internet.':'Indicatif ou mot de passe incorrect.'));return;}
-      if(!applySession(r.data.session.user)){loginMsg('Compte sans droits : contacte le master.');await sb.auth.signOut();return;}
-      if(me.must){showNewPwd();return;}
-      loginMsg('');startApp();return;
-    }
-    /* ancien accès : mot de passe partagé */
-    var h=await sha256hex(pwd);var role=null;for(var k in ROLE_HASHES){if(ROLE_HASHES[k]===h){role=k;break;}}
-    if(!role){loginMsg('Mot de passe incorrect.');return;}
-    await fetchAuthStatus();
-    if(!legacyAllowed){loginMsg('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');setLoginMode(false);return;}
-    currentRole=role;
-    if(ensureSb()){
-      try{var s=await withTimeout(sb.auth.signInWithPassword({email:ROLE_EMAILS[role],password:pwd}),10000);
-        if(s&&s.error&&/banned/i.test(s.error.message||'')){loginMsg('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');setLoginMode(false);return;}
-        if(s&&!s.error&&s.data&&s.data.session)applySession(s.data.session.user);else setAuthMode('anon');}catch(e){setAuthMode('anon');}
-    }else setAuthMode('anon');
-    me={id:null,callsign:'',member_id:null,personal:false};
-    try{localStorage.setItem('bs_role',role);}catch(e){}
+    var r=await withTimeout(sb.auth.signInWithPassword({email:emailOfCall(call),password:pwd}),12000);
+    if(r.error||!r.data||!r.data.session){var em=(r.error&&r.error.message)||'';
+      loginMsg(/banned/i.test(em)?'Accès bloqué : contacte le master.':(/fetch|network/i.test(em)?'Pas de connexion internet.':'Indicatif ou mot de passe incorrect.'));return;}
+    if(!applySession(r.data.session.user)){loginMsg('Ce compte n\'a pas accès à l\'appli : contacte le master.');await sb.auth.signOut();return;}
+    if(me.must){showNewPwd();return;}
     loginMsg('');startApp();
   }catch(e){loginMsg('Connexion impossible. Réessaie.');}
   finally{btn.disabled=false;}
@@ -1171,7 +1128,7 @@ async function saveNewPwd(fromMenu){
   if(a!==b){err.textContent='Les deux mots de passe ne sont pas identiques.';return;}
   err.textContent='Enregistrement…';
   try{var r=await withTimeout(sb.auth.updateUser({password:a,data:{must_change:false}}),12000);
-    if(r.error){err.textContent=/same|different/i.test(r.error.message)?'Choisis un mot de passe différent du provisoire.':'Erreur : '+r.error.message;return;}
+    if(r.error){err.textContent=/same|different/i.test(r.error.message)?'Choisis un mot de passe différent de celui reçu.':'Erreur : '+r.error.message;return;}
     me.must=false;err.textContent='';
     if(fromMenu){closeSheet();toast('Mot de passe modifié');}else startApp();
   }catch(e){err.textContent='Pas de connexion internet.';}
@@ -1197,15 +1154,11 @@ async function bootAuth(){
   ensureSb();
   if(sb&&sb.auth){
     try{var s=await withTimeout(sb.auth.getSession(),5000);var u=s&&s.data&&s.data.session&&s.data.session.user;
-      if(u&&applySession(u)){if(me.must){showNewPwd();return;}startApp();return;}}catch(e){}
+      if(u&&applySession(u)){if(me.must){showNewPwd();return;}startApp();return;}
+      if(u){try{await sb.auth.signOut();}catch(e){}}}catch(e){}
   }
-  var role=null;try{role=localStorage.getItem('bs_role');}catch(e){}
-  if(role&&ROLE_HASHES[role]&&authMode()==='anon'){
-    await fetchAuthStatus();
-    if(legacyAllowed){currentRole=role;startApp();return;}
-    showLogin('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');return;
-  }
-  showLogin(role?'Connecte-toi avec ton indicatif (ou le mot de passe de l\'escouade).':'');
+  var had=null;try{had=localStorage.getItem('bs_role');localStorage.removeItem('bs_role');}catch(e){}
+  showLogin(had?'Nouvelle connexion : entre ton indicatif et le mot de passe reçu par message.':'');
 }
 function applyRole(){
   document.body.classList.remove('role-admin','role-membre','role-lecture');
@@ -2456,19 +2409,16 @@ function ensureMapLib(){
 
 /* =====================================================================
    COMPTES ET ACCÈS (master)
-   Appelle la fonction Supabase « comptes ». Si le master est connecté avec
-   l'ancien mot de passe partagé sans compte Supabase, la fonction demande
-   le code de configuration (même code que la fonction GPS).
+   Appelle la fonction Supabase « comptes » (réservée aux comptes Master).
    ===================================================================== */
 var accCache=null,accLegacy=true,_accLoading=null;
 var ROLE_LABEL={admin:'Master',membre:'Membre',lecture:'Lecture'};
 var ACC_ERR={reserve_master:'Réservé au master.',indicatif_deja_pris:'Cet indicatif a déjà un compte.',indicatif_vide:'Indicatif vide.',
   pas_soi_meme:'Impossible sur ton propre compte.',aucun_master_individuel:'Crée d\'abord ton propre compte master avant de couper les mots de passe partagés.',
   compte_introuvable:'Compte introuvable.',role_invalide:'Droits invalides.'};
-function setupCode(){try{return sessionStorage.getItem('bs_setup')||'';}catch(e){return '';}}
 async function accApi(action,payload,retried){
   if(!ensureSb()||!sb.functions)throw new Error('Pas de connexion internet.');
-  var body=Object.assign({action:action},payload||{});var sc=setupCode();if(sc)body.setup_code=sc;
+  var body=Object.assign({action:action},payload||{});
   var r;try{r=await withTimeout(sb.functions.invoke('comptes',{body:body}),20000);}catch(e){throw new Error('Pas de réponse du serveur. Vérifie que la fonction « comptes » est déployée.');}
   var data=r&&r.data,err=r&&r.error;
   var status=err&&err.context&&err.context.status;
@@ -2481,10 +2431,6 @@ async function accApi(action,payload,retried){
     else if(status>=500)code='La fonction « comptes » a planté (erreur '+status+'). Ouvre-la dans Supabase > Edge Functions > Logs et envoie une capture.';
     else if(err&&/Failed to send|fetch/i.test(err.message||''))code='Impossible de joindre la fonction « comptes » : elle n\'est pas déployée, ou il n\'y a pas de réseau.';
     else code=((data&&(data.message||data.msg))||(err&&err.message)||'Erreur inconnue')+(status?' (code '+status+')':'');
-  }
-  if(code==='reserve_master'&&!retried&&canAdmin()){
-    var v=prompt('Ton accès master n\'est pas encore un compte individuel.\nEntre le code de configuration (le même code secret que pour le GPS) :');
-    if(v){try{sessionStorage.setItem('bs_setup',v.trim());}catch(e){}return accApi(action,payload,true);}
   }
   throw new Error(ACC_ERR[code]||code);
 }
@@ -2506,7 +2452,7 @@ function defaultCallsign(m){
 }
 function accStateTxt(a){
   if(a.blocked)return '<span style="color:var(--signal)">Bloqué</span>';
-  if(a.must_change)return 'En attente de première connexion';
+  if(a.must_change)return 'Pas encore connecté (mot de passe reçu)';
   return a.last?'Dernière connexion '+ago(new Date(a.last).getTime()):'Jamais connecté';
 }
 /* ---------- panneau « Accès à l'appli » sur la fiche ---------- */
@@ -2519,9 +2465,9 @@ function fillAccessPanel(){
 function drawAccessPanel(mid){
   var box=$('acc-panel');if(!box||currentId!==mid)return;var m=db[mid]||{};var a=accOfMember(mid);
   if(!a){
-    box.innerHTML='<h2 class="h-sec">Accès à l\'appli</h2><div class="tiny" style="margin-bottom:10px">Ce membre n\'a pas encore de compte. Il se connectera avec cet indicatif et un mot de passe provisoire.</div>'+
+    box.innerHTML='<h2 class="h-sec">Accès à l\'appli</h2><div class="tiny" style="margin-bottom:10px">Ce membre n\'a pas encore de compte. Un mot de passe de départ est généré ; il choisira le sien à la première connexion.</div>'+
       '<div class="grid2 stack"><div class="field"><label>Identifiant (indicatif)</label><input id="acc-call" maxlength="16" value="'+esc(defaultCallsign(m))+'" autocapitalize="characters"></div>'+
-      '<div class="field"><label>Droits</label><select id="acc-role">'+['membre','lecture','admin'].map(function(r){return '<option value="'+r+'">'+ROLE_LABEL[r]+'</option>';}).join('')+'</select></div></div>'+
+            '<div class="field"><label>Droits</label><select id="acc-role">'+['membre','lecture','admin'].map(function(r){return '<option value="'+r+'">'+ROLE_LABEL[r]+'</option>';}).join('')+'</select></div></div>'+
       '<button class="btn primary block" style="margin-top:12px" onclick="accCreate(\''+mid+'\')">Créer l\'accès</button>';
     return;
   }
@@ -2537,12 +2483,13 @@ function drawAccessPanel(mid){
 async function accCreate(mid){
   var call=($('acc-call').value||'').trim().toUpperCase(),role=$('acc-role').value;
   if(!call){toast('Indicatif vide.',true);return;}
-  try{var d=await accApi('create',{callsign:call,role:role,member_id:mid});accCache=null;await loadAccounts(true);drawAccessPanel(mid);showCredentials(d.callsign,d.password,true);}
+  try{var d=await accApi('create',{callsign:call,role:role,member_id:mid});accCache=null;await loadAccounts(true);drawAccessPanel(mid);showCredentials(d.callsign,d.password,true,mid);}
   catch(e){toast(e.message,true);}
 }
 async function accReset(id,call){
-  if(!confirm('Générer un nouveau mot de passe provisoire pour '+call+' ?\nSon mot de passe actuel ne marchera plus.'))return;
-  try{var d=await accApi('reset',{id:id});accCache=null;await loadAccounts(true);if(currentId)drawAccessPanel(currentId);showCredentials(call,d.password,false);}
+  if(!confirm('Générer un nouveau mot de passe pour '+call+' ?\nL\'ancien ne marchera plus.'))return;
+  try{var d=await accApi('reset',{id:id});accCache=null;await loadAccounts(true);
+    var a=(accCache||[]).filter(function(x){return x.id===id;})[0];if(currentId)drawAccessPanel(currentId);showCredentials(call,d.password,false,a&&a.member_id);}
   catch(e){toast(e.message,true);}
 }
 async function accSetRole(id,role){
@@ -2555,35 +2502,30 @@ async function accBlock(id,block){
   catch(e){toast(e.message,true);}
 }
 function appUrl(){return location.href.split('#')[0].split('?')[0];}
-function showCredentials(call,pwd,isNew){
-  var msg='Ton accès à l\'appli Brown Squadron :\n'+appUrl()+'\n\nIdentifiant : '+call+'\nMot de passe provisoire : '+pwd+'\n\nTu choisiras ton propre mot de passe à la première connexion.';
-  window._credMsg=msg;
-  openSheet('<h3>'+(isNew?'Accès créé':'Nouveau mot de passe')+'</h3><div class="sub">À transmettre à '+esc(call)+'. Ce mot de passe ne sera plus affiché ensuite.</div>'+
-    '<div class="cred"><div><span>Identifiant</span><b>'+esc(call)+'</b></div><div><span>Mot de passe provisoire</span><b>'+esc(pwd)+'</b></div></div>'+
-    '<button class="btn primary block" onclick="copyCred()">Copier le message à envoyer</button>'+
+function telOf(mid){var m=mid&&db[mid];var t=String((m&&m.tel)||'').replace(/[^\d+]/g,'');if(/^0\d{9}$/.test(t))t='+33'+t.slice(1);return t;}
+function showCredentials(call,pwd,isNew,mid){
+  var msg='Brown Squadron : ton accès à l\'appli\n'+appUrl()+'\n\nIdentifiant : '+call+'\nMot de passe : '+pwd+'\n\nÀ la première connexion, tu choisis ton propre mot de passe.';
+  window._credMsg=msg;var tel=telOf(mid);
+  openSheet('<h3>'+(isNew?'Accès créé':'Mot de passe changé')+'</h3><div class="sub">À envoyer à '+esc(call)+'.</div>'+
+    '<div class="cred"><div><span>Identifiant</span><b>'+esc(call)+'</b></div><div><span>Mot de passe</span><b>'+esc(pwd)+'</b></div></div>'+
+    (tel?'<a class="btn primary block" href="sms:'+tel+'?&body='+encodeURIComponent(msg)+'">Envoyer par SMS au '+esc(m_tel(mid))+'</a>'
+        :'<div class="tiny" style="margin-bottom:8px;color:var(--tan2)">Pas de téléphone sur sa fiche : copie le message.</div>')+
+    '<button class="btn block'+(tel?'':' primary')+'" style="margin-top:8px" onclick="copyCred()">Copier le message</button>'+
     '<div class="tiny" style="margin-top:8px;white-space:pre-wrap">'+esc(msg)+'</div>');
 }
-function copyCred(){var t=window._credMsg||'';try{navigator.clipboard.writeText(t).then(function(){toast('Message copié : colle-le dans WhatsApp ou par SMS');},function(){prompt('Copie ce message :',t);});}catch(e){prompt('Copie ce message :',t);}}
+function m_tel(mid){return (db[mid]&&db[mid].tel)||'';}
+function copyCred(){var t=window._credMsg||'';try{navigator.clipboard.writeText(t).then(function(){toast('Message copié');},function(){prompt('Copie ce message :',t);});}catch(e){prompt('Copie ce message :',t);}}
 /* ---------- vue d'ensemble (menu) ---------- */
 function openAccounts(){
   openSheet('<h3>Comptes et accès</h3><div class="tiny">Chargement…</div>');
   loadAccounts(true).then(function(list){
     var mem=membresOf();var without=mem.filter(function(m){return !accOfMember(m._id);});
-    var masters=list.filter(function(a){return a.role==='admin'&&!a.blocked;}).length;
     openSheet('<h3>Comptes et accès</h3><div class="sub">'+list.length+' compte'+(list.length>1?'s':'')+' · '+without.length+' membre'+(without.length>1?'s':'')+' sans accès</div>'+
-      '<div class="mp-status'+(accLegacy?'':' ok')+'"><b>Mots de passe partagés : '+(accLegacy?'actifs':'désactivés')+'</b>'+
-        '<span>'+(accLegacy?'Les 3 anciens mots de passe marchent encore. Coupe-les quand tout le monde a son compte.':'Seuls les comptes individuels peuvent se connecter.')+'</span>'+
-        '<button class="btn sm'+(accLegacy?' danger':'')+'" onclick="accLegacySet('+(!accLegacy)+')"'+(accLegacy&&!masters?' disabled title="Crée d\'abord ton compte master"':'')+'>'+(accLegacy?'Couper les mots de passe partagés':'Les réactiver')+'</button></div>'+
       (without.length?'<div class="grp-title">Sans accès</div>'+without.map(function(m){return '<div class="mp-row"><button class="mp-row-main" onclick="go(\'fiche\',\''+m._id+'\')"><i style="background:var(--bone3)"></i><span>'+esc(memName(m))+'</span><small>Créer l\'accès</small></button></div>';}).join(''):'')+
       '<div class="grp-title">Comptes</div>'+list.slice().sort(function(a,b){return String(a.callsign).localeCompare(String(b.callsign),'fr',{numeric:true});}).map(function(a){
         var col=a.blocked?'var(--signal)':(a.role==='admin'?'var(--tan)':(a.role==='membre'?'var(--phos)':'var(--bone3)'));
         return '<div class="mp-row"><button class="mp-row-main" onclick="'+(a.member_id&&db[a.member_id]?'go(\'fiche\',\''+a.member_id+'\')':'')+'"><i style="background:'+col+'"></i><span>'+esc(a.callsign)+' · '+ROLE_LABEL[a.role]+'</span><small>'+accStateTxt(a).replace(/<[^>]+>/g,'')+'</small></button></div>';}).join(''));
   },function(e){openSheet('<h3>Comptes et accès</h3><div class="tiny" style="color:var(--signal)">'+esc(e.message)+'</div>');});
-}
-async function accLegacySet(on){
-  if(!on&&!confirm('Couper les 3 mots de passe partagés ?\nCeux qui n\'ont pas de compte individuel ne pourront plus entrer.'))return;
-  try{await accApi('legacy',{on:on});accLegacy=on;toast(on?'Mots de passe partagés réactivés':'Mots de passe partagés coupés');openAccounts();}
-  catch(e){toast(e.message,true);}
 }
 </script>
 <script>
