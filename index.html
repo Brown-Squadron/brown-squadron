@@ -624,6 +624,38 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 .mk-gps.stale .dot{background:#6b6b62!important;box-shadow:0 0 0 2px rgba(0,0,0,.45)!important;border-color:#aaa;}
 .mk-gps.stale .cone{display:none;}
 .mk-gps.stale .n{opacity:.75;border-style:dashed;}
+
+/* connexion par indicatif */
+.login-field input{width:100%;height:54px;border-radius:var(--r);border:1px solid var(--hair3);background:rgba(13,16,12,.8);padding:0 18px;font-size:18px;text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em;}
+#login-newpwd .login-field input{text-transform:none;letter-spacing:.1em;}
+.login-field input:focus{outline:none;border-color:var(--phos);box-shadow:0 0 0 4px var(--phos-dim);}
+#login .pwd input{letter-spacing:.12em;}
+.login-switch{margin-top:6px;border:0;background:none;color:var(--bone2);font-size:13.5px;text-decoration:underline;text-underline-offset:3px;padding:8px;}
+.login-help{margin:4px 0 0;color:var(--bone3);font-size:12.5px;}
+.cred{display:grid;gap:10px;margin:14px 0;}
+.cred div{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:14px;background:var(--ground);border:1px solid var(--hair2);}
+.cred span{font-size:12.5px;color:var(--bone3);}
+.cred b{font-size:22px;font-stretch:112%;letter-spacing:.04em;user-select:all;}
+/* présence */
+.rsvp-me{margin:12px 0 4px;padding:12px;border-radius:16px;background:var(--ground);border:1px solid var(--hair2);}
+.rsvp-me .lbl{margin-bottom:8px;}
+.rsvp-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rsvp-b{min-height:52px;border-radius:13px;border:1px solid var(--hair2);background:var(--raised);font-weight:700;font-size:13.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;color:var(--bone);}
+.rsvp-b i{font-style:normal;font-size:16px;line-height:1;opacity:.7;}
+.rsvp-b.k-yes.on{background:var(--phos);border-color:var(--phos);color:var(--night);}
+.rsvp-b.k-no.on{background:var(--signal);border-color:var(--signal);color:#fff;}
+.rsvp-b.k-maybe.on{background:var(--tan);border-color:var(--tan);color:var(--tan-ink);}
+.rsvp-b.on i{opacity:1;}
+.hero-rsvp{margin-top:16px;}
+.hero-rsvp .rsvp-b{background:rgba(13,16,12,.55);}
+.rsvp-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0 4px;}
+.rsvp-sum span{display:flex;flex-direction:column;align-items:center;padding:8px 2px;border-radius:12px;background:var(--ground);font-size:11px;color:var(--bone2);text-align:center;line-height:1.2;}
+.rsvp-sum b{font-size:20px;font-stretch:118%;margin-bottom:2px;}
+.pres.ro{cursor:default;}
+.rsvp-mini{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:auto;}
+.rsvp-mini.k-yes{background:rgba(168,239,192,.15);color:var(--phos);}
+.rsvp-mini.k-no{background:rgba(226,86,63,.15);color:var(--signal);}
+.rsvp-mini.k-maybe{background:rgba(180,154,107,.18);color:var(--tan2);}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -641,13 +673,25 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
   <div class="card">
     <div class="badge" id="login-badge"></div>
     <h1>Brown Squadron</h1>
-    <p class="lead">Entre le mot de passe de l'escouade</p>
-    <div class="pwd">
-      <input type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()">
-      <button type="button" onclick="togglePwd()" aria-label="Afficher le mot de passe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    <div id="login-form">
+      <p class="lead" id="login-lead">Connecte-toi avec ton indicatif</p>
+      <div id="login-call-wrap" class="login-field"><input id="login-call" placeholder="Indicatif (ex. BS-07)" autocapitalize="characters" autocomplete="username" spellcheck="false" onkeydown="if(event.key==='Enter')$('login-pwd').focus()"></div>
+      <div class="pwd">
+        <input type="password" id="login-pwd" placeholder="Mot de passe" autocomplete="current-password" onkeydown="if(event.key==='Enter')tryLogin()">
+        <button type="button" onclick="togglePwd()" aria-label="Afficher le mot de passe"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <button class="btn primary go" id="login-go" onclick="tryLogin()">Entrer</button>
+      <p id="login-err"></p>
+      <button class="login-switch" id="login-switch" onclick="setLoginMode(!loginLegacy)">Utiliser le mot de passe de l'escouade</button>
+      <p class="login-help">Mot de passe oublié : demande au master de le réinitialiser.</p>
     </div>
-    <button class="btn primary go" onclick="tryLogin()">Entrer</button>
-    <p id="login-err"></p>
+    <div id="login-newpwd" class="hidden">
+      <p class="lead">Bienvenue <b id="np-who"></b>. Choisis ton mot de passe personnel.</p>
+      <div class="login-field"><input type="password" id="np-1" placeholder="Nouveau mot de passe (6 caractères min.)" autocomplete="new-password"></div>
+      <div class="login-field"><input type="password" id="np-2" placeholder="Confirmer" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveNewPwd()"></div>
+      <button class="btn primary go" onclick="saveNewPwd()">Enregistrer et entrer</button>
+      <p id="np-err" style="color:var(--signal);min-height:22px;margin:12px 0 0;font-size:14px"></p>
+    </div>
   </div>
 </div>
 
@@ -763,7 +807,7 @@ var currentRole=null;
 /* comptes Supabase (un par rôle, même mot de passe que dans l'appli) : protègent les données
    une fois la sécurité RLS activée. Tant qu'ils n'existent pas, l'appli fonctionne comme avant. */
 var ROLE_EMAILS={admin:'admin@brownsquadron.app',membre:'membre@brownsquadron.app',lecture:'lecture@brownsquadron.app'};
-var _loginPwd=null;
+
 function canWrite(){return !!currentRole;}
 function canEditOps(){return currentRole==='admin'||currentRole==='membre';}
 function canAdmin(){return currentRole==='admin';}
@@ -1035,20 +1079,108 @@ var _renderT=null;
 function renderSoon(now){clearTimeout(_renderT);_renderT=setTimeout(renderAll,now?0:120);}
 
 /* =====================================================================
-   CONNEXION / DÉMARRAGE
+   CONNEXION — comptes individuels (identifiant = indicatif)
+   Transition : les 3 mots de passe partagés restent possibles tant que
+   le master ne les a pas coupés (Menu > Comptes et accès).
    ===================================================================== */
+var AUTH_DOMAIN='brownsquadron.app';
+var me={id:null,callsign:'',member_id:null,personal:false};
+var legacyAllowed=true,loginLegacy=false;
 async function sha256hex(str){var buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(str));
   return [].map.call(new Uint8Array(buf),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');}
+function slugCall(c){return String(c||'').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);}
+function emailOfCall(c){return slugCall(c)+'@'+AUTH_DOMAIN;}
 function togglePwd(){var i=$('login-pwd');i.type=i.type==='password'?'text':'password';}
-function tryLogin(){
-  var v=$('login-pwd').value;
-  sha256hex(v).then(function(h){
-    var role=null;for(var r in ROLE_HASHES){if(ROLE_HASHES[r]===h){role=r;break;}}
-    if(!role){$('login-err').textContent='Mot de passe incorrect.';return;}
-    currentRole=role;_loginPwd=v;
-    try{localStorage.setItem('bs_role',role);sessionStorage.setItem('bs_role',role);}catch(e){}
-    startApp();
-  });
+function authMode(){try{return localStorage.getItem('bs_auth')||'';}catch(e){return 'anon';}}
+function setAuthMode(v){try{localStorage.setItem('bs_auth',v);}catch(e){}}
+function ensureSb(){if(!sb&&window.supabase&&SB_URL&&SB_KEY){try{sb=window.supabase.createClient(SB_URL,SB_KEY);}catch(e){sb=null;}}return sb;}
+/* rôle et identité à partir du compte connecté */
+function applySession(user){
+  if(!user)return false;var am=user.app_metadata||{};var role=am.role;
+  if(!role){for(var r in ROLE_EMAILS){if(ROLE_EMAILS[r]===user.email)role=r;}}
+  if(!role)return false;
+  currentRole=role;
+  me={id:user.id,callsign:am.callsign||'',member_id:am.member_id||null,personal:!!am.callsign,must:!!(am.callsign&&user.user_metadata&&user.user_metadata.must_change)};
+  if(me.personal){try{localStorage.setItem('bs_gps_call',me.callsign);localStorage.setItem('bs_comms_call',me.callsign);}catch(e){}}
+  setAuthMode('ok');try{localStorage.setItem('bs_role',role);}catch(e){}
+  return true;
+}
+function loginMsg(t){$('login-err').textContent=t||'';}
+function setLoginMode(legacy){
+  loginLegacy=!!legacy;
+  $('login-call-wrap').classList.toggle('hidden',loginLegacy);
+  $('login-lead').textContent=loginLegacy?'Mot de passe de l\'escouade (ancien accès)':'Connecte-toi avec ton indicatif';
+  $('login-switch').textContent=loginLegacy?'Se connecter avec mon indicatif':'Utiliser le mot de passe de l\'escouade';
+  $('login-switch').classList.toggle('hidden',!legacyAllowed&&!loginLegacy);
+  loginMsg('');setTimeout(function(){var f=loginLegacy?$('login-pwd'):$('login-call');if(f&&window.innerWidth>760)f.focus();},50);
+}
+function showLogin(msg){
+  currentRole=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');
+  $('login-form').classList.remove('hidden');$('login-newpwd').classList.add('hidden');
+  setLoginMode(false);loginMsg(msg||'');
+  fetchAuthStatus().then(function(){setLoginMode(loginLegacy);if(msg)loginMsg(msg);});
+}
+async function fetchAuthStatus(){
+  if(!ensureSb()||!sb.functions)return legacyAllowed;
+  try{var r=await withTimeout(sb.functions.invoke('comptes',{body:{action:'status'}}),6000);
+    if(r&&r.data&&typeof r.data.legacy==='boolean')legacyAllowed=r.data.legacy;}catch(e){}
+  return legacyAllowed;
+}
+async function tryLogin(){
+  var pwd=$('login-pwd').value;var btn=$('login-go');
+  if(!pwd){loginMsg('Entre ton mot de passe.');return;}
+  btn.disabled=true;loginMsg('Connexion…');
+  try{
+    if(!loginLegacy){
+      var call=($('login-call').value||'').trim();
+      if(!call){loginMsg('Entre ton indicatif.');return;}
+      if(!ensureSb()){loginMsg('Pas de connexion internet.');return;}
+      var r=await withTimeout(sb.auth.signInWithPassword({email:emailOfCall(call),password:pwd}),12000);
+      if(r.error||!r.data||!r.data.session){var em=(r.error&&r.error.message)||'';
+        loginMsg(/banned/i.test(em)?'Accès bloqué : contacte le master.':(/fetch|network/i.test(em)?'Pas de connexion internet.':'Indicatif ou mot de passe incorrect.'));return;}
+      if(!applySession(r.data.session.user)){loginMsg('Compte sans droits : contacte le master.');await sb.auth.signOut();return;}
+      if(me.must){showNewPwd();return;}
+      loginMsg('');startApp();return;
+    }
+    /* ancien accès : mot de passe partagé */
+    var h=await sha256hex(pwd);var role=null;for(var k in ROLE_HASHES){if(ROLE_HASHES[k]===h){role=k;break;}}
+    if(!role){loginMsg('Mot de passe incorrect.');return;}
+    await fetchAuthStatus();
+    if(!legacyAllowed){loginMsg('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');setLoginMode(false);return;}
+    currentRole=role;
+    if(ensureSb()){
+      try{var s=await withTimeout(sb.auth.signInWithPassword({email:ROLE_EMAILS[role],password:pwd}),10000);
+        if(s&&s.error&&/banned/i.test(s.error.message||'')){loginMsg('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');setLoginMode(false);return;}
+        if(s&&!s.error&&s.data&&s.data.session)applySession(s.data.session.user);else setAuthMode('anon');}catch(e){setAuthMode('anon');}
+    }else setAuthMode('anon');
+    me={id:null,callsign:'',member_id:null,personal:false};
+    try{localStorage.setItem('bs_role',role);}catch(e){}
+    loginMsg('');startApp();
+  }catch(e){loginMsg('Connexion impossible. Réessaie.');}
+  finally{btn.disabled=false;}
+}
+/* première connexion : choisir son propre mot de passe */
+function showNewPwd(){
+  $('app').classList.add('hidden');$('login').classList.remove('hidden');
+  $('login-form').classList.add('hidden');$('login-newpwd').classList.remove('hidden');
+  $('np-who').textContent=me.callsign;$('np-err').textContent='';setTimeout(function(){$('np-1').focus();},60);
+}
+async function saveNewPwd(fromMenu){
+  var a=$(fromMenu?'mp-1':'np-1').value,b=$(fromMenu?'mp-2':'np-2').value,err=$(fromMenu?'mp-err':'np-err');
+  if(a.length<6){err.textContent='6 caractères minimum.';return;}
+  if(a!==b){err.textContent='Les deux mots de passe ne sont pas identiques.';return;}
+  err.textContent='Enregistrement…';
+  try{var r=await withTimeout(sb.auth.updateUser({password:a,data:{must_change:false}}),12000);
+    if(r.error){err.textContent=/same|different/i.test(r.error.message)?'Choisis un mot de passe différent du provisoire.':'Erreur : '+r.error.message;return;}
+    me.must=false;err.textContent='';
+    if(fromMenu){closeSheet();toast('Mot de passe modifié');}else startApp();
+  }catch(e){err.textContent='Pas de connexion internet.';}
+}
+function openChangePwd(){
+  openSheet('<h3>Changer mon mot de passe</h3><div class="sub">Compte '+esc(me.callsign)+'</div>'+
+    '<div class="grid1" style="margin-top:14px"><div class="field"><label>Nouveau mot de passe</label><input id="mp-1" type="password" autocomplete="new-password"></div>'+
+    '<div class="field"><label>Confirmer</label><input id="mp-2" type="password" autocomplete="new-password" onkeydown="if(event.key===\'Enter\')saveNewPwd(true)"></div></div>'+
+    '<p id="mp-err" class="tiny" style="color:var(--signal);min-height:18px"></p><button class="btn primary block" onclick="saveNewPwd(true)">Enregistrer</button>');
 }
 function logout(){
   try{localStorage.removeItem('bs_role');sessionStorage.removeItem('bs_role');localStorage.removeItem('bs_auth');}catch(e){}
@@ -1056,34 +1188,37 @@ function logout(){
   var done=function(){location.reload();};
   try{if(sb&&sb.auth)withTimeout(sb.auth.signOut(),3000).then(done,done);else done();}catch(e){done();}
 }
-function authMode(){try{return localStorage.getItem('bs_auth')||'';}catch(e){return 'anon';}}
-function setAuthMode(v){try{localStorage.setItem('bs_auth',v);}catch(e){}}
-/* connexion au compte Supabase du rôle (silencieuse) */
-async function authSignIn(){
-  if(!sb||!sb.auth)return;
-  var pwd=_loginPwd;_loginPwd=null;
-  if(pwd){
-    try{var r=await withTimeout(sb.auth.signInWithPassword({email:ROLE_EMAILS[currentRole],password:pwd}),10000);
-      setAuthMode(r&&!r.error&&r.data&&r.data.session?'ok':'anon');}catch(e){setAuthMode('anon');}
-    return;
-  }
-  try{var s=await withTimeout(sb.auth.getSession(),5000);if(s&&s.data&&s.data.session)return;}catch(e){return;}
-  /* pas de session : si les comptes existent (bs_auth absent ou 'ok'), il faut se reconnecter une fois */
-  if(authMode()!=='anon')throw new Error('reauth');
-}
 function askReLogin(msg){
   try{localStorage.removeItem('bs_role');sessionStorage.removeItem('bs_role');}catch(e){}
-  currentRole=null;$('app').classList.add('hidden');$('login').classList.remove('hidden');$('login-err').textContent=msg||'';
+  showLogin(msg);
+}
+/* au lancement : session existante ? sinon ancien accès mémorisé ? sinon écran de connexion */
+async function bootAuth(){
+  ensureSb();
+  if(sb&&sb.auth){
+    try{var s=await withTimeout(sb.auth.getSession(),5000);var u=s&&s.data&&s.data.session&&s.data.session.user;
+      if(u&&applySession(u)){if(me.must){showNewPwd();return;}startApp();return;}}catch(e){}
+  }
+  var role=null;try{role=localStorage.getItem('bs_role');}catch(e){}
+  if(role&&ROLE_HASHES[role]&&authMode()==='anon'){
+    await fetchAuthStatus();
+    if(legacyAllowed){currentRole=role;startApp();return;}
+    showLogin('Les mots de passe partagés sont désactivés : connecte-toi avec ton indicatif.');return;
+  }
+  showLogin(role?'Connecte-toi avec ton indicatif (ou le mot de passe de l\'escouade).':'');
 }
 function applyRole(){
   document.body.classList.remove('role-admin','role-membre','role-lecture');
   document.body.classList.add('role-'+currentRole);
+  document.body.classList.toggle('personal',!!me.personal);
 }
+var _appStarted=false;
 async function startApp(){
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   applyRole();
-  if(window.supabase&&SB_URL&&SB_KEY){try{sb=window.supabase.createClient(SB_URL,SB_KEY);}catch(e){sb=null;}}
-  try{await authSignIn();}catch(e){askReLogin('Mise à jour de sécurité : entre le mot de passe une dernière fois.');return;}
+  if(_appStarted){route(history.state&&history.state.v?history.state:{v:'home'},true);return;}
+  _appStarted=true;ensureSb();
+  if(sb&&sb.auth&&sb.auth.onAuthStateChange){try{sb.auth.onAuthStateChange(function(ev){if(ev==='SIGNED_OUT'&&me.personal&&_appStarted)askReLogin('Session terminée : reconnecte-toi.');});}catch(e){}}
   await idbOpen();
   var rows=await idbAll();
   Object.keys(rows).forEach(function(id){var v=rows[id];if(v&&v.d&&!isIgnored(id,v.d.type)){db[id]=v.d;dbTs[id]=v.u||undefined;}});
@@ -1225,7 +1360,7 @@ function openMenu(){
   var n=pendingList().length+delList().length;
   var roleL={admin:'Master',membre:'Membre',lecture:'Lecture'}[currentRole]||'';
   openSheet(
-    '<h3>Menu</h3><div class="sub">Connecté en <b>'+roleL+'</b></div>'+
+    '<h3>Menu</h3><div class="sub">'+(me.personal?'Connecté : <b>'+esc(me.callsign)+'</b> · '+roleL:'Connecté en <b>'+roleL+'</b> (accès partagé)')+'</div>'+
     '<div class="menu-list">'+
       '<button class="menu-item" onclick="go(\'drill\')">'+I.shield+'Drill<span class="r">Cours & fiches</span></button>'+
       '<button class="menu-item" onclick="go(\'map\')">'+I.map+'Carte<span class="r">Terrain, GPS</span></button>'+
@@ -1234,6 +1369,8 @@ function openMenu(){
       '<div class="divider" style="margin:8px 0"></div>'+
       '<button class="menu-item" onclick="closeSheet();cloudRefresh()">'+I.sync+'Synchroniser maintenant<span class="r">'+
         (n?n+' en attente':(lastSyncAt?'à jour '+pad2(lastSyncAt.getHours())+':'+pad2(lastSyncAt.getMinutes()):esc(syncText)))+'</span></button>'+
+      (canAdmin()?'<button class="menu-item" onclick="openAccounts()">'+I.users+'Comptes et accès<span class="r">Master</span></button>':'')+
+      (me.personal?'<button class="menu-item" onclick="openChangePwd()">'+I.shield+'Changer mon mot de passe</button>':'')+
       '<button class="menu-item" onclick="logout()">'+I.out+'Se déconnecter<span class="r">'+APP_VERSION+'</span></button>'+
     '</div>');
 }
@@ -1412,7 +1549,9 @@ function renderHome(){
       '<div class="when">'+fmtDay(next.date)+(next.heure?' · '+esc(heureRange(next)):'')+'</div>'+
       '<div class="count"><span class="n">'+(dd<0?'•':big)+'</span><span class="u">'+unit+'</span></div>'+
       '<div class="meta">'+(next.lieu?'<span class="tag">'+I.pin.replace('<svg','<svg width="13" height="13"')+esc(next.lieu)+'</span>':'')+
-        '<span class="tag">'+(next.presents||[]).length+' inscrit'+((next.presents||[]).length>1?'s':'')+'</span></div></div>';
+        '<span class="tag">'+(next.presents||[]).length+' présent'+((next.presents||[]).length>1?'s':'')+'</span></div>'+
+      (me.member_id&&db[me.member_id]?(function(){var r=rsvpOf(next,me.member_id);return '<div class="rsvp-btns hero-rsvp" onclick="event.stopPropagation()">'+['yes','no','maybe'].map(function(k){
+        return '<button class="rsvp-b k-'+k+(r&&r.s===k?' on':'')+'" onclick="currentOpId=\''+next._id+'\';answerSelf(\''+k+'\')"><i>'+RSVP[k].ic+'</i>'+RSVP[k].l+'</button>';}).join('')+'</div>';})():'')+'</div>';
   }else{
     hero='<div class="hero" style="cursor:default">'+reticleSVG()+'<div class="eyebrow"><span class="live" style="background:var(--bone3);box-shadow:none"></span>Agenda</div>'+
       '<div class="t">Rien de prévu</div><div class="when">Aucune opération à venir dans l\'agenda.</div>'+
@@ -1429,6 +1568,7 @@ function renderHome(){
       '<div class="panel"><div class="row between" style="margin-bottom:4px"><h2 class="h-sec" style="margin:0">Ensuite</h2><button class="btn sm ghost" onclick="go(\'calendrier\')">Agenda</button></div>'+
         (later.length?later.map(function(o){return evRow(o);}).join(''):'<div class="tiny" style="padding:10px 0">Rien d\'autre au programme pour l\'instant.</div>')+'</div>'+
       '<div class="panel"><h2 class="h-sec">Accès rapide</h2><div class="menu-list" style="margin:0">'+
+        (me.member_id&&db[me.member_id]?'<button class="menu-item" onclick="go(\'fiche\',\''+me.member_id+'\')">'+I.users+'Ma fiche<span class="r">kit, drill</span></button>':'')+
         '<button class="menu-item" onclick="go(\'drill\')">'+I.shield+'Drill<span class="r">'+coursOf().length+' cours</span></button>'+
         '<button class="menu-item" onclick="go(\'map\')">'+I.map+'Carte<span class="r">Terrain, GPS live</span></button>'+
         '<button class="menu-item" onclick="go(\'comms\')">'+I.chat+'Comms<span class="r">Messagerie</span></button>'+
@@ -1496,7 +1636,7 @@ function renderFiche(){
     '<div class="tabs"><div class="seg">'+[['profil','Profil'],['kit','Kit-list'],['arme','Armement']].map(function(t){
       return '<button class="'+(ficheTab===t[0]?'on':'')+'" onclick="ficheTab=\''+t[0]+'\';renderFiche()">'+t[1]+'</button>';}).join('')+'</div></div>';
   if(ficheTab==='profil'){
-    html+='<div class="panel"><h2 class="h-sec">Identité</h2><div class="grid2 stack">'+fld('Indicatif','pseudo','text','Ghost')+fld('Rôle / spécialité','role','text','Medic, sniper, leader…')+fld('Prénom','prenom')+fld('Nom','nom')+'</div></div>'+
+    html+=accessPanelHTML()+'<div class="panel"><h2 class="h-sec">Identité</h2><div class="grid2 stack">'+fld('Indicatif','pseudo','text','Ghost')+fld('Rôle / spécialité','role','text','Medic, sniper, leader…')+fld('Prénom','prenom')+fld('Nom','nom')+'</div></div>'+
       '<div class="panel"><h2 class="h-sec">Coordonnées</h2><div class="grid2 stack">'+fld('Téléphone','tel','tel','06 00 00 00 00')+fld('Email','email','email')+fld('Adresse','adresse','text','',true)+'</div></div>'+
       '<div class="panel"><h2 class="h-sec">Infos opérationnelles</h2><div class="grid2 stack">'+fld('Groupe sanguin','sang','text','O+')+fld('Taille d\'équipement','taille','text','L / 42')+
         fld('Contact d\'urgence','urg_nom')+fld('Téléphone d\'urgence','urg_tel','tel')+fld('Autres renseignements','notes','textarea','Allergies, remarques, disponibilités…',true)+'</div></div>';
@@ -1518,6 +1658,7 @@ function renderFiche(){
     (canEditOps()&&!window._newMember?'<button class="btn danger" style="flex:0 0 auto" onclick="delMembre()" aria-label="Supprimer">'+I.trash+'</button>':'')+'</div>'+
     '<div class="status-line" id="fiche-status"></div>';
   $('view-fiche').innerHTML=html;
+  if(ficheTab==='profil'&&canAdmin())fillAccessPanel();
 }
 function setRep(n,k,v){var d=window._ficheDraft;d['rep'+n]=d['rep'+n]||{};d['rep'+n][k]=v;window._formDirty=true;}
 function pickRepImg(n){pickFiles('image/*',false,function(files){compressImage(files[0],function(data){repImg[n]=data;window._formDirty=true;renderFiche();});});}
@@ -1686,7 +1827,8 @@ function opCard(o,past){
     '<div class="top"><span class="tag"><i style="background:'+t.c+'"></i>'+t.l+'</span><span class="date">'+esc(opDateTxt(o))+'</span>'+faces(o.presents)+'</div>'+
     '<div class="n">'+esc(o.name||'Sans nom')+'</div>'+
     '<div class="s">'+(o.heure?'<span>'+I.clock+esc(heureRange(o))+'</span>':'')+(o.lieu?'<span>'+I.pin+esc(o.lieu)+'</span>':'')+
-      '<span>'+I.users+(o.presents||[]).length+' inscrit'+((o.presents||[]).length>1?'s':'')+'</span></div></div>';
+      '<span>'+I.users+(o.presents||[]).length+' présent'+((o.presents||[]).length>1?'s':'')+(function(){var q=rsvpCounts(o).maybe;return q?' · '+q+' incertain'+(q>1?'s':''):'';})()+'</span>'+
+      (me.member_id&&rsvpOf(o,me.member_id)?'<span class="rsvp-mini k-'+rsvpOf(o,me.member_id).s+'">'+RSVP[rsvpOf(o,me.member_id).s].l+'</span>':'')+'</div></div>';
 }
 function renderOps(){
   var all=operationsOf();var t=todayISO();
@@ -1734,24 +1876,71 @@ function renderOpView(id){
     (docs.length?'<div class="panel" style="margin-top:12px"><h2 class="h-sec">Documents ('+docs.length+')</h2><div class="docs">'+docs.map(function(d,i){return docTile(d,i,false);}).join('')+'</div></div>':'')+
     '<div class="panel" style="margin-top:12px" id="pres-box">'+presenceHTML(o)+'</div>';
 }
+/* ---------- présence : Présent / Absent / Je ne sais pas (+ motif) ----------
+   Stockage : o.rsvp[idMembre] = {s:'yes'|'no'|'maybe', m:motif, t:date, by:indicatif}
+   o.presents (liste des présents) est tenu à jour pour la compatibilité. */
+var RSVP={yes:{l:'Présent',c:'var(--phos)',ic:'✓'},maybe:{l:'Je ne sais pas',c:'var(--tan2)',ic:'?'},no:{l:'Absent',c:'var(--signal)',ic:'✕'}};
+function rsvpOf(o,mid){var r=o&&o.rsvp&&o.rsvp[mid];if(r&&r.s)return r;if(o&&(o.presents||[]).indexOf(mid)>=0)return {s:'yes'};return null;}
+function rsvpCounts(o){var n={yes:0,no:0,maybe:0,none:0};membresOf().forEach(function(m){var r=rsvpOf(o,m._id);n[r?r.s:'none']++;});return n;}
+function canAnswerFor(mid){
+  if(me.personal)return canAdmin()||me.member_id===mid; /* compte perso : soi-même, le master pour tous */
+  return true; /* ancien accès partagé sans identité */
+}
 function presenceHTML(o){
-  var ms=membresOf();var pres=o.presents||[];
-  var head='<div class="row between"><h2 class="h-sec" style="margin:0">Présence</h2><span class="tag">'+pres.length+' / '+ms.length+'</span></div>'+
-    '<div class="tiny" style="margin:6px 0 4px">'+(canEditOps()?'Touche un membre pour l\'inscrire ou le retirer.':'Touche ton nom pour t\'inscrire. Pour te désinscrire : salon « Annulation de présence » dans Comms + message à Flo.')+'</div>';
-  if(!ms.length)return head+'<div class="tiny">Aucun membre dans l\'effectif.</div>';
-  var sorted=ms.slice().sort(function(a,b){var pa=pres.indexOf(a._id)>=0,pb=pres.indexOf(b._id)>=0;return (pb-pa)||memName(a).localeCompare(memName(b),'fr');});
-  return head+sorted.map(function(m){var on=pres.indexOf(m._id)>=0;
-    return '<div class="pres'+(on?' on':'')+'" onclick="togglePresence(\''+m._id+'\')"><div class="avatar">'+(on?I.check.replace('<svg','<svg width="18" height="18"'):esc(memBadge(m)))+'</div>'+
-      '<div class="info"><b>'+esc(memName(m))+'</b><span>'+esc(m.role||'')+'</span></div><span class="tiny">'+(on?'Présent':'')+'</span></div>';}).join('');
+  var ms=membresOf();var n=rsvpCounts(o);
+  var mine=me.member_id&&db[me.member_id]?rsvpOf(o,me.member_id):null;
+  var html='<div class="row between"><h2 class="h-sec" style="margin:0">Présence</h2><span class="tag">'+n.yes+' présent'+(n.yes>1?'s':'')+'</span></div>';
+  if(me.member_id&&db[me.member_id]){
+    html+='<div class="rsvp-me"><div class="lbl">Ta réponse</div><div class="rsvp-btns">'+['yes','no','maybe'].map(function(k){
+      return '<button class="rsvp-b k-'+k+(mine&&mine.s===k?' on':'')+'" onclick="answerSelf(\''+k+'\')"><i>'+RSVP[k].ic+'</i>'+RSVP[k].l+'</button>';}).join('')+'</div>'+
+      (mine&&mine.m?'<div class="tiny" style="margin-top:6px">Motif : '+esc(mine.m)+' · <a href="#" onclick="event.preventDefault();askMotif(\''+me.member_id+'\',\''+mine.s+'\')">modifier</a></div>':'')+'</div>';
+  }
+  html+='<div class="rsvp-sum">'+[['yes','Présents'],['maybe','Je ne sais pas'],['no','Absents'],['none','Sans réponse']].map(function(x){
+    return '<span><b style="color:'+(x[0]==='none'?'var(--bone3)':RSVP[x[0]].c)+'">'+n[x[0]]+'</b>'+x[1]+'</span>';}).join('')+'</div>';
+  if(!ms.length)return html+'<div class="tiny">Aucun membre dans l\'effectif.</div>';
+  var groups={yes:[],maybe:[],no:[],none:[]};
+  ms.forEach(function(m){var r=rsvpOf(o,m._id);groups[r?r.s:'none'].push({m:m,r:r});});
+  [['yes','Présents'],['maybe','Je ne sais pas'],['no','Absents'],['none','Sans réponse']].forEach(function(g){
+    if(!groups[g[0]].length)return;
+    html+='<div class="grp-title">'+g[1]+' ('+groups[g[0]].length+')</div>'+groups[g[0]].map(function(x){
+      var m=x.m,r=x.r,can=canAnswerFor(m._id);var st=r?RSVP[r.s]:null;
+      return '<div class="pres'+(r&&r.s==='yes'?' on':'')+(can?'':' ro')+'" '+(can?'onclick="openRsvp(\''+m._id+'\')"':'')+'><div class="avatar"'+(st&&r.s!=='yes'?' style="color:'+st.c+'"':'')+'>'+
+        (r&&r.s==='yes'?I.check.replace('<svg','<svg width="18" height="18"'):(st?st.ic:esc(memBadge(m))))+'</div>'+
+        '<div class="info"><b>'+esc(memName(m))+'</b><span>'+(r&&r.m?'« '+esc(r.m)+' »':esc(m.role||''))+'</span></div>'+
+        '<span class="tiny" style="color:'+(st?st.c:'var(--bone3)')+'">'+(st?st.l:'')+'</span></div>';}).join('');
+  });
+  return html;
 }
-function togglePresence(mid){
-  var o=db[currentOpId];if(!o)return;var on=(o.presents||[]).indexOf(mid)>=0;
-  if(on&&!canEditOps()){toast('Désinscription : salon « Annulation de présence » + message à Flo.',true);return;}
-  cloudMutate(currentOpId,function(x){x.type='operation';x.presents=(x.presents||[]).slice();var i=x.presents.indexOf(mid);
-    if(on){if(i>=0)x.presents.splice(i,1);}else if(i<0)x.presents.push(mid);},'operation')
-    .then(function(ok){if(ok)toast(on?'Retiré de l\'opération':'Inscrit à l\'opération');});
-  var b=$('pres-box');if(b)b.innerHTML=presenceHTML(db[currentOpId]);
+function answerSelf(s){if(!me.member_id)return;if(s==='maybe'){askMotif(me.member_id,'maybe');return;}setRsvp(me.member_id,s,'');}
+function openRsvp(mid){
+  if(!canAnswerFor(mid))return;var o=db[currentOpId];var m=db[mid];if(!o||!m)return;var r=rsvpOf(o,mid);
+  if(!canEditOps()&&!me.personal&&r&&r.s==='yes'){toast('Désinscription : salon « Annulation de présence » + message à Flo.',true);return;}
+  openSheet('<h3>'+esc(memName(m))+'</h3><div class="sub">'+esc(o.name||'Opération')+'</div>'+
+    '<div class="rsvp-btns" style="margin-top:14px">'+['yes','no','maybe'].map(function(k){
+      return '<button class="rsvp-b k-'+k+(r&&r.s===k?' on':'')+'" onclick="'+(k==='maybe'?'askMotif(\''+mid+'\',\'maybe\')':'closeSheet();setRsvp(\''+mid+'\',\''+k+'\',\'\')')+'"><i>'+RSVP[k].ic+'</i>'+RSVP[k].l+'</button>';}).join('')+'</div>'+
+    (r&&canAdmin()?'<button class="btn sm ghost" style="margin-top:12px" onclick="closeSheet();setRsvp(\''+mid+'\',null,\'\')">Effacer la réponse</button>':''));
 }
+function askMotif(mid,s){
+  var o=db[currentOpId];var r=rsvpOf(o,mid);var m=db[mid];
+  openSheet('<h3>Je ne sais pas encore</h3><div class="sub">'+esc(memName(m))+' · '+esc(o.name||'Opération')+'</div>'+
+    '<div class="field" style="margin-top:14px"><label>Motif (obligatoire)</label><textarea id="rsvp-motif" maxlength="160" placeholder="Travail à confirmer, garde d\'enfants, transport…" style="min-height:90px">'+esc(r&&r.s===s&&r.m||'')+'</textarea></div>'+
+    '<p id="rsvp-err" class="tiny" style="color:var(--signal);min-height:16px;margin:6px 0"></p>'+
+    '<button class="btn primary block" onclick="confirmMotif(\''+mid+'\',\''+s+'\')">Valider</button>');
+  setTimeout(function(){var t=$('rsvp-motif');if(t)t.focus();},250);
+}
+function confirmMotif(mid,s){var v=($('rsvp-motif').value||'').trim();if(v.length<3){$('rsvp-err').textContent='Indique un motif.';return;}closeSheet();setRsvp(mid,s,v);}
+function setRsvp(mid,s,motif,opId){
+  var id=opId||currentOpId;if(!db[id])return;var by=myCall()||(me.callsign||'');
+  cloudMutate(id,function(x){
+    x.type='operation';x.rsvp=Object.assign({},x.rsvp||{});
+    var pres=(x.presents||[]).filter(function(p){return p!==mid;});
+    if(!s)delete x.rsvp[mid];else x.rsvp[mid]={s:s,m:motif||'',t:Date.now(),by:by};
+    if(s==='yes')pres.push(mid);x.presents=pres;
+  },'operation').then(function(ok){if(ok)toast(s?RSVP[s].l+' enregistré':'Réponse effacée');});
+  var b=$('pres-box');if(b&&id===currentOpId)b.innerHTML=presenceHTML(db[id]);
+  if(curView==='home')renderHome();
+}
+function togglePresence(mid){openRsvp(mid);}
 /* ---------- édition opération ---------- */
 function renderOpEdit(id){
   var o=db[id];if(!o){go('operations',null,{replace:true});return;}
@@ -1961,7 +2150,8 @@ var commsCur=null,commsRt=null,commsPoll=null,lastByChan={},_msgSig='';
 function commsChannels(){var list=[{id:'general',name:'Général'}];
   var c=(db['__commschans__']&&db['__commschans__'].data&&db['__commschans__'].data.list)||[];
   c.forEach(function(x){if(x&&x.id&&x.id.indexOf('op_')!==0)list.push({id:x.id,name:x.name});});return list;}
-function myCall(){try{return localStorage.getItem('bs_comms_call')||'';}catch(e){return '';}}
+function callChip(after){return me.personal?'<span class="callsign-chip" style="display:inline-flex;align-items:center">'+esc(me.callsign)+'</span>':'<button class="callsign-chip" onclick="askCall('+(after||'')+')">'+esc(myCall()||'choisir un indicatif')+'</button>';}
+function myCall(){if(me&&me.personal)return me.callsign;try{return localStorage.getItem('bs_comms_call')||'';}catch(e){return '';}}
 function setCall(v){v=(v||'').trim().slice(0,16);try{localStorage.setItem('bs_comms_call',v);}catch(e){}return v;}
 function askCall(after){
   openSheet('<h3>Ton indicatif</h3><div class="sub">Il signe tes messages dans Comms.</div><div class="field" style="margin:14px 0"><input id="call-inp" maxlength="16" value="'+esc(myCall())+'" placeholder="BS-02" onkeydown="if(event.key===\'Enter\')$(\'call-ok\').click()"></div>'+
@@ -1971,7 +2161,7 @@ function askCall(after){
 }
 function renderComms(){
   var chans=commsChannels();
-  $('view-comms').innerHTML='<div class="page-head"><div><h1 class="h-page">Comms</h1><div class="sub">Tu signes en <button class="callsign-chip" onclick="askCall(renderComms)">'+esc(myCall()||'choisir un indicatif')+'</button></div></div>'+
+  $('view-comms').innerHTML='<div class="page-head"><div><h1 class="h-page">Comms</h1><div class="sub">Tu signes en '+callChip('renderComms')+'</div></div>'+
     '<button class="btn sm" onclick="newChannel()">'+I.plus+'Conversation</button></div>'+
     '<div class="panel" style="padding:4px 12px">'+chans.map(function(c){var l=lastByChan[c.id];
       return '<div class="conv" onclick="go(\'chat\',\''+c.id+'\')"><div class="avatar">'+esc(initials(c.name))+'</div><div class="info"><b>'+esc(c.name)+'</b><span>'+(l?esc((l.callsign?l.callsign+' : ':'')+l.body):'Aucun message')+'</span></div>'+
@@ -2015,7 +2205,7 @@ function renderChat(id){
   var c=commsChannels().filter(function(x){return x.id===id;})[0];
   if(!c){go('comms',null,{replace:true});return;}
   commsCur=id;_msgSig='';$('tb-title').textContent=c.name;if(msgCache[id])setTimeout(function(){drawMsgs(msgCache[id]);},0);
-  $('view-chat').innerHTML='<div class="chat"><div class="row" style="padding:10px 14px;border-bottom:1px solid var(--hair);gap:8px"><span class="tiny">Tu signes</span><button class="callsign-chip" onclick="askCall()">'+esc(myCall()||'choisir')+'</button>'+
+  $('view-chat').innerHTML='<div class="chat"><div class="row" style="padding:10px 14px;border-bottom:1px solid var(--hair);gap:8px"><span class="tiny">Tu signes</span>'+callChip('')+''+
     '<span style="flex:1"></span>'+(canAdmin()&&id!=='general'?'<button class="btn sm danger" onclick="deleteChannel()">'+I.trash+'Supprimer</button>':'')+'</div>'+
     '<div class="log" id="chat-log"><div class="tiny" style="text-align:center;padding:30px">Chargement…</div></div>'+
     '<div class="composer"><textarea id="chat-inp" rows="1" maxlength="500" placeholder="Message" oninput="this.style.height=\'auto\';this.style.height=Math.min(this.scrollHeight,140)+\'px\'" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey&&window.innerWidth>760){event.preventDefault();sendMsg();}"></textarea>'+
@@ -2196,7 +2386,9 @@ function genOpPDF(){
     printDoc(w,o.name||'Opération','Brown Squadron · '+t.l,t.hex,
       '<h2>Logistique</h2><table>'+kvRow('Date',when)+kvRow('Heure',heureRange(o))+kvRow('Lieu',o.lieu)+(o.gps?kvRow('GPS',o.gps.lat.toFixed(5)+', '+o.gps.lon.toFixed(5)):'')+kvRow('Infos pratiques',o.infos)+'</table>'+
       (o.scenario?'<h2>Briefing</h2><div class="box">'+esc(o.scenario)+'</div>':'')+
-      '<h2>Équipe ('+pres.length+')</h2><div>'+(pres.length?pres.map(function(p){return '<span class="chip">'+esc(p)+'</span>';}).join(''):'<span style="color:#888">Aucun inscrit</span>')+'</div>'+pages);});
+      '<h2>Présents ('+pres.length+')</h2><div>'+(pres.length?pres.map(function(p){return '<span class="chip">'+esc(p)+'</span>';}).join(''):'<span style="color:#888">Aucun inscrit</span>')+'</div>'+
+      (function(){var out='';[['maybe','Je ne sais pas'],['no','Absents']].forEach(function(g){var l=membresOf().filter(function(m){var r=rsvpOf(o,m._id);return r&&r.s===g[0];});
+        if(l.length)out+='<h2>'+g[1]+' ('+l.length+')</h2><table>'+l.map(function(m){var r=rsvpOf(o,m._id);return '<tr><td style="width:200px"><b>'+esc(memName(m))+'</b></td><td>'+esc(r.m||'')+'</td></tr>';}).join('')+'</table>';});return out;})()+pages);});
 }
 function genCoursPDF(){
   var c=db[currentCoursId];if(!c)return;var w=window.open('','_blank');var blocks=c.blocks||[];
@@ -2260,6 +2452,130 @@ function ensureMapLib(){
     _mapLibP=loadScript('https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js').catch(function(){_mapLibP=null;});
   }
   return _mapLibP;
+}
+
+/* =====================================================================
+   COMPTES ET ACCÈS (master)
+   Appelle la fonction Supabase « comptes ». Si le master est connecté avec
+   l'ancien mot de passe partagé sans compte Supabase, la fonction demande
+   le code de configuration (même code que la fonction GPS).
+   ===================================================================== */
+var accCache=null,accLegacy=true,_accLoading=null;
+var ROLE_LABEL={admin:'Master',membre:'Membre',lecture:'Lecture'};
+var ACC_ERR={reserve_master:'Réservé au master.',indicatif_deja_pris:'Cet indicatif a déjà un compte.',indicatif_vide:'Indicatif vide.',
+  pas_soi_meme:'Impossible sur ton propre compte.',aucun_master_individuel:'Crée d\'abord ton propre compte master avant de couper les mots de passe partagés.',
+  compte_introuvable:'Compte introuvable.',role_invalide:'Droits invalides.'};
+function setupCode(){try{return sessionStorage.getItem('bs_setup')||'';}catch(e){return '';}}
+async function accApi(action,payload,retried){
+  if(!ensureSb()||!sb.functions)throw new Error('Pas de connexion internet.');
+  var body=Object.assign({action:action},payload||{});var sc=setupCode();if(sc)body.setup_code=sc;
+  var r;try{r=await withTimeout(sb.functions.invoke('comptes',{body:body}),20000);}catch(e){throw new Error('Pas de réponse du serveur. Vérifie que la fonction « comptes » est déployée.');}
+  var data=r&&r.data,err=r&&r.error;
+  if(err&&!data){try{data=await err.context.json();}catch(e){data=null;}}
+  if(data&&data.ok)return data;
+  var code=(data&&data.error)||(err&&err.message)||'erreur';
+  if(code==='reserve_master'&&!retried&&canAdmin()){
+    var v=prompt('Ton accès master n\'est pas encore un compte individuel.\nEntre le code de configuration (le même code secret que pour le GPS) :');
+    if(v){try{sessionStorage.setItem('bs_setup',v.trim());}catch(e){}return accApi(action,payload,true);}
+  }
+  throw new Error(ACC_ERR[code]||code);
+}
+async function loadAccounts(force){
+  if(accCache&&!force)return accCache;
+  if(_accLoading)return _accLoading;
+  _accLoading=accApi('list').then(function(d){accCache=d.users||[];accLegacy=d.legacy!==false;_accLoading=null;return accCache;},function(e){_accLoading=null;throw e;});
+  return _accLoading;
+}
+function accOfMember(mid){
+  if(!accCache)return null;var m=db[mid];
+  return accCache.filter(function(a){return a.member_id===mid;})[0]||
+    (m?accCache.filter(function(a){return !a.member_id&&slugCall(a.callsign)===slugCall(defaultCallsign(m));})[0]:null)||null;
+}
+/* « BS-07 / HAYDEN » -> « BS-07 » */
+function defaultCallsign(m){
+  var p=String((m&&m.pseudo)||'').trim();var x=p.match(/\b([A-Za-z]{1,4}-?\d{1,3})\b/);
+  return (x?x[1]:p.split(/\s*\/\s*/)[0]).toUpperCase().slice(0,16);
+}
+function accStateTxt(a){
+  if(a.blocked)return '<span style="color:var(--signal)">Bloqué</span>';
+  if(a.must_change)return 'En attente de première connexion';
+  return a.last?'Dernière connexion '+ago(new Date(a.last).getTime()):'Jamais connecté';
+}
+/* ---------- panneau « Accès à l'appli » sur la fiche ---------- */
+function accessPanelHTML(){return canAdmin()&&!window._newMember?'<div class="panel" id="acc-panel"><h2 class="h-sec">Accès à l\'appli</h2><div class="tiny">Chargement…</div></div>':'';}
+function fillAccessPanel(){
+  var box=$('acc-panel');if(!box)return;var mid=currentId;
+  loadAccounts().then(function(){drawAccessPanel(mid);},function(e){
+    box.innerHTML='<h2 class="h-sec">Accès à l\'appli</h2><div class="tiny" style="color:var(--signal)">'+esc(e.message)+'</div><button class="btn sm" style="margin-top:8px" onclick="accCache=null;fillAccessPanel()">Réessayer</button>';});
+}
+function drawAccessPanel(mid){
+  var box=$('acc-panel');if(!box||currentId!==mid)return;var m=db[mid]||{};var a=accOfMember(mid);
+  if(!a){
+    box.innerHTML='<h2 class="h-sec">Accès à l\'appli</h2><div class="tiny" style="margin-bottom:10px">Ce membre n\'a pas encore de compte. Il se connectera avec cet indicatif et un mot de passe provisoire.</div>'+
+      '<div class="grid2 stack"><div class="field"><label>Identifiant (indicatif)</label><input id="acc-call" maxlength="16" value="'+esc(defaultCallsign(m))+'" autocapitalize="characters"></div>'+
+      '<div class="field"><label>Droits</label><select id="acc-role">'+['membre','lecture','admin'].map(function(r){return '<option value="'+r+'">'+ROLE_LABEL[r]+'</option>';}).join('')+'</select></div></div>'+
+      '<button class="btn primary block" style="margin-top:12px" onclick="accCreate(\''+mid+'\')">Créer l\'accès</button>';
+    return;
+  }
+  var isMe=me.id&&a.id===me.id;
+  box.innerHTML='<h2 class="h-sec">Accès à l\'appli</h2>'+
+    '<div class="row between" style="flex-wrap:wrap;gap:8px"><div><b style="font-stretch:112%;font-size:17px">'+esc(a.callsign)+'</b><div class="tiny">'+accStateTxt(a)+'</div></div>'+
+    '<select class="inp" style="width:auto;min-height:42px" onchange="accSetRole(\''+a.id+'\',this.value)"'+(isMe?' disabled title="Tes propres droits ne se modifient pas ici"':'')+'>'+
+      ['admin','membre','lecture'].map(function(r){return '<option value="'+r+'"'+(a.role===r?' selected':'')+'>'+ROLE_LABEL[r]+'</option>';}).join('')+'</select></div>'+
+    '<div class="row" style="gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn sm" onclick="accReset(\''+a.id+'\',\''+esc(a.callsign)+'\')">Réinitialiser le mot de passe</button>'+
+      (isMe?'':'<button class="btn sm '+(a.blocked?'':'danger')+'" onclick="accBlock(\''+a.id+'\','+(!a.blocked)+')">'+(a.blocked?'Débloquer':'Bloquer l\'accès')+'</button>')+'</div>';
+  if(!a.member_id)accApi('link',{id:a.id,member_id:mid}).then(function(){a.member_id=mid;},function(){});
+}
+async function accCreate(mid){
+  var call=($('acc-call').value||'').trim().toUpperCase(),role=$('acc-role').value;
+  if(!call){toast('Indicatif vide.',true);return;}
+  try{var d=await accApi('create',{callsign:call,role:role,member_id:mid});accCache=null;await loadAccounts(true);drawAccessPanel(mid);showCredentials(d.callsign,d.password,true);}
+  catch(e){toast(e.message,true);}
+}
+async function accReset(id,call){
+  if(!confirm('Générer un nouveau mot de passe provisoire pour '+call+' ?\nSon mot de passe actuel ne marchera plus.'))return;
+  try{var d=await accApi('reset',{id:id});accCache=null;await loadAccounts(true);if(currentId)drawAccessPanel(currentId);showCredentials(call,d.password,false);}
+  catch(e){toast(e.message,true);}
+}
+async function accSetRole(id,role){
+  try{await accApi('role',{id:id,role:role});accCache=null;await loadAccounts(true);toast('Droits : '+ROLE_LABEL[role]+' (actifs à sa prochaine ouverture de l\'appli)');}
+  catch(e){toast(e.message,true);if(currentId)drawAccessPanel(currentId);}
+}
+async function accBlock(id,block){
+  if(block&&!confirm('Bloquer cet accès ? La personne ne pourra plus se connecter (effet complet sous 1 h maximum).'))return;
+  try{await accApi(block?'block':'unblock',{id:id});accCache=null;await loadAccounts(true);if(currentId)drawAccessPanel(currentId);if(curView!=='fiche')openAccounts();toast(block?'Accès bloqué':'Accès débloqué');}
+  catch(e){toast(e.message,true);}
+}
+function appUrl(){return location.href.split('#')[0].split('?')[0];}
+function showCredentials(call,pwd,isNew){
+  var msg='Ton accès à l\'appli Brown Squadron :\n'+appUrl()+'\n\nIdentifiant : '+call+'\nMot de passe provisoire : '+pwd+'\n\nTu choisiras ton propre mot de passe à la première connexion.';
+  window._credMsg=msg;
+  openSheet('<h3>'+(isNew?'Accès créé':'Nouveau mot de passe')+'</h3><div class="sub">À transmettre à '+esc(call)+'. Ce mot de passe ne sera plus affiché ensuite.</div>'+
+    '<div class="cred"><div><span>Identifiant</span><b>'+esc(call)+'</b></div><div><span>Mot de passe provisoire</span><b>'+esc(pwd)+'</b></div></div>'+
+    '<button class="btn primary block" onclick="copyCred()">Copier le message à envoyer</button>'+
+    '<div class="tiny" style="margin-top:8px;white-space:pre-wrap">'+esc(msg)+'</div>');
+}
+function copyCred(){var t=window._credMsg||'';try{navigator.clipboard.writeText(t).then(function(){toast('Message copié : colle-le dans WhatsApp ou par SMS');},function(){prompt('Copie ce message :',t);});}catch(e){prompt('Copie ce message :',t);}}
+/* ---------- vue d'ensemble (menu) ---------- */
+function openAccounts(){
+  openSheet('<h3>Comptes et accès</h3><div class="tiny">Chargement…</div>');
+  loadAccounts(true).then(function(list){
+    var mem=membresOf();var without=mem.filter(function(m){return !accOfMember(m._id);});
+    var masters=list.filter(function(a){return a.role==='admin'&&!a.blocked;}).length;
+    openSheet('<h3>Comptes et accès</h3><div class="sub">'+list.length+' compte'+(list.length>1?'s':'')+' · '+without.length+' membre'+(without.length>1?'s':'')+' sans accès</div>'+
+      '<div class="mp-status'+(accLegacy?'':' ok')+'"><b>Mots de passe partagés : '+(accLegacy?'actifs':'désactivés')+'</b>'+
+        '<span>'+(accLegacy?'Les 3 anciens mots de passe marchent encore. Coupe-les quand tout le monde a son compte.':'Seuls les comptes individuels peuvent se connecter.')+'</span>'+
+        '<button class="btn sm'+(accLegacy?' danger':'')+'" onclick="accLegacySet('+(!accLegacy)+')"'+(accLegacy&&!masters?' disabled title="Crée d\'abord ton compte master"':'')+'>'+(accLegacy?'Couper les mots de passe partagés':'Les réactiver')+'</button></div>'+
+      (without.length?'<div class="grp-title">Sans accès</div>'+without.map(function(m){return '<div class="mp-row"><button class="mp-row-main" onclick="go(\'fiche\',\''+m._id+'\')"><i style="background:var(--bone3)"></i><span>'+esc(memName(m))+'</span><small>Créer l\'accès</small></button></div>';}).join(''):'')+
+      '<div class="grp-title">Comptes</div>'+list.slice().sort(function(a,b){return String(a.callsign).localeCompare(String(b.callsign),'fr',{numeric:true});}).map(function(a){
+        var col=a.blocked?'var(--signal)':(a.role==='admin'?'var(--tan)':(a.role==='membre'?'var(--phos)':'var(--bone3)'));
+        return '<div class="mp-row"><button class="mp-row-main" onclick="'+(a.member_id&&db[a.member_id]?'go(\'fiche\',\''+a.member_id+'\')':'')+'"><i style="background:'+col+'"></i><span>'+esc(a.callsign)+' · '+ROLE_LABEL[a.role]+'</span><small>'+accStateTxt(a).replace(/<[^>]+>/g,'')+'</small></button></div>';}).join(''));
+  },function(e){openSheet('<h3>Comptes et accès</h3><div class="tiny" style="color:var(--signal)">'+esc(e.message)+'</div>');});
+}
+async function accLegacySet(on){
+  if(!on&&!confirm('Couper les 3 mots de passe partagés ?\nCeux qui n\'ont pas de compte individuel ne pourront plus entrer.'))return;
+  try{await accApi('legacy',{on:on});accLegacy=on;toast(on?'Mots de passe partagés réactivés':'Mots de passe partagés coupés');openAccounts();}
+  catch(e){toast(e.message,true);}
 }
 </script>
 <script>
@@ -2365,7 +2681,9 @@ function delItem(c,id,noUndo){var it=world()[c].filter(function(i){return i.id==
 function patchItem(c,id,patch){worldEdit(function(x){x[c].forEach(function(i){if(i.id===id)Object.assign(i,patch);});});}
 function mapUndoLast(){var op=mapUndo.pop();if(!op)return;
   if(op.t==='del')delItem(op.c,op.id,true);else addItem(op.c,op.item,true);toast('Action annulée');renderTray();}
-function myCallsign(){try{return localStorage.getItem('bs_gps_call')||localStorage.getItem('bs_comms_call')||'';}catch(e){return '';}}
+function myCallsign(){if(me&&me.personal)return me.callsign;
+  return _myCallsignLS();}
+function _myCallsignLS(){try{return localStorage.getItem('bs_gps_call')||localStorage.getItem('bs_comms_call')||'';}catch(e){return '';}}
 function mapCurrentOp(){var s=$('map-op-select');return (s&&s.value)||mapOpMode||'';}
 
 /* ---------- géométrie ---------- */
@@ -2718,7 +3036,7 @@ function toggleGps(){
       '<button class="btn sm'+(headOn?' primary':'')+'" onclick="toggleHeading()">'+(headOn?'Boussole active':'Activer la boussole')+'</button></div></div>'
     :(call?'<div class="mp-status"><b>Aucune position reçue pour '+esc(call)+'</b><span>Si Traccar est installé, vérifie qu\'il est activé avec l\'identifiant '+esc(call)+'.</span></div>':'');
   openSheet('<h3>Ma position</h3>'+status+
-    '<div class="grid2" style="margin-top:14px"><div class="field"><label>Mon indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02" autocapitalize="characters"></div>'+
+    '<div class="grid2" style="margin-top:14px"><div class="field"><label>Mon indicatif</label><input id="gps-call" maxlength="16" value="'+esc(call)+'" placeholder="BS-02" '+(me.personal?'readonly title="Indicatif de ton compte" ':'')+'autocapitalize="characters"></div>'+
     '<div class="field"><label>Couleur sur la carte</label><div class="mp-colors sm">'+['#46b29d','#ffd24a','#6ea7d6','#e2563f','#b07cff','#ffffff'].map(function(c){
       return '<button style="background:'+c+'" class="'+(c===col?'on':'')+'" onclick="lsSet(\'bs_gps_color\',\''+c+'\');this.parentNode.querySelectorAll(\'button\').forEach(function(b){b.classList.remove(\'on\')});this.classList.add(\'on\')"></button>';}).join('')+'</div></div></div>'+
     '<button class="btn primary block" style="margin-top:14px" onclick="saveMyCall()">Enregistrer</button>'+
@@ -3030,9 +3348,7 @@ function onGpsTyped(){}
   }catch(e){}
   /* cache hors ligne (fichier sw.js à côté de index.html sur GitHub) */
   try{if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}
-  var role=null;try{role=localStorage.getItem('bs_role')||sessionStorage.getItem('bs_role');}catch(e){}
-  if(role&&ROLE_HASHES[role]){currentRole=role;startApp();}
-  else setTimeout(function(){var i=$('login-pwd');if(i&&window.innerWidth>760)i.focus();},100);
+  bootAuth();
 })();
 </script>
 </body></html>
