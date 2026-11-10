@@ -656,6 +656,50 @@ body[data-view=map] .toast{font-size:13px;padding:9px 13px;}
 .rsvp-mini.k-yes{background:rgba(168,239,192,.15);color:var(--phos);}
 .rsvp-mini.k-no{background:rgba(226,86,63,.15);color:var(--signal);}
 .rsvp-mini.k-maybe{background:rgba(180,154,107,.18);color:var(--tan2);}
+
+/* =====================================================================
+   CARTE — téléphone en paysage : carte plein écran, outils en colonne
+   ===================================================================== */
+.mp-back{display:none;}
+@media (orientation:landscape) and (max-height:560px){
+  body[data-view=map] .topbar,body[data-view=map] .nav{display:none;}
+  body[data-view=map] #app{padding-left:0;}
+  body[data-view=map] .mp{position:fixed;inset:0;height:100dvh;z-index:60;}
+  #mp-full{display:none;}
+  .mp-back{display:flex;position:absolute;z-index:6;top:8px;left:calc(8px + env(safe-area-inset-left));width:38px;height:38px;}
+  .mp-back svg{width:20px;height:20px;}
+  /* dossier */
+  .mp-top{top:8px;left:calc(54px + env(safe-area-inset-left));right:auto;}
+  .mp-folder{height:38px;padding:0 4px 0 10px;}
+  .mp-folder span{display:none;}
+  .mp-folder select{font-size:13px;max-width:34vw;}
+  /* zoom / boussole carte en haut à droite, boutons GPS en bas à droite */
+  .maplibregl-ctrl-top-right{top:4px;right:calc(4px + env(safe-area-inset-right));}
+  .maplibregl-ctrl-group button{width:34px!important;height:34px!important;}
+  .mp-side{top:auto;bottom:10px;right:calc(8px + env(safe-area-inset-right));flex-direction:row;}
+  .mp-side .mp-fab{width:44px;height:44px;}
+  /* outils : colonne à gauche */
+  .mp-dock{left:calc(8px + env(safe-area-inset-left));right:auto;top:54px;bottom:8px;width:116px;flex-direction:column;gap:6px;}
+  .mp-modes{order:-1;grid-template-columns:1fr 1fr;gap:3px;padding:3px;border-radius:12px;flex:none;}
+  .mp-modes button{height:28px;font-size:0;border-radius:9px;padding:0;}
+  .mp-modes button[data-tray=edit]:after{content:'Édition';font-size:10.5px;}
+  .mp-modes button[data-tray=tac]:after{content:'Tactique';font-size:10.5px;}
+  .mp-tray{display:grid;grid-template-columns:1fr 1fr;overflow-x:hidden;overflow-y:auto;padding:4px;gap:2px;border-radius:14px;min-height:0;flex:0 1 auto;}
+  .mp-tool{width:100%;min-width:0;height:46px;font-size:10px;gap:2px;padding:0;}
+  .mp-tool svg{width:20px;height:20px;}
+  .mp-tool .mp-sym,.mp-tool .mp-sym svg{width:24px;height:24px;}
+  .mp-dot{width:20px;height:20px;}
+  .maplibregl-ctrl-bottom-right{right:calc(112px + env(safe-area-inset-right));}
+  /* consigne de dessin : en bas, à droite de la colonne d'outils */
+  .mp-hint{position:absolute;left:124px;bottom:0;width:min(520px,calc(100vw - 260px));}
+  body[data-view=map] #toasts,body.map-fs #toasts{top:10px;bottom:auto;}
+  /* fenêtres : panneau latéral à droite, la carte reste visible */
+  .sheet{left:auto;right:0;top:0;bottom:0;width:min(420px,62vw);max-height:none;border-radius:22px 0 0 22px;border:1px solid var(--hair2);border-right:0;
+    padding:10px calc(16px + env(safe-area-inset-right)) 16px 16px;transform:translateX(105%);}
+  .sheet.on{transform:none;}
+  .sheet .grab{display:none;}
+  .sheet-bg.on{background:rgba(0,0,0,.25);}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -2663,6 +2707,7 @@ function renderMapChrome(){
   v.innerHTML='<div class="mp" id="mp">'+
     '<div id="map-canvas"></div>'+
     '<div class="mp-top"><label class="mp-folder"><span>Dossier</span><select id="map-op-select" onchange="mapFocusOp(this.value)"></select></label></div>'+
+    '<button class="mp-fab mp-back" onclick="go(\'home\')" aria-label="Retour">'+I.chevl+'</button>'+
     '<div class="mp-side">'+
       '<button class="mp-fab" id="mp-gps" onclick="toggleGps()" aria-label="Partager ma position">'+I_MAP.gps+'</button>'+
       '<button class="mp-fab" id="mp-full" onclick="toggleMapFull()" aria-label="Plein écran">'+I_MAP.full+'</button>'+
