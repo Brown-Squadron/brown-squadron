@@ -3,11 +3,12 @@
    • les nouvelles versions publiées sur GitHub sont prises en priorité ;
    • les tuiles de carte déjà vues restent disponibles hors réseau (terrain sans 4G) ;
    • les données Supabase ne passent JAMAIS par ce cache (toujours en direct). */
-const APP_CACHE = 'bs-app-v5';
+const APP_CACHE = 'bs-app-v6';
 const TILE_CACHE = 'bs-tiles-v1';
-const TILE_MAX = 2500; // environ 50 à 80 Mo de tuiles au maximum
+const TILE_MAX = 4000; // environ 80 à 120 Mo de tuiles au maximum
 
-const TILE_HOSTS = ['data.geopf.fr', 'server.arcgisonline.com', 'tile.opentopomap.org', 'elevation-tiles-prod'];
+const TILE_HOSTS = ['data.geopf.fr', 'server.arcgisonline.com', 'tile.opentopomap.org'];
+const isTile = (url) => TILE_HOSTS.some((h) => url.hostname.includes(h)) || url.pathname.includes('/elevation-tiles-prod/'); // relief 3D : le nom est dans le chemin
 const LIB_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -45,10 +46,10 @@ self.addEventListener('fetch', (e) => {
   }
 
   // tuiles de carte : cache d'abord, réseau sinon (et on garde la tuile)
-  if (TILE_HOSTS.some((h) => url.hostname.includes(h))) {
+  if (isTile(url)) {
     e.respondWith(
       caches.open(TILE_CACHE).then((c) => c.match(req).then((hit) => hit || fetch(req).then((res) => {
-        if (res.ok) { c.put(req, res.clone()); if (Math.random() < 0.05) trimTiles(); }
+        if (res.ok) { c.put(req, res.clone()); if (Math.random() < 0.01) trimTiles(); }
         return res;
       })))
     );
